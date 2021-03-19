@@ -1,0 +1,4 @@
+build/*
+install/*
+*.o
+include/*.gch
