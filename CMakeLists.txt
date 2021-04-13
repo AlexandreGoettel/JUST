@@ -1,10 +1,10 @@
 # General config
 cmake_minimum_required(VERSION 3.4.1 FATAL_ERROR)
-project(test
+project(NuSolarFit
 	VERSION 0.0.1
 	DESCRIPTION "Preliminary tests for juno solar fits.")
 
-SET(EXENAME "NuSolarFit")
+SET(EXENAME ${PROJECT_NAME})
 
 #-------------------------------------------------------------------------------
 # ADD ROOT
