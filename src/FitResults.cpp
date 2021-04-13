@@ -6,10 +6,17 @@
 // includes
 #include "FitResults.h"
 
-
 namespace NuFitter {
 
-auto NuFitResults::addResults(NuFitResults *results) -> void {
+// @brief Constructor
+NuFitResults::NuFitResults(std::vector<double> popt_,
+	                       std::vector<std::vector<double>> pcov_) {
+   popt = popt_;
+   pcov = pcov_;
+}
+
+// @brief Add results to existing NuFitResults. Used for ToyData fits.
+auto NuFitResults::addResults(NuFitResults results) -> void {
 	// TODO
 }
 

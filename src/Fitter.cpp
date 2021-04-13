@@ -10,6 +10,7 @@
 #include <iostream>
 // ROOT includes
 #include "Math/Util.h"
+#include "TMatrixDSym.h"
 // Project includes
 #include "Fitter.h"
 
@@ -131,16 +132,40 @@ auto MinuitManager::callMinuit() -> void {
 		gMinuit->mnexcm("MINOS", arglist, 2, errorflag);
 }
 
+// @brief Convert fit results to vectors, store in member variables popt/pcov
+auto MinuitManager::getResults() -> void {
+	// Get the covariance matrix
+	TMatrixDSym mat(config.nparams);
+	gMinuit->mnemat(mat.GetMatrixArray(), config.nparams);
+
+	// Convert to vector
+	for (auto i = 0U; i < config.nparams; i++) {
+		std::vector<double> pcov_row;
+		for (auto j = 0U; j < config.nparams; j++) {
+			pcov_row.push_back(mat[i][j]);
+		}
+		pcov.push_back(pcov_row);
+	}
+
+	// Put the parameter estimates into another vector
+	double x, _;
+	for (auto i = 0U; i < config.nparams; i++) {
+		gMinuit->GetParameter(i, x, _);
+		popt.push_back(x);
+		// Could also get an uncertainty vector here.
+	}
+}
+
 // @brief Perform a binned likelihood fit of the pdfs on the data
 // @param data data to be fitted
 // @param pdfs MC PDFs to fit to
 // @param config container for fit options / variables
 // @return NuFitResults object containing relevant fit results info
 auto Fit(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config)
-		-> NuFitResults* {
+		-> NuFitResults {
 	// 1. Create the NuFitContainer object -> formats data according to config
-	// auto fitCtnr = std::make_unique<NuFitContainer>(data, pdfs, config);
-	// 1. Overwrite NuFitContainer at static location
+	// 1.1 Overwrite NuFitContainer at static location in MCFit scope
+	// TODO: Add memory leak protection?
 	new (&fitCtnr) NuFitContainer(data, pdfs, config);
 
 	// 2. Prepare TMinuit
@@ -149,11 +174,12 @@ auto Fit(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config)
 
 	// 3. Start minimization
 	manager->callMinuit();
+	manager->getResults();
 
 	// 4. Pass output to NuFitResults
 	// TODO
-	auto results = std::make_unique<NuFitResults>();
-	return results.get();
+	auto results = NuFitResults(manager->popt, manager->pcov);
+	return results;
 }
 
 // @brief Fit for each entry in vector<NuFitData*>
@@ -162,10 +188,10 @@ auto Fit(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config)
 // @param config pointer to the fit config variables
 // @return vector of NuFitResults*, one for each NuFitData* in data
 auto Fit(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
-	     const NuFitConfig config) -> NuFitResults* {
+	     const NuFitConfig config) -> NuFitResults {
 	auto results = Fit(data[0], pdfs, config);
 	for (auto i = 1u; i < data.size(); i++) {
-		results->addResults(Fit(data[i], pdfs, config));
+		results.addResults(Fit(data[i], pdfs, config));
 	}
 	return results;
 }

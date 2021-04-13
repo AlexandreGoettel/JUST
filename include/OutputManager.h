@@ -8,17 +8,20 @@
 
 //============================================================================
 // Includes
+#include <memory>
+#include <vector>
+#include "FitResults.h"
+#include "DataReader.h"
+#include "FitResults.h"
+#include "Parser.h"
 
 //============================================================================
 // Method definitions
 
 namespace NuFitter {
 
-//============================================================================
-// Forward declarations
-class NuFitResults;
-
-void ProcessResults(NuFitResults*);
+void ProcessResults(NuFitData*, NuFitPDFs*, const NuFitConfig, NuFitResults);
+void ProcessResults(std::vector<NuFitData*>, NuFitPDFs*, const NuFitConfig, NuFitResults);
 
 }  // namespace NuFitter
 

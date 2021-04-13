@@ -35,18 +35,15 @@ auto main(int argc, char* argv[]) -> int {
 	NuFitPDFs *pdfs = PDFs::Read(config);
 
 	// Perform the fit with real or toy data
-	NuFitResults *results;
-	// std::cout << config.doToyData_ << std::endl;
 	if (config.doToyData_) {
 		// Generate toy data for the fit
-		std::vector<NuFitData*> data = generateToyData(config);
-		results = MCFit::Fit(data, pdfs, config);
+		auto data = generateToyData(config);
+		auto results = MCFit::Fit(data, pdfs, config);
+		ProcessResults(data, pdfs, config, results);
 	} else {
 		// Read the data histogram(s)
-		NuFitData *data = Data::Read(config);
-		results = MCFit::Fit(data, pdfs, config);
+		auto data = Data::Read(config);
+		auto results = MCFit::Fit(data, pdfs, config);
+		ProcessResults(data, pdfs, config, results);
 	}
-
-	// Save/plot results
-	ProcessResults(results);
 }

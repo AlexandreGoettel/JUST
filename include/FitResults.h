@@ -8,6 +8,8 @@
 
 //============================================================================
 // Includes
+#include <vector>
+#include <memory>
 
 //============================================================================
 // Class definition
@@ -17,17 +19,20 @@ namespace NuFitter {
 class NuFitResults {
 // Constructors and operator assignments
 public:
-	constexpr NuFitResults() = default;  // constructor
+	NuFitResults() = default;
+	NuFitResults(std::vector<double>, std::vector<std::vector<double>>);  // constructor
 	~NuFitResults() = default;  // destructor
-	constexpr NuFitResults(const NuFitResults&) = default;  // copy constructor
-	constexpr NuFitResults(NuFitResults&&) = default;  // move constructor
-	constexpr NuFitResults &operator=(const NuFitResults&) = default;  // copy assignment
-	constexpr NuFitResults &operator=(NuFitResults&&) = default;  // move assignment
+	NuFitResults(const NuFitResults&) = default;  // copy constructor
+	NuFitResults(NuFitResults&&) = default;  // move constructor
+	NuFitResults &operator=(const NuFitResults&) = default;  // copy assignment
+	NuFitResults &operator=(NuFitResults&&) = default;  // move assignment
 
-// Functions
-public:
-	void addResults(NuFitResults*);
+public: // Member variables
+	std::vector<double> popt;
+	std::vector<std::vector<double>> pcov;
 
+public: // Functions
+	void addResults(NuFitResults);
 };
 
 }  // namespace NuFitter

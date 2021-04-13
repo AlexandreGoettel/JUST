@@ -64,14 +64,17 @@ public:  // Member variables
 	NuFitConfig config;
 	TMinuit *gMinuit;
 	int errorflag;
+	std::vector<double> popt;
+	std::vector<std::vector<double>> pcov;
 
 public:  // Functions
 	void initMinuit();
 	void callMinuit();
+	void getResults();
 };
 
-NuFitResults *Fit(NuFitData*, NuFitPDFs*, const NuFitConfig);
-NuFitResults *Fit(std::vector<NuFitData*>, NuFitPDFs*,
+NuFitResults Fit(NuFitData*, NuFitPDFs*, const NuFitConfig);
+NuFitResults Fit(std::vector<NuFitData*>, NuFitPDFs*,
 				  const NuFitConfig);
 void fcn(int&, double*, double&, double*, int);
 
