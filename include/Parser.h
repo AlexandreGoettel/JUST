@@ -34,8 +34,8 @@ public:
 	NuFitConfig &operator=(const NuFitConfig&) = default;  // copy assignment
 	NuFitConfig &operator=(NuFitConfig&&) = default;  // move assignment
 
-public:
-	bool doToyData_ = true;
+public:  // Initialise variables to be filled by parser
+	bool doToyData_ = true, doHesse = false, doMinos = false;
 	double emin = 0, emax = 1e308;  // Close to numeric limit
 	unsigned int nbins = 100;
 
