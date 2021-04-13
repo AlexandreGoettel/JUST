@@ -9,6 +9,7 @@
 //============================================================================
 // Includes
 #include <vector>
+#include "TH1.h"
 
 //============================================================================
 // Class definition
@@ -20,7 +21,8 @@ class NuFitConfig;
 
 class NuFitData {
 public:  // Constructros and operator assigments
-	NuFitData(std::vector<double>, std::vector<double>);  // constructor
+	NuFitData(std::vector<double>, std::vector<double>,
+	          std::vector<TH1D*>);  // constructor
 	~NuFitData() = default;  // destructor
 	NuFitData(const NuFitData&) = default;  // copy constructor
 	NuFitData(NuFitData&&) = default;  // move constructor
@@ -29,11 +31,13 @@ public:  // Constructros and operator assigments
 
 public: // Variables
 	std::vector<double> data, bin_edges;
+	std::vector<TH1D*> data_histograms;
 };
 
 class NuFitPDFs {
 public:  // Constructors and operator assigments
-	NuFitPDFs(std::vector<std::vector<double>>, std::vector<double>);  // constructor
+	NuFitPDFs(std::vector<std::vector<double>>, std::vector<double>,
+	          std::vector<TH1D*>);  // constructor
 	~NuFitPDFs() = default;  // destructor
 	NuFitPDFs(const NuFitPDFs&) = default;  // copy constructor
 	NuFitPDFs(NuFitPDFs&&) = default;  // move constructor
@@ -43,6 +47,7 @@ public:  // Constructors and operator assigments
 public:  // Variables
 	std::vector<double> bin_edges;
 	std::vector<std::vector<double>> pdfs;
+	std::vector<TH1D*> pdf_histograms;
 };
 
 namespace Data {

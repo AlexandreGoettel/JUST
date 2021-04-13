@@ -7,7 +7,6 @@
 #include <memory>
 #include <iostream>
 // ROOT includes
-#include "TH1.h"
 #include "TF1.h"
 #include "TRandom3.h"
 // Project includes
@@ -37,14 +36,18 @@ auto genHist(T function, C functionName, C histName,
 }
 
 NuFitPDFs::NuFitPDFs(std::vector<std::vector<double>> pdfs_,
-	                 std::vector<double> bin_edges_) {
+	                 std::vector<double> bin_edges_,
+				     std::vector<TH1D*> pdf_histograms_) {
 	pdfs = pdfs_;
 	bin_edges = bin_edges_;
+	pdf_histograms = pdf_histograms_;
 }
 
-NuFitData::NuFitData(std::vector<double>data_, std::vector<double> bin_edges_) {
+NuFitData::NuFitData(std::vector<double>data_, std::vector<double> bin_edges_,
+	                 std::vector<TH1D*> data_histograms_) {
 	data = data_;
 	bin_edges = bin_edges_;
+	data_histograms = data_histograms_;
 }
 
 auto getBinEdges(TH1D *hist, unsigned int nbins) -> std::vector<double> {
@@ -81,8 +84,12 @@ auto Read(const NuFitConfig config) -> NuFitData* {
 	// Create bin_edges vector
 	auto bin_edges = getBinEdges(h_total, config.nbins);
 
+	// Also save histograms (for plotting later)
+	std::vector<TH1D*> hists;
+	hists.push_back(h_total);
+
 	// Create and return NuFitData object
-	auto *data = new NuFitData(vec_data, bin_edges);
+	auto *data = new NuFitData(vec_data, bin_edges, hists);
 	return data;
 }
 
@@ -119,8 +126,13 @@ auto Read(const NuFitConfig config) -> NuFitPDFs* {
 	// Create bin_edges vector
 	auto bin_edges = getBinEdges(h_background, config.nbins);
 
+	// Also save histograms in vector (for plotting later)
+	std::vector<TH1D*> hists;
+	hists.push_back(h_signal);
+	hists.push_back(h_background);
+
 	// Create and return NuFitPDFs object with the variables
-	auto *output = new NuFitPDFs(pdfs, bin_edges);
+	auto *output = new NuFitPDFs(pdfs, bin_edges, hists);
 	return output;
 }
 
