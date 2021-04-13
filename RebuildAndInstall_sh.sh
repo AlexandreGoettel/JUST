@@ -38,6 +38,7 @@ SIM_DIR=/home/alexandregoettel/work/PhD/Juno/JunoFit/skeleton
  echo "$ME Calling CMake to build."
  cmake -DCMAKE_INSTALL_PREFIX=$SIM_DIR/install \
        -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ \
+       -DCMAKE_CXX_STANDARD=14 \ #-DCMAKE_BUILD_TYPE=Debug \
        $SIM_DIR
  cmake --build . -j 4
 
