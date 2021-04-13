@@ -1,10 +1,10 @@
-//! @file	include/Fitter.h
+//! @file	include/NuFitContainer.h
 //! @brief	Declaration of class to fit MC PDFs
 //! @author	Alexandre Göttel
 //! @date	2021-03-18
 
-#ifndef FITTER_H_
-#define FITTER_H_
+#ifndef NuFitContainer_H_
+#define NuFitContainer_H_
 
 //============================================================================
 // Standard includes
@@ -28,34 +28,52 @@ class NuFitPDFs;
 
 namespace MCFit {
 
-class Fitter {
+class NuFitContainer {
 public:  // Constructors and assigment operators
-	Fitter() = default;  // constructor
-	~Fitter() = default;  // destructor
-	Fitter(const Fitter&) = default;  // copy constructor
-	Fitter(Fitter&&) = default;  // move constructor
-	Fitter &operator=(const Fitter&) = default;  // copy assignment
-	Fitter &operator=(Fitter&&) = default;  // move assignment
+	NuFitContainer() = default;
+	NuFitContainer(NuFitData*, NuFitPDFs*, const NuFitConfig);  // constructor
+	~NuFitContainer() = default;  // destructor
+	NuFitContainer(const NuFitContainer&) = default;  // copy constructor
+	NuFitContainer(NuFitContainer&&) = default;  // move constructor
+	NuFitContainer &operator=(const NuFitContainer&) = default;  // copy assignment
+	NuFitContainer &operator=(NuFitContainer&&) = default;  // move assignment
 
-public:  // Functions
-	// Overloaded functions to fit Data or Toy Data
-	NuFitResults *Fit(NuFitData*, NuFitPDFs*, const NuFitConfig*);
-	NuFitResults *Fit(std::vector<NuFitData*>, NuFitPDFs*,
-		              const NuFitConfig*);
-
-protected:  // Minuit functions
-	void fcn(int&, double*, double&, double*, int);
+public:
+	NuFitData *data;
+	NuFitPDFs *pdfs;
+	NuFitConfig config;
+public:  // Minuit functions
 	double NLL(int, const double*);
 	double fitFunction(unsigned int, unsigned int, const double*);
-	void initMinuit(const NuFitConfig*);
-	void callMinuit(const NuFitConfig*);
 
 private:  // Member variables
 	std::vector<std::vector<double>> pdf_vectors;
 	std::vector<double> data_vector, efficiencies;
-	TMinuit *gMinuit;
-	int errorflag = 0;
 };
+
+class MinuitManager {
+public:  // Constructors and assigment operators
+	MinuitManager(const NuFitConfig);  // constructor
+	~MinuitManager() = default;  // destructor
+	MinuitManager(const MinuitManager&) = default;  // copy constructor
+	MinuitManager(MinuitManager&&) = default;  // move constructor
+	MinuitManager &operator=(const MinuitManager&) = default;  // copy assignment
+	MinuitManager &operator=(MinuitManager&&) = default;  // move assignment
+
+public:  // Member variables
+	NuFitConfig config;
+	TMinuit *gMinuit;
+	int errorflag;
+
+public:  // Functions
+	void initMinuit();
+	void callMinuit();
+};
+
+NuFitResults *Fit(NuFitData*, NuFitPDFs*, const NuFitConfig);
+NuFitResults *Fit(std::vector<NuFitData*>, NuFitPDFs*,
+				  const NuFitConfig);
+void fcn(int&, double*, double&, double*, int);
 
 }  // namespace MCFit
 }  // namespace NuFitter

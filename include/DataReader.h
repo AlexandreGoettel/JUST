@@ -20,7 +20,7 @@ class NuFitConfig;
 
 class NuFitData {
 public:  // Constructros and operator assigments
-	NuFitData() = default;  // constructor
+	NuFitData(std::vector<double>, std::vector<double>);  // constructor
 	~NuFitData() = default;  // destructor
 	NuFitData(const NuFitData&) = default;  // copy constructor
 	NuFitData(NuFitData&&) = default;  // move constructor
@@ -32,8 +32,8 @@ public: // Variables
 };
 
 class NuFitPDFs {
-public:  // Constructros and operator assigments
-	NuFitPDFs() = default;  // constructor
+public:  // Constructors and operator assigments
+	NuFitPDFs(std::vector<std::vector<double>>, std::vector<double>);  // constructor
 	~NuFitPDFs() = default;  // destructor
 	NuFitPDFs(const NuFitPDFs&) = default;  // copy constructor
 	NuFitPDFs(NuFitPDFs&&) = default;  // move constructor
@@ -46,13 +46,11 @@ public:  // Variables
 };
 
 namespace Data {
-	// template <class Config>
-	NuFitData *Read(const NuFitConfig *config);
+	NuFitData *Read(const NuFitConfig config);
 }  // namespace CMDLParser
 
 namespace PDFs {
-	// template <class Config>
-	NuFitPDFs *Read(const NuFitConfig *config);
+	NuFitPDFs* Read(const NuFitConfig config);
 }  // namespace ConfigParser
 
 }  // namespace NuFitter

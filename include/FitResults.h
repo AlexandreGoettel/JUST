@@ -17,12 +17,12 @@ namespace NuFitter {
 class NuFitResults {
 // Constructors and operator assignments
 public:
-	constexpr NuFitResults() = default;  // constructor
+	NuFitResults() = default;  // constructor
 	~NuFitResults() = default;  // destructor
-	constexpr NuFitResults(const NuFitResults&) = default;  // copy constructor
-	constexpr NuFitResults(NuFitResults&&) = default;  // move constructor
-	constexpr NuFitResults &operator=(const NuFitResults&) = default;  // copy assignment
-	constexpr NuFitResults &operator=(NuFitResults&&) = default;  // move assignment
+	NuFitResults(const NuFitResults&) = default;  // copy constructor
+	NuFitResults(NuFitResults&&) = default;  // move constructor
+	NuFitResults &operator=(const NuFitResults&) = default;  // copy assignment
+	NuFitResults &operator=(NuFitResults&&) = default;  // move assignment
 
 // Functions
 public:

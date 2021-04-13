@@ -9,6 +9,7 @@
 //============================================================================
 // Includes
 #include <vector>
+#include "Parser.h"
 
 //============================================================================
 // Class definition
@@ -34,7 +35,7 @@ class NuFitData;
 
 // template <class Config>
 // NuFitToyData *generateToyData(const NuFitConfig *config);
-std::vector<NuFitData*> generateToyData(const NuFitConfig *config);
+std::vector<NuFitData*> generateToyData(const NuFitConfig config);
 
 }  // namespace NuFitter
 

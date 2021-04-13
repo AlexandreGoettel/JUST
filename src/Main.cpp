@@ -5,7 +5,9 @@
 
 //============================================================================
 // Standard includes
-// #include <memory>
+#include <memory>
+#include <vector>
+#include <iostream>
 // Project includes
 #include "Parser.h"
 #include "DataReader.h"
@@ -27,16 +29,17 @@ auto main(int argc, char* argv[]) -> int {
 	const NuFitCmdlArgs cmdl_args = CMDLParser::Parse(argc, argv);
 
 	// Parse config files
-	const NuFitConfig *config = ConfigParser::Parse(cmdl_args);
+	const NuFitConfig config = ConfigParser::Parse(cmdl_args);
 
 	// Read the PDFs to fit to the data
 	NuFitPDFs *pdfs = PDFs::Read(config);
 
 	// Perform the fit with real or toy data
 	NuFitResults *results;
-	if (config->doToyData_) {
+	// std::cout << config.doToyData_ << std::endl;
+	if (config.doToyData_) {
 		// Generate toy data for the fit
-		NuFitToyData *data = generateToyData(config);
+		std::vector<NuFitData*> data = generateToyData(config);
 		results = MCFit::Fit(data, pdfs, config);
 	} else {
 		// Read the data histogram(s)

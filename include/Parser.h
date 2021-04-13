@@ -27,7 +27,7 @@ public:
 
 class NuFitConfig {
 public:
-	NuFitConfig() = default;  // constructor
+	NuFitConfig();
 	~NuFitConfig() = default;  // destructor
 	NuFitConfig(const NuFitConfig&) = default;  // copy constructor
 	NuFitConfig(NuFitConfig&&) = default;  // move constructor
@@ -35,13 +35,14 @@ public:
 	NuFitConfig &operator=(NuFitConfig&&) = default;  // move assignment
 
 public:  // Initialise variables to be filled by parser
-	bool doToyData_ = true, doHesse = false, doMinos = false;
+	bool doToyData_ = false, doHesse = false, doMinos = false;
 	double emin = 0, emax = 1e308;  // Close to numeric limit
 	unsigned int nbins = 100;
 
 	double nparams;
 	std::vector<TString> param_names;
-	std::vector<double> param_initial_guess, param_stepsize, param_lowerlim, param_upperlim;
+	std::vector<double> param_initial_guess, param_stepsize,
+	                    param_lowerlim, param_upperlim;
 };
 
 namespace CMDLParser {
@@ -49,7 +50,7 @@ namespace CMDLParser {
 }  // namespace CMDLParser
 
 namespace ConfigParser {
-	NuFitConfig *Parse(NuFitCmdlArgs);
+	NuFitConfig Parse(NuFitCmdlArgs);
 }  // namespace ConfigParser
 
 }  // namespace NuFitter

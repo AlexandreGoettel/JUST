@@ -11,9 +11,9 @@
 namespace NuFitter{
 
 // template <class Config>
-auto generateToyData(const NuFitConfig *config) -> NuFitToyData* {
+auto generateToyData(const NuFitConfig config) -> std::vector<NuFitData*> {
 	// TODO
-	auto data = std::make_unique<NuFitToyData>();
-	return data.get();
+	std::vector<NuFitData*> data;
+	return data;
 }
 }  // namespace NuFitter
