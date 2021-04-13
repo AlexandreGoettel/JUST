@@ -8,7 +8,7 @@
 
 //============================================================================
 // Includes
-// #include "Parser.h"
+#include <vector>
 
 //============================================================================
 // Class definition
@@ -19,23 +19,30 @@ namespace NuFitter {
 class NuFitConfig;
 
 class NuFitData {
-public:
-	constexpr NuFitData() = default;  // constructor
+public:  // Constructros and operator assigments
+	NuFitData() = default;  // constructor
 	~NuFitData() = default;  // destructor
-	constexpr NuFitData(const NuFitData&) = default;  // copy constructor
-	constexpr NuFitData(NuFitData&&) = default;  // move constructor
-	constexpr NuFitData &operator=(const NuFitData&) = default;  // copy assignment
-	constexpr NuFitData &operator=(NuFitData&&) = default;  // move assignment
+	NuFitData(const NuFitData&) = default;  // copy constructor
+	NuFitData(NuFitData&&) = default;  // move constructor
+	NuFitData &operator=(const NuFitData&) = default;  // copy assignment
+	NuFitData &operator=(NuFitData&&) = default;  // move assignment
+
+public: // Variables
+	std::vector<double> data, bin_edges;
 };
 
 class NuFitPDFs {
-public:
-	constexpr NuFitPDFs() = default;  // constructor
+public:  // Constructros and operator assigments
+	NuFitPDFs() = default;  // constructor
 	~NuFitPDFs() = default;  // destructor
-	constexpr NuFitPDFs(const NuFitPDFs&) = default;  // copy constructor
-	constexpr NuFitPDFs(NuFitPDFs&&) = default;  // move constructor
-	constexpr NuFitPDFs &operator=(const NuFitPDFs&) = default;  // copy assignment
-	constexpr NuFitPDFs &operator=(NuFitPDFs&&) = default;  // move assignment
+	NuFitPDFs(const NuFitPDFs&) = default;  // copy constructor
+	NuFitPDFs(NuFitPDFs&&) = default;  // move constructor
+	NuFitPDFs &operator=(const NuFitPDFs&) = default;  // copy assignment
+	NuFitPDFs &operator=(NuFitPDFs&&) = default;  // move assignment
+
+public:  // Variables
+	std::vector<double> bin_edges;
+	std::vector<std::vector<double>> pdfs;
 };
 
 namespace Data {

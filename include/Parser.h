@@ -8,6 +8,8 @@
 
 //============================================================================
 // Includes
+#include <vector>
+#include "TString.h"
 
 //============================================================================
 // Class definition
@@ -15,25 +17,31 @@
 namespace NuFitter {
 class NuFitCmdlArgs {
 public:
-	constexpr NuFitCmdlArgs() = default;  // constructor
+	NuFitCmdlArgs() = default;  // constructor
 	~NuFitCmdlArgs() = default;  // destructor
-	constexpr NuFitCmdlArgs(const NuFitCmdlArgs&) = default;  // copy constructor
-	constexpr NuFitCmdlArgs(NuFitCmdlArgs&&) = default;  // move constructor
-	constexpr NuFitCmdlArgs &operator=(const NuFitCmdlArgs&) = default;  // copy assignment
-	constexpr NuFitCmdlArgs &operator=(NuFitCmdlArgs&&) = default;  // move assignment
+	NuFitCmdlArgs(const NuFitCmdlArgs&) = default;  // copy constructor
+	NuFitCmdlArgs(NuFitCmdlArgs&&) = default;  // move constructor
+	NuFitCmdlArgs &operator=(const NuFitCmdlArgs&) = default;  // copy assignment
+	NuFitCmdlArgs &operator=(NuFitCmdlArgs&&) = default;  // move assignment
 };
 
 class NuFitConfig {
 public:
-	constexpr NuFitConfig() = default;  // constructor
+	NuFitConfig() = default;  // constructor
 	~NuFitConfig() = default;  // destructor
-	constexpr NuFitConfig(const NuFitConfig&) = default;  // copy constructor
-	constexpr NuFitConfig(NuFitConfig&&) = default;  // move constructor
-	constexpr NuFitConfig &operator=(const NuFitConfig&) = default;  // copy assignment
-	constexpr NuFitConfig &operator=(NuFitConfig&&) = default;  // move assignment
+	NuFitConfig(const NuFitConfig&) = default;  // copy constructor
+	NuFitConfig(NuFitConfig&&) = default;  // move constructor
+	NuFitConfig &operator=(const NuFitConfig&) = default;  // copy assignment
+	NuFitConfig &operator=(NuFitConfig&&) = default;  // move assignment
 
 public:
 	bool doToyData_ = true;
+	double emin = 0, emax = 1e308;  // Close to numeric limit
+	unsigned int nbins = 100;
+
+	double nparams;
+	std::vector<TString> param_names;
+	std::vector<double> param_initial_guess, param_stepsize, param_lowerlim, param_upperlim;
 };
 
 namespace CMDLParser {
