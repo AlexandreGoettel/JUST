@@ -9,7 +9,7 @@ gcc >= 9.3.0
 cmake >= 3.4.1
 ROOT >= 6.22
 
-Because the software is written with the c++17 standard, the compilers must be recent enough to reflect this. Additionally, ROOT must be installed against this standard.
+Because the software is written with the c++14 standard, the compilers must be recent enough to reflect this. Additionally, ROOT must be installed against this standard.
 
 ### @brief
 Because the CMakeLists operates on environment variables, the only thing to do before installing NuSolarFitter is to source the correct compilers and "thisroot.sh" (which is probably in your .bashrc anyway). As long as "gcc", "g++", and "ROOTSYS" exist, the software should compile.
