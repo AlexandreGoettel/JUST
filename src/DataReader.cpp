@@ -9,32 +9,13 @@
 // ROOT includes
 #include "TF1.h"
 #include "TRandom3.h"
+#include <TFile.h>
 // Project includes
 #include "DataReader.h"
 #include "Parser.h"
 
 
 namespace NuFitter {
-
-template <class T, class C, class ... params>
-auto genHist(T function, C functionName, C histName,
-	         C histDescription, int nBins, double xmin, double xmax,
-			 int nEvents, params ... p) -> TH1D* {
-	// Create a TF1 object representing the function
-	TF1 *f = new TF1(functionName, function, xmin, xmax);
-	f->SetParameters(p ...);
-
-	// Randomize seed
-	gRandom = new TRandom();
-	gRandom->SetSeed(0);
-
-	// Create and fill a histogram with that function
-	TH1D *h = new TH1D(histName, histDescription, nBins, xmin, xmax);
-	h->FillRandom(functionName, nEvents);
-
-	return h;
-}
-
 NuFitPDFs::NuFitPDFs(std::vector<std::vector<double>> pdfs_,
 	                 std::vector<double> bin_edges_,
 				     std::vector<TH1D*> pdf_histograms_) {
@@ -65,28 +46,22 @@ auto getBinEdges(TH1D *hist, unsigned int nbins) -> std::vector<double> {
 namespace Data {
 
 auto Read(const NuFitConfig config) -> NuFitData* {
-	// TODO
-	// ##################################
-	// This is all temporary for testing!
-	// ##################################
-	// Generate the data
-	auto nEvents_data {15000};
-	auto h_total = genHist("expo(0) + .5*gaus(2)", "f_tot", "h_tot",
-	                       "Data", config.nbins, 0, 10, nEvents_data,
-						   0.2, -1, 1, 2, .5);
+
+	TFile *file_data = new TFile(config.data_name.c_str());
+	TH1D* hdata = (TH1D*)file_data->Get(config.histo_data.c_str());
 
 	// Convert histogram to vector
 	std::vector<double> vec_data;
 	for (auto i = 1U; i <= config.nbins; i++) {
-		vec_data.push_back(h_total->GetBinContent(i));
+		vec_data.push_back(hdata->GetBinContent(i));
 	}
 
 	// Create bin_edges vector
-	auto bin_edges = getBinEdges(h_total, config.nbins);
+	auto bin_edges = getBinEdges(hdata, config.nbins);
 
 	// Also save histograms (for plotting later)
 	std::vector<TH1D*> hists;
-	hists.push_back(h_total);
+	hists.push_back(hdata);
 
 	// Create and return NuFitData object
 	auto *data = new NuFitData(vec_data, bin_edges, hists);
@@ -98,38 +73,33 @@ auto Read(const NuFitConfig config) -> NuFitData* {
 namespace PDFs {
 
 auto Read(const NuFitConfig config) -> NuFitPDFs* {
-	// TODO
-	// ##################################
-	// This is all temporary for testing!
-	// ##################################
 	// Generate the PDFs
-	auto nEvents_pdfs {100000};
-	auto h_background = genHist("expo(0)", "f_background", "h_background",
-                       "Exponential background", config.nbins, 0, 10,
-                       nEvents_pdfs, 0.2, -1);
-   	h_background->Scale(1./nEvents_pdfs);
-   	auto h_signal = genHist("gaus(0)", "f_signal", "h_signal",
-   	                   "Gaussian signal", config.nbins, 0, 10, nEvents_pdfs,
-   				       1, 2, .5);
-   	h_signal->Scale(1./nEvents_pdfs);
+		TFile *file_pdf = new TFile(config.pdf_name.c_str());
+		TH1D** hPDF = new TH1D*[config.npdfs];
+
+		hPDF[config.npdfs-config.npdfs] = (TH1D*)file_pdf->Get(config.histo_pdf_signal.c_str());
+		//hPDF[config.npdfs-config.npdfs]->Scale(1./hPDF[config.npdfs-config.npdfs]->Integral());
+		hPDF[config.npdfs-config.npdfs+1] = (TH1D*)file_pdf->Get(config.histo_pdf_background.c_str());
+		//hPDF[config.npdfs-config.npdfs+1]->Scale(1./hPDF[config.npdfs-config.npdfs+1]->Integral());
+
 
 	// Convert histograms to vector
 	std::vector<double> vec_background, vec_signal;
 	for (auto i = 1U; i <= config.nbins; i++) {
-		vec_background.push_back(h_background->GetBinContent(i));
-		vec_signal.push_back(h_signal->GetBinContent(i));
+		vec_background.push_back(hPDF[config.npdfs-config.npdfs+1]->GetBinContent(i));
+		vec_signal.push_back(hPDF[config.npdfs-config.npdfs]->GetBinContent(i));
 	}
 	std::vector<std::vector<double>> pdfs;
 	pdfs.push_back(vec_signal);
 	pdfs.push_back(vec_background);
 
 	// Create bin_edges vector
-	auto bin_edges = getBinEdges(h_background, config.nbins);
+	auto bin_edges = getBinEdges(hPDF[config.npdfs-config.npdfs+1], config.nbins);
 
 	// Also save histograms in vector (for plotting later)
 	std::vector<TH1D*> hists;
-	hists.push_back(h_signal);
-	hists.push_back(h_background);
+	hists.push_back(hPDF[config.npdfs-config.npdfs]);
+	hists.push_back(hPDF[config.npdfs-config.npdfs+1]);
 
 	// Create and return NuFitPDFs object with the variables
 	auto *output = new NuFitPDFs(pdfs, bin_edges, hists);
