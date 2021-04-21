@@ -12,7 +12,6 @@
 #include <vector>
 #include "FitResults.h"
 #include "DataReader.h"
-#include "FitResults.h"
 #include "Parser.h"
 
 //============================================================================

@@ -165,7 +165,7 @@ auto Fit(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config)
 		-> NuFitResults {
 	// 1. Create the NuFitContainer object -> formats data according to config
 	// 1.1 Overwrite NuFitContainer at static location in MCFit scope
-	// TODO: Add memory leak protection?
+	// TODO: Need memory leak protection?
 	new (&fitCtnr) NuFitContainer(data, pdfs, config);
 
 	// 2. Prepare TMinuit
