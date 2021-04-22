@@ -23,11 +23,14 @@ public:
 	NuFitCmdlArgs(NuFitCmdlArgs&&) = default;  // move constructor
 	NuFitCmdlArgs &operator=(const NuFitCmdlArgs&) = default;  // copy assignment
 	NuFitCmdlArgs &operator=(NuFitCmdlArgs&&) = default;  // move assignment
+
+public:
+	std::string config1;
 };
 
 class NuFitConfig {
 public:
-	NuFitConfig();
+	NuFitConfig() = default;
 	~NuFitConfig() = default;  // destructor
 	NuFitConfig(const NuFitConfig&) = default;  // copy constructor
 	NuFitConfig(NuFitConfig&&) = default;  // move constructor
