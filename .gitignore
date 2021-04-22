@@ -3,3 +3,5 @@ install/*
 *.o
 *.root
 include/*.gch
+config/*
+data/*
