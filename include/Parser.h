@@ -41,13 +41,13 @@ public:  // Initialise variables to be filled by parser
 	bool doToyData_ = false, doHesse = false, doMinos = false;
 	double emin = 5, emax = 1e308;  // Close to numeric limit
 	unsigned int nbins = 2990;
-	unsigned int npdfs = 2;
 
 	std::string pdf_name;
 	std::string data_name;
 	std::string histo_data;
 
-	unsigned int nparams = npdfs;
+	unsigned int nparams;
+	unsigned int npdfs;
 	std::vector<TString> param_names;
 	std::vector<double> param_initial_guess, param_stepsize,
 	                    param_lowerlim, param_upperlim;

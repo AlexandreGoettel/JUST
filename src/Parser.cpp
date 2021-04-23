@@ -70,6 +70,7 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	auto config = std::make_unique<NuFitConfig>();
 
 	config->nparams = x;
+	config->npdfs = x;
 	config->param_names = s;
 	config->param_initial_guess = in;
 	config->param_lowerlim = low;
