@@ -73,36 +73,28 @@ auto Read(const NuFitConfig config) -> NuFitData* {
 namespace PDFs {
 
 auto Read(const NuFitConfig config) -> NuFitPDFs* {
-	// Generate the PDFs
-		TFile *file_pdf = new TFile(config.pdf_name.c_str());
-		TH1D** hPDF = new TH1D*[config.npdfs];
+	// Generate the PDFs and save to vector
+	TFile *file_pdf = new TFile(config.pdf_name.c_str());
+	std::vector<TH1D*> hPDFs;
+    for (auto i = 0U; i < config.npdfs; i++) {
+		hPDFs.push_back((TH1D*)file_pdf->Get(config.param_names[i]));
+    }
 
-		hPDF[config.npdfs-config.npdfs] = (TH1D*)file_pdf->Get(config.histo_pdf_signal.c_str());
-		//hPDF[config.npdfs-config.npdfs]->Scale(1./hPDF[config.npdfs-config.npdfs]->Integral());
-		hPDF[config.npdfs-config.npdfs+1] = (TH1D*)file_pdf->Get(config.histo_pdf_background.c_str());
-		//hPDF[config.npdfs-config.npdfs+1]->Scale(1./hPDF[config.npdfs-config.npdfs+1]->Integral());
-
-
-	// Convert histograms to vector
-	std::vector<double> vec_background, vec_signal;
-	for (auto i = 1U; i <= config.nbins; i++) {
-		vec_background.push_back(hPDF[config.npdfs-config.npdfs+1]->GetBinContent(i));
-		vec_signal.push_back(hPDF[config.npdfs-config.npdfs]->GetBinContent(i));
-	}
+	// Convert histograms to vectors
 	std::vector<std::vector<double>> pdfs;
-	pdfs.push_back(vec_signal);
-	pdfs.push_back(vec_background);
+	for (auto n = 0U; n < config.npdfs; n++) {
+		std::vector<double> current_pdf;
+		for (auto i = 1U; i <= config.nbins; i++) {
+			current_pdf.push_back(hPDFs[n]->GetBinContent(i));
+		}
+		pdfs.push_back(current_pdf);
+	}
 
 	// Create bin_edges vector
-	auto bin_edges = getBinEdges(hPDF[config.npdfs-config.npdfs+1], config.nbins);
-
-	// Also save histograms in vector (for plotting later)
-	std::vector<TH1D*> hists;
-	hists.push_back(hPDF[config.npdfs-config.npdfs]);
-	hists.push_back(hPDF[config.npdfs-config.npdfs+1]);
+	auto bin_edges = getBinEdges(hPDFs[1], config.nbins);
 
 	// Create and return NuFitPDFs object with the variables
-	auto *output = new NuFitPDFs(pdfs, bin_edges, hists);
+	auto *output = new NuFitPDFs(pdfs, bin_edges, hPDFs);
 	return output;
 }
 

@@ -32,25 +32,20 @@ namespace ConfigParser {
 
 auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 
+    // Set-up ifstream from config file
 	std::ifstream ReadConf;
 	ReadConf.open(args.config1.c_str());
 
 	//quite rough, to be changed
-	std::string a, b;
+    // Define placeholder variables to store the values
+	std::string a, b, datafile, pdffile, datahist;
 	double c, d, e, f, g, h, i, l, x;
 
-	ReadConf >> x;
-	ReadConf >> a;
-	ReadConf >> b;
-	ReadConf >> c;
-	ReadConf >> d;
-	ReadConf >> e;
-	ReadConf >> f;
-	ReadConf >> g;
-	ReadConf >> h;
-	ReadConf >> i;
-	ReadConf >> l;
+    // Read the file
+    ReadConf >> x >> a >> b >> c >> d >> e >> f >> g >> h >> i >> l;
+    ReadConf >> pdffile >> datafile >> datahist;
 
+    // Save and write to new NuFitConfig object
 	std::vector<TString> s;
 	s.push_back(a);
 	s.push_back(b);
@@ -71,6 +66,7 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	step.push_back(i);
 	step.push_back(l);
 
+
 	auto config = std::make_unique<NuFitConfig>();
 
 	config->nparams = x;
@@ -79,6 +75,9 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	config->param_lowerlim = low;
 	config->param_upperlim = up;
 	config->param_stepsize = step;
+    config->data_name = datafile;
+    config->pdf_name = pdffile;
+    config->histo_data = datahist;
 
 	return *config;
 }
