@@ -61,6 +61,7 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 		pdf_vectors.push_back(current_pdf);
 		efficiencies.push_back(current_efficiency);
 	}
+	assert(data_vector.size() == pdf_vectors[0].size());
 }
 
 // @brief The fit function (parameters * pdfs)
@@ -80,7 +81,6 @@ auto NuFitContainer::NLL(int npar, const double *par) -> double {
 	auto chi_sqr_lambda_p { 0. };
 	for (auto i = 0U; i < nbins; i++) {
 		auto yi = fitFunction(i, npar, par);
-		// auto yi = par[0]*signal_vector[i] + par[1]*background_vector[i];
 		auto ni = data_vector[i];
 
 		chi_sqr_lambda_p += yi - ni + ni*(ROOT::Math::Util::EvalLog(ni) -

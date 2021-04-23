@@ -47,6 +47,7 @@ namespace Data {
 
 auto Read(const NuFitConfig config) -> NuFitData* {
 
+	// Where is file_data closed?
 	TFile *file_data = new TFile(config.data_name.c_str());
 	TH1D* hdata = (TH1D*)file_data->Get(config.histo_data.c_str());
 
