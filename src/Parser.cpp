@@ -2,13 +2,23 @@
 //! @brief	Implementation of classes to parse cmdl args and config files
 //! @author	Alexandre Göttel
 //! @date	2021-03-18
+
+//============================================================================
+// Includes
+// Standard includes
 #include <memory>
-#include "Parser.h"
 #include <fstream>
 #include <iostream>
+// ROOT includes
+#include "TFile.h"
+#include "TH1D.h"
+// Project includes
+#include "Parser.h"
+
+//============================================================================
+// Implementations
+
 namespace NuFitter {
-
-
 namespace CMDLParser {
 
 auto Parse(int argc, char* argv[]) -> NuFitCmdlArgs {
@@ -79,6 +89,13 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
     config->data_name = datafile;
     config->pdf_name = pdffile;
     config->histo_data = datahist;
+
+	// Get nbins from the data hist
+	// TODO: make sure pdfs are compatible?
+	TFile *fdata = new TFile(config->data_name.c_str());
+	TH1D* hdata = (TH1D*)fdata->Get(config->histo_data.c_str());
+	config->nbins = hdata->GetNbinsX();
+	fdata->Close();
 
 	return *config;
 }
