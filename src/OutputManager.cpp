@@ -13,7 +13,7 @@ namespace NuFitter {
 // @brief For now, simply plot the results (simple fit example)
 auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config, NuFitResults results) -> void {
 	// Open file to save the plots in
-	TFile *f = new TFile("test.root", "RECREATE");
+	TFile *f = new TFile(config.output_name.c_str(), "RECREATE");
 	data->data_histograms[0]->Write();
 
 	for (auto i = 0U; i < config.nparams; i++) {

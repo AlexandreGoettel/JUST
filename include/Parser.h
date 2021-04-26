@@ -25,7 +25,7 @@ public:
 	NuFitCmdlArgs &operator=(NuFitCmdlArgs&&) = default;  // move assignment
 
 public:
-	std::string config1;
+	std::string gen, spec, toy;
 };
 
 class NuFitConfig {
@@ -38,10 +38,11 @@ public:
 	NuFitConfig &operator=(NuFitConfig&&) = default;  // move assignment
 
 public:  // Initialise variables to be filled by parser
-	bool doToyData_ = false, doHesse = false, doMinos = false;
-	double emin = 5, emax = 1e308;  // Close to numeric limit
+	bool doToyData_, doHesse, doMinos;
+	double emin, emax;  // Close to numeric limit
 
 	unsigned int nbins;
+	std::string output_name;
 	std::string pdf_name;
 	std::string data_name;
 	std::string histo_data;
