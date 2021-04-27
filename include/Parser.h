@@ -9,6 +9,7 @@
 //============================================================================
 // Includes
 #include <vector>
+#include <fstream>
 #include "TString.h"
 
 //============================================================================
@@ -53,6 +54,12 @@ public:  // Initialise variables to be filled by parser
 	std::vector<double> param_initial_guess, param_stepsize,
 	                    param_lowerlim, param_upperlim;
 };
+
+void ErrorReading(const std::ifstream&, const std::string&);
+void HelpMessage(char*);
+template<typename T> void ReadAndFill_Gen(std::ifstream&, T&, T&);
+int HowManySpecies(std::ifstream&, const std::string&);
+template<typename T> void ReadAndFill_Spec(std::ifstream&, T&, std::vector<T>&);
 
 namespace CMDLParser {
 	NuFitCmdlArgs Parse(int argc, char* argv[]);
