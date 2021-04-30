@@ -111,7 +111,7 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 		NuFitter::ReadAndFill_Spec(ReadSpec,uplim,config->param_upperlim);
 		NuFitter::ReadAndFill_Spec(ReadSpec,step,config->param_stepsize);
 		
-	}	
+	}
 	
 	ReadSpec.close();
 

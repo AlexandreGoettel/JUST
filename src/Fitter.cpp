@@ -148,11 +148,12 @@ auto MinuitManager::getResults() -> void {
 	}
 
 	// Put the parameter estimates into another vector
-	double x, _;
+	double x, sigmax;
 	for (auto i = 0U; i < config.nparams; i++) {
-		gMinuit->GetParameter(i, x, _);
+		gMinuit->GetParameter(i, x, sigmax);
 		popt.push_back(x);
 		// Could also get an uncertainty vector here.
+		popt_err.push_back(sigmax);
 	}
 }
 
@@ -178,7 +179,7 @@ auto Fit(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config)
 
 	// 4. Pass output to NuFitResults
 	// TODO
-	auto results = NuFitResults(manager->popt, manager->pcov);
+	auto results = NuFitResults(manager->popt, manager->popt_err, manager->pcov);
 	return results;
 }
 

@@ -9,10 +9,12 @@
 namespace NuFitter {
 
 // @brief Constructor
-NuFitResults::NuFitResults(std::vector<double> popt_,
+NuFitResults::NuFitResults(std::vector<double> popt_, std::vector<double> popt_err_,
 	                       std::vector<std::vector<double>> pcov_) {
    popt = popt_;
+   popt_err = popt_err_;
    pcov = pcov_;
+
 }
 
 // @brief Add results to existing NuFitResults. Used for ToyData fits.

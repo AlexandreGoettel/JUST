@@ -65,6 +65,7 @@ public:  // Member variables
 	TMinuit *gMinuit;
 	int errorflag;
 	std::vector<double> popt;
+	std::vector<double> popt_err;
 	std::vector<std::vector<double>> pcov;
 
 public:  // Functions
