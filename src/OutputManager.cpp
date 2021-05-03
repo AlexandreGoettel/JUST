@@ -9,6 +9,7 @@
 #include "TFile.h"
 #include "TStyle.h"
 #include <TLegend.h>
+#include <TGraph.h>
 #include "TCanvas.h"
 #include "OutputManager.h"
 
@@ -26,7 +27,10 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config, 
 
 	TCanvas *c = new TCanvas("Results","Results",1500,700);
 	gPad->SetLogy();
-	c->cd();
+
+	TPad* Pad_up = new TPad("Pad_up", "Pad_up", 0, 0.3, 1.0, 1.0);
+	Pad_up->Draw();
+	Pad_up->cd();
 
 	data->data_histograms[0]->SetLineColor(kBlack);
 	data->data_histograms[0]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
@@ -34,7 +38,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config, 
 	data->data_histograms[0]->Draw();
 
 	//the maximum number of the species is 12 (Be7,pep,CNO,Bi210,K40,Kr85,U238,Th232,Po210,C10,He6,C11)
-	int *Colors = new int [12]{632,632,842,799,600,921,870,800,632,844,425,616};
+	int *Colors = new int [12]{632,632,409,616,400,600,870,921,632,801,881,419};
 
 	TLegend *leg = new TLegend(0.54,0.55,0.74,0.85,NULL,"brNDC");
         leg->SetTextAlign(13);
@@ -57,6 +61,34 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config, 
 	PDFsSum_histo->SetLineColor(632);
 	PDFsSum_histo->SetMarkerColor(632);
 	PDFsSum_histo->Draw("SAME");
+	gPad->SetLogy();
+
+	// Residuals
+	double res[config.nbins];
+	double rec_energy[config.nbins];
+
+	for(int i = 0; i < config.nbins; i++){
+		rec_energy[i] = i + pdfs->bin_edges.front();
+		res[i] = (data->data_histograms[0]->GetBinContent(i)-PDFsSum_histo->GetBinContent(i))/sqrt(data->data_histograms[0]->GetBinContent(i));
+	}
+
+	c->cd();
+  	TPad* Pad_down = new TPad("Pad_down", "Pad_down", 0.0, 0.0, 1.0, 0.3);
+  	Pad_down->Draw();
+  	Pad_down->cd();
+	
+	TGraph *Residuals = new TGraph(config.nbins,rec_energy,res);
+	Residuals->SetTitle("Residuals");
+	Residuals->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
+	Residuals->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
+	Residuals->GetYaxis()->CenterTitle(true);
+	Residuals->GetYaxis()->SetTitleSize(.05);
+	Residuals->GetXaxis()->SetTitleSize(.05);
+	Residuals->GetXaxis()->SetRangeUser(pdfs->bin_edges.front(),pdfs->bin_edges.back());
+	Residuals->GetYaxis()->SetRangeUser(-4.,4.);
+	Residuals->SetLineWidth(1);
+	Residuals->Draw("AL");
+
 	c->Write();
 	f->Close();
 }
