@@ -11,6 +11,7 @@ build-job:
         - echo "Hello, $GITLAB_USER_LOGIN!"
         - export SIM_DIR=$CI_PROJECT_DIR
         - echo "Setting SIM_DIR to $CI_PROJECT_DIR"
+        - echo $ROOTSYS
         - ./RebuildAndInstall_sh.sh
 
 test-job:
