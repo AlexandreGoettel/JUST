@@ -4,6 +4,8 @@ stages:
 
 build-job:
     stage: build
+    variables:
+        ROOTSYS: /home/alexandregoettel/Software/root/install
     artifacts:
         paths:
             - install/bin/NuSolarFitter
