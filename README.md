@@ -15,4 +15,5 @@ Because the software is written with the c++14 standard, the compilers must be r
 Because the CMakeLists operates on environment variables, the only thing to do before installing NuSolarFitter is to source the correct compilers and "thisroot.sh" (which is probably in your .bashrc anyway). As long as "gcc", "g++", and "ROOTSYS" exist, the software should compile.
 
 ## Usage
-The program can be compiled using RebuildAndInstall_sh.sh, which automatically builds/install the programm according to the CMakeLists.txt while using the correct compilers. Alternatively, one can run the program interactively using root and .L
+The program can be compiled using RebuildAndInstall_sh.sh, which automatically builds/install the programm according to the CMakeLists.txt while using the correct compilers. To use the program, make sure the SIM_DIR environment variable is set to the (absolute) path of your git folders root (export SIM_DIR=path/to/git).
+Alternatively, one can run the program interactively using root and .L
