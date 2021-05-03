@@ -1,22 +1,13 @@
 stages:
     - build
-    - test
 
 build-job:
     stage: build
     variables:
         ROOTSYS: /home/alexandregoettel/Software/root/install
-    artifacts:
-        paths:
-            - install/bin/NuSolarFit
     script:
         - echo "Hello, $GITLAB_USER_LOGIN!"
         - export SIM_DIR=$CI_PROJECT_DIR
         - echo "Setting SIM_DIR to $CI_PROJECT_DIR"
         - echo $ROOTSYS
         - ./RebuildAndInstall_sh.sh
-
-test-job:
-    stage: test
-    script:
-        - install/bin/NuSolarFit
