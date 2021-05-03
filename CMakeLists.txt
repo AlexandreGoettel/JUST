@@ -10,11 +10,10 @@ SET(EXENAME ${PROJECT_NAME})
 # ADD ROOT
 #-------------------------------------------------------------------------------
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
+find_package(ROOT 6.22 CONFIG REQUIRED Minuit)
 
 # Make sure the ROOT variables are set correctly
 message(STATUS "ROOT INCLUDE DIR: " ${ROOT_INCLUDE_DIRS})
-
-find_package(ROOT 6.22 CONFIG REQUIRED Minuit)
 
 # This allows to include ROOT headers in the project files
 INCLUDE_DIRECTORIES(${ROOT_INCLUDE_DIRS})
