@@ -5,8 +5,8 @@
 # directory 'build' will be deleted. 
 ################################################################################
 
-# define partent directory for the simulation build and install
-SIM_DIR=/home/alexandregoettel/work/PhD/Juno/JunoFit/skeleton
+# define parent directory for the simulation build and install
+#SIM_DIR=/home/alexandregoettel/work/PhD/Juno/JunoFit/skeleton
 
 # get script name and call directory
  ME="$(basename "$(readlink -f "$BASH_SOURCE")")"
@@ -14,11 +14,7 @@ SIM_DIR=/home/alexandregoettel/work/PhD/Juno/JunoFit/skeleton
  FROM=$PWD
  
  echo "$ME Starting to build project..."
-
-# get name of project's base directory by taking the parent directory of the
-# parent directory of this script (assuming it is in ".../<BASE_DIR>/scripts/)
- BASE_DIR="$(dirname "$(dirname "$(readlink -f "$BASH_SOURCE")")")"
- echo "$ME Project base directory is '$BASE_DIR'".
+ echo "SIM_DIR: $SIM_DIR"
 
 # replace existing 'build' directory in the project's base directory
  echo "$ME Going to directory where to build the project."
