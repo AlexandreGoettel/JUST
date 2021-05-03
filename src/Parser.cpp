@@ -75,13 +75,15 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	//placeholder variables
 	std::string output, pdffile, datafile, datahist;
         bool toy, hesse, minos = false;
-        double min, max = 0;
+        double ltime, mass, min, max = 0;
 
 	//general_options.txt: read and fill the NuFitConfig variable
 	NuFitter::ReadAndFill_Gen(ReadGen,output,config->output_name);
         NuFitter::ReadAndFill_Gen(ReadGen,pdffile,config->pdf_name);
         NuFitter::ReadAndFill_Gen(ReadGen,datafile,config->data_name);
         NuFitter::ReadAndFill_Gen(ReadGen,datahist,config->histo_data);
+	NuFitter::ReadAndFill_Gen(ReadGen,ltime,config->lifetime);
+	NuFitter::ReadAndFill_Gen(ReadGen,mass,config->mass_target);
 	NuFitter::ReadAndFill_Gen(ReadGen,min,config->emin);
         NuFitter::ReadAndFill_Gen(ReadGen,max,config->emax);
 	NuFitter::ReadAndFill_Gen(ReadGen,toy,config->doToyData_);
@@ -104,7 +106,7 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	
 	//loop over the number of species and fill the NuFitConfig variable
 	for(int i = 0; i < N; i++){
-	
+
 		NuFitter::ReadAndFill_Spec(ReadSpec,namepar,config->param_names);
 		NuFitter::ReadAndFill_Spec(ReadSpec,inguess,config->param_initial_guess);
 		NuFitter::ReadAndFill_Spec(ReadSpec,lowlim,config->param_lowerlim);
@@ -157,6 +159,8 @@ auto HelpMessage(char* a) -> void {
 //Read and Fill for general_options.txt
 template<class T> auto ReadAndFill_Gen(std::ifstream& filename, T& var1, T& var2) -> void {
 
+	std::string appo;
+	filename >> appo;//read the labels
 	filename >> var1;
 	var2 = var1;
 
