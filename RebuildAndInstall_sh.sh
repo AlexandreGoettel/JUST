@@ -6,6 +6,7 @@
 ################################################################################
 
 # define parent directory for the simulation build and install
+# best to write this in your .bashrc!
 #SIM_DIR=/home/alexandregoettel/work/PhD/Juno/JunoFit/skeleton
 
 # get script name and call directory
@@ -14,7 +15,7 @@
  FROM=$PWD
  
  echo "$ME Starting to build project..."
- echo "SIM_DIR: $SIM_DIR"
+ echo "$ME SIM_DIR: $SIM_DIR"
 
 # replace existing 'build' directory in the project's base directory
  echo "$ME Going to directory where to build the project."
