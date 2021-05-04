@@ -6,7 +6,6 @@
 ################################################################################
 
 # define parent directory for the simulation build and install
-#SIM_DIR=/home/alexandregoettel/work/PhD/Juno/JunoFit/skeleton
 if [ -z $SIM_DIR ]; then
 	SIM_DIR=$(pwd)
 fi
