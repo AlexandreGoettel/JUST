@@ -108,20 +108,16 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 
 	//loop over the number of species and fill the NuFitConfig variable
 	for(int i = 0; i < N; i++){
-
 		NuFitter::ReadAndFill_Spec(ReadSpec,namepar,config->param_names);
 		NuFitter::ReadAndFill_Spec(ReadSpec,inguess,config->param_initial_guess);
 		NuFitter::ReadAndFill_Spec(ReadSpec,lowlim,config->param_lowerlim);
 		NuFitter::ReadAndFill_Spec(ReadSpec,uplim,config->param_upperlim);
 		NuFitter::ReadAndFill_Spec(ReadSpec,step,config->param_stepsize);
-
 	}
 
 	ReadSpec.close();
 
-	// Get nbins from the
-	//
-	// data hist
+	// Get nbins from the data hist
 	// TODO: make sure pdfs are compatible?
 	TFile *fdata = new TFile(config->data_name.c_str());
 	TH1D* hdata = (TH1D*)fdata->Get(config->histo_data.c_str());

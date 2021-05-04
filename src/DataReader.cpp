@@ -46,8 +46,8 @@ auto getBinEdges(TH1D *hist, unsigned int nbins) -> std::vector<double> {
 namespace Data {
 
 auto Read(const NuFitConfig config) -> NuFitData* {
-
-	// Where is file_data closed?
+	// Read the histogram from the data file
+	std::cout << "INFO: Reading data from " << config.data_name << std::endl;
 	TFile *file_data = new TFile(config.data_name.c_str());
 	TH1D* hdata = (TH1D*)file_data->Get(config.histo_data.c_str());
 
@@ -74,7 +74,8 @@ auto Read(const NuFitConfig config) -> NuFitData* {
 namespace PDFs {
 
 auto Read(const NuFitConfig config) -> NuFitPDFs* {
-	// Generate the PDFs and save to vector
+	// Read the PDFs and convert them to vectors
+	std::cout << "INFO: Reading PDFs from " << config.pdf_name << std::endl;
 	TFile *file_pdf = new TFile(config.pdf_name.c_str());
 	std::vector<TH1D*> hPDFs;
     for (auto i = 0U; i < config.npdfs; i++) {
