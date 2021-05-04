@@ -9,6 +9,8 @@
 #include <memory>
 #include <fstream>
 #include <iostream>
+#include <cstring>
+#include <cstdlib>
 // ROOT includes
 #include "TFile.h"
 #include "TH1D.h"
@@ -19,42 +21,38 @@
 // Implementations
 
 namespace NuFitter{
-	
+
 namespace CMDLParser {
 
 auto Parse(int argc, char* argv[]) -> NuFitCmdlArgs{
 
 	auto args = std::make_unique<NuFitCmdlArgs>();
 
-	if(argc < 4 || (strcmp(argv[1], "--help")) == 0 || (strcmp(argv[1], "-h") == 0)){
+	if(argc < 4 || (std::strcmp(argv[1], "--help")) == 0 || (std::strcmp(argv[1], "-h") == 0)){
 		NuFitter::HelpMessage(argv[0]);
-		exit(-1);
+		std::exit(-1);
 	}
 	for (int i = 1; i < argc; i++){
 		if (i + 1 != argc){
-			if (strcmp(argv[i], "--gen") == 0 || strcmp(argv[i], "-g") == 0){
+			if (std::strcmp(argv[i], "--general-options") == 0 || std::strcmp(argv[i], "-g") == 0){
 				args->gen = argv[i+1];
 				i++;
 			}
-			else 
-				if (strcmp(argv[i], "--species") == 0 || strcmp(argv[i], "-s") == 0){
-                    	     		args->spec = argv[i+1];
-                                	i++;
-                        	}
-				else 
-					if (strcmp(argv[i], "--toy") == 0 || strcmp(argv[i], "-t") == 0){
-                                		args->toy = argv[i+1];
-                               			i++;
-					}
-			 		else {	
-						 std::cout << "ERROR: something went wrong. Please read carefully the instructions below.\n";
-						 NuFitter::HelpMessage(argv[0]);
-						 exit(-1);
-		 			}
+			else if (std::strcmp(argv[i], "--species-list") == 0 || std::strcmp(argv[i], "-s") == 0){
+				args->spec = argv[i+1];
+				i++;
 			}
+			else if (std::strcmp(argv[i], "--toy-rates") == 0 || std::strcmp(argv[i], "-t") == 0){
+				args->toy = argv[i+1];
+				i++;
+			}
+			else {
+				std::cout << "ERROR: something went wrong. Please read carefully the instructions below.\n";
+				NuFitter::HelpMessage(argv[0]);
+				std::exit(-1);
+			}
+		}
 	}
-
-		
 
 	return *args;
 }
@@ -64,10 +62,10 @@ auto Parse(int argc, char* argv[]) -> NuFitCmdlArgs{
 namespace ConfigParser {
 
 auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
-
 	auto config = std::make_unique<NuFitConfig>();
 
-	std::ifstream ReadGen, ReadSpec;
+	// Read the general_options config file
+	std::ifstream ReadGen;
 
 	ReadGen.open(args.gen);
 	NuFitter::ErrorReading(ReadGen,args.gen);
@@ -77,11 +75,10 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
         bool toy, hesse, minos = false;
         double ltime, mass, min, max = 0;
 
-	//general_options.txt: read and fill the NuFitConfig variable
+	// general_options.txt: read and fill the NuFitConfig variable
+	// TODO: loop over the file, can probably auto placeholder
 	NuFitter::ReadAndFill_Gen(ReadGen,output,config->output_name);
-        NuFitter::ReadAndFill_Gen(ReadGen,pdffile,config->pdf_name);
-        NuFitter::ReadAndFill_Gen(ReadGen,datafile,config->data_name);
-        NuFitter::ReadAndFill_Gen(ReadGen,datahist,config->histo_data);
+	NuFitter::ReadAndFill_Gen(ReadGen,pdffile,config->pdf_name);
 	NuFitter::ReadAndFill_Gen(ReadGen,ltime,config->lifetime);
 	NuFitter::ReadAndFill_Gen(ReadGen,mass,config->mass_target);
 	NuFitter::ReadAndFill_Gen(ReadGen,min,config->emin);
@@ -91,6 +88,9 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
         NuFitter::ReadAndFill_Gen(ReadGen,minos,config->doMinos);
 
 	ReadGen.close();
+
+	// Read the species-list
+	std::ifstream ReadSpec;
 
 	//count the number of species from species_list.txt
 	int N = HowManySpecies(ReadSpec,args.spec);
@@ -103,7 +103,7 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	//placeholder variables
 	TString namepar;
 	double inguess, lowlim, uplim, step = 0;
-	
+
 	//loop over the number of species and fill the NuFitConfig variable
 	for(int i = 0; i < N; i++){
 
@@ -112,9 +112,9 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 		NuFitter::ReadAndFill_Spec(ReadSpec,lowlim,config->param_lowerlim);
 		NuFitter::ReadAndFill_Spec(ReadSpec,uplim,config->param_upperlim);
 		NuFitter::ReadAndFill_Spec(ReadSpec,step,config->param_stepsize);
-		
+
 	}
-	
+
 	ReadSpec.close();
 
 	// Get nbins from the
@@ -137,10 +137,10 @@ auto ErrorReading(const std::ifstream& filename, const std::string& s) -> void {
         if(filename.fail()){
                 std::cout << "Opening " << s << " for reading.\n";
                 std::cout <<"The "<< s <<" file could not be opened!\n";
-                std::cout << "Possible errors:\n";	   
+                std::cout << "Possible errors:\n";
 		std::cout <<"1. The file does not exist.\n";
                 std::cout <<"2. The path was not found.\n";
-                exit(-1);
+                std::exit(-1);
         }
 }
 
@@ -182,7 +182,7 @@ auto HowManySpecies(std::ifstream& filename, const std::string& s) -> int {
 	int n = 0;
 
         while(std::getline(filename,unused))	++n;
-	
+
 	filename.close();
 
 	return n;
