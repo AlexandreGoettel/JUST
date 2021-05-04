@@ -6,8 +6,10 @@
 ################################################################################
 
 # define parent directory for the simulation build and install
-# best to write this in your .bashrc!
 #SIM_DIR=/home/alexandregoettel/work/PhD/Juno/JunoFit/skeleton
+if [ -z $SIM_DIR ]; then
+	SIM_DIR=$(pwd)
+fi
 
 # get script name and call directory
  ME="$(basename "$(readlink -f "$BASH_SOURCE")")"
