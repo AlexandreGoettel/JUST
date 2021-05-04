@@ -40,7 +40,7 @@ public:
 
 public:  // Initialise variables to be filled by parser
 	bool doToyData_, doHesse, doMinos;
-	double emin, emax;  // Close to numeric limit
+	double lifetime, mass_target, emin, emax;  // Close to numeric limit
 
 	unsigned int nbins;
 	std::string output_name;
