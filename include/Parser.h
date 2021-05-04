@@ -39,9 +39,12 @@ public:
 	NuFitConfig &operator=(NuFitConfig&&) = default;  // move assignment
 
 public:  // Initialise variables to be filled by parser
-	bool doToyData_, doHesse, doMinos;
-	double lifetime, mass_target, emin, emax;  // Close to numeric limit
+	bool doToyData_ = false, doHesse = false, doMinos = false;
+	double emin = 0, emax = 1e308;  // Close to numeric limit
+	std::string likelihood = "extended";
 
+	// Parameters with no standard value must be given in the config file
+	double lifetime, mass_target;
 	unsigned int nbins;
 	std::string output_name;
 	std::string pdf_name;

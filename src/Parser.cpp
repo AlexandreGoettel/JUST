@@ -71,22 +71,24 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	NuFitter::ErrorReading(ReadGen,args.gen);
 
 	//placeholder variables
-	std::string output, pdffile, datafile, datahist;
-        bool toy, hesse, minos = false;
-        double ltime, mass, min, max = 0;
+	std::string output, pdffile, datafile, datahist, likelihood;
+	bool toy, hesse, minos = false;
+	double ltime, mass, min, max = 0;
 
 	// general_options.txt: read and fill the NuFitConfig variable
 	// TODO: loop over the file, can probably auto placeholder
 	NuFitter::ReadAndFill_Gen(ReadGen,output,config->output_name);
 	NuFitter::ReadAndFill_Gen(ReadGen,pdffile,config->pdf_name);
+	NuFitter::ReadAndFill_Gen(ReadGen,datafile,config->data_name);
+	NuFitter::ReadAndFill_Gen(ReadGen,datahist,config->histo_data);
 	NuFitter::ReadAndFill_Gen(ReadGen,ltime,config->lifetime);
 	NuFitter::ReadAndFill_Gen(ReadGen,mass,config->mass_target);
 	NuFitter::ReadAndFill_Gen(ReadGen,min,config->emin);
-        NuFitter::ReadAndFill_Gen(ReadGen,max,config->emax);
+	NuFitter::ReadAndFill_Gen(ReadGen,max,config->emax);
 	NuFitter::ReadAndFill_Gen(ReadGen,toy,config->doToyData_);
-        NuFitter::ReadAndFill_Gen(ReadGen,hesse,config->doHesse);
-        NuFitter::ReadAndFill_Gen(ReadGen,minos,config->doMinos);
-
+	NuFitter::ReadAndFill_Gen(ReadGen,hesse,config->doHesse);
+	NuFitter::ReadAndFill_Gen(ReadGen,minos,config->doMinos);
+	NuFitter::ReadAndFill_Gen(ReadGen,likelihood,config->likelihood);
 	ReadGen.close();
 
 	// Read the species-list

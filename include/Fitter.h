@@ -43,7 +43,8 @@ public:
 	NuFitPDFs *pdfs;
 	NuFitConfig config;
 public:  // Minuit functions
-	double NLL(int, const double*);
+	double NLL_extended(int, const double*);
+	double NLL_poisson(int, const double*);
 	double fitFunction(unsigned int, unsigned int, const double*);
 
 private:  // Member variables

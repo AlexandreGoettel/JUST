@@ -74,8 +74,8 @@ auto NuFitContainer::fitFunction(unsigned int i, unsigned int npar, const double
 	return yi;
 }
 
-// @brief Define Minuit-Style binned poisson likelihood
-auto NuFitContainer::NLL(int npar, const double *par) -> double {
+// @brief Define Minuit-Style binned poisson likelihood (extended)
+auto NuFitContainer::NLL_extended(int npar, const double *par) -> double {
 	// Following Baker&Cousins 1983 definition on page 439
 	auto nbins = data_vector.size();
 	auto chi_sqr_lambda_p { 0. };
@@ -87,6 +87,19 @@ auto NuFitContainer::NLL(int npar, const double *par) -> double {
 		                                  ROOT::Math::Util::EvalLog(yi));
 	}
 	return chi_sqr_lambda_p;
+}
+
+// @brief Define standard binned poisson likelihood
+auto NuFitContainer::NLL_poisson(int npar, const double *par) -> double {
+	auto nbins = data_vector.size();
+	auto logL { 0. };
+	for (auto i = 0U; i < nbins; i++) {
+		auto yi = fitFunction(i, npar, par);
+		auto ni = data_vector[i];
+
+		logL += ni*ROOT::Math::Util::EvalLog(yi) - yi;
+	}
+	return -logL;
 }
 
 // @brief MinuitManager constructor
@@ -199,7 +212,15 @@ auto Fit(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
 
 // @brief Used by TMinuit to sample the likelihood
 auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
-	f = fitCtnr.NLL(npar, par);
+	if (fitCtnr.config.likelihood.compare("poisson") == 0) {
+		f = fitCtnr.NLL_poisson(npar, par);
+	} else if (fitCtnr.config.likelihood.compare("extended") == 0) {
+		f = fitCtnr.NLL_extended(npar, par);
+	} else {
+		throw std::invalid_argument("'" + fitCtnr.config.likelihood +
+			"' is not a valid likelihood.\nAllowed: ['poisson', 'extended']" +
+			"\nPay attention to the capitalisation!");
+	}
 }
 
 }  // namespace MCFit
