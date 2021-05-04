@@ -104,15 +104,17 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 
 	//placeholder variables
 	TString namepar;
-	double inguess, lowlim, uplim, step = 0;
+	double inguess, lowlim, uplim, step;
+	int fixed;
 
 	//loop over the number of species and fill the NuFitConfig variable
 	for(int i = 0; i < N; i++){
-		NuFitter::ReadAndFill_Spec(ReadSpec,namepar,config->param_names);
-		NuFitter::ReadAndFill_Spec(ReadSpec,inguess,config->param_initial_guess);
-		NuFitter::ReadAndFill_Spec(ReadSpec,lowlim,config->param_lowerlim);
-		NuFitter::ReadAndFill_Spec(ReadSpec,uplim,config->param_upperlim);
-		NuFitter::ReadAndFill_Spec(ReadSpec,step,config->param_stepsize);
+		NuFitter::ReadAndFill_Spec(ReadSpec, namepar, config->param_names);
+		NuFitter::ReadAndFill_Spec(ReadSpec, inguess, config->param_initial_guess);
+		NuFitter::ReadAndFill_Spec(ReadSpec, lowlim, config->param_lowerlim);
+		NuFitter::ReadAndFill_Spec(ReadSpec, uplim, config->param_upperlim);
+		NuFitter::ReadAndFill_Spec(ReadSpec, step, config->param_stepsize);
+		NuFitter::ReadAndFill_Spec(ReadSpec, fixed, config->param_fixed);
 	}
 
 	ReadSpec.close();
@@ -131,59 +133,53 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 
 //problems in opening or reading input files
 auto ErrorReading(const std::ifstream& filename, const std::string& s) -> void {
-
-        if(filename.fail()){
-                std::cout << "Opening " << s << " for reading.\n";
-                std::cout <<"The "<< s <<" file could not be opened!\n";
-                std::cout << "Possible errors:\n";
+	if(filename.fail()){
+		std::cout << "Opening " << s << " for reading.\n";
+		std::cout <<"The "<< s <<" file could not be opened!\n";
+		std::cout << "Possible errors:\n";
 		std::cout <<"1. The file does not exist.\n";
-                std::cout <<"2. The path was not found.\n";
-                std::exit(-1);
-        }
+		std::cout <<"2. The path was not found.\n";
+		std::exit(-1);
+	}
 }
 
 //help message to run the software
 auto HelpMessage(char* a) -> void {
-
 	std::cerr << "Usage: " << a << " [-h] [-g GENERAL OPTIONS] [-s SPECIES] [-t TOY]"
         << "\nOptions:\n"
-        << "\t-h,--help\tShow this help message\n"
-        << "\t-g,--gen GENERAL OPTIONS\tSpecify the file containing PDFs, data, output rootfiles paths and other info.\n"
-        << "\t-s,--species SPECIES\tSpecify the file containing the number of parameters, the list of species (also if they are free/fixed/constrained) and the min/man energy range\n"
-        << "\t-t,--toy TOY\tTO BE WRITTEN"
-	<< std::endl;
+        << "\t-h,--help\n\tShow this help message\n"
+        << "\t-g,--general-options\n\tSpecify the file containing PDFs, data, output rootfiles paths and other info.\n"
+        << "\t-s,--species-list\n\tSpecify the file containing the number of parameters, the list of species (also if they are free/fixed/constrained) and the min/man energy range\n"
+        << "\t-t,--toy-rates\n\tTO BE WRITTEN"
+		<< std::endl;
 }
 
 //Read and Fill for general_options.txt
 template<class T> auto ReadAndFill_Gen(std::ifstream& filename, T& var1, T& var2) -> void {
-
 	std::string appo;
-	filename >> appo;//read the labels
+	filename >> appo;  // read the labels
 	filename >> var1;
 	var2 = var1;
-
 }
 
 //Read and Fill for species_list.txt
 template<class T> auto ReadAndFill_Spec(std::ifstream& filename, T& var1, std::vector<T>& var2) -> void {
-
-        filename >> var1;
-        var2.push_back(var1);
-
+	filename >> var1;
+	var2.push_back(var1);
 }
 
 //count the number of species from species_list.txt
 auto HowManySpecies(std::ifstream& filename, const std::string& s) -> int {
-
+	// TODO: Can this be removed?
 	filename.open(s);
 	std::string unused;
 	int n = 0;
 
-        while(std::getline(filename,unused))	++n;
+	while(std::getline(filename,unused)) {
+		++n;
+	}
 
 	filename.close();
-
 	return n;
-
 }
 }  // namespace NuFitter

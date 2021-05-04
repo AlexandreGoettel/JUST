@@ -46,6 +46,7 @@ public:  // Minuit functions
 	double NLL_extended(int, const double*);
 	double NLL_poisson(int, const double*);
 	double fitFunction(unsigned int, unsigned int, const double*);
+	bool atLeastOneFixed();
 
 private:  // Member variables
 	std::vector<std::vector<double>> pdf_vectors;

@@ -64,6 +64,16 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 	assert(data_vector.size() == pdf_vectors[0].size());
 }
 
+// @brief Returns true if at least one of the fit parameters is fixed
+auto NuFitContainer::atLeastOneFixed() -> bool {
+	for (auto i = 0U; i < config.npdfs; i++) {
+		if (config.param_fixed[i] == 1) {
+			return true;
+		}
+	}
+	return false;
+}
+
 // @brief The fit function (parameters * pdfs)
 auto NuFitContainer::fitFunction(unsigned int i, unsigned int npar, const double *par)
 		-> double {
@@ -115,34 +125,51 @@ auto MinuitManager::initMinuit() -> void {
 	gMinuit->SetFCN(fcn);
 	// Set each parameter in Minuit
 	for (auto i = 0U; i < config.nparams; i++) {
+		// Give the parameter information to Minuit
 		gMinuit->mnparm(i, config.param_names[i],
 			config.param_initial_guess[i], config.param_stepsize[i],
 			config.param_lowerlim[i], config.param_upperlim[i], errorflag);
+
+		// Fix parameters
+		if (config.param_fixed[i] == 1) {
+			gMinuit->FixParameter(i);
+		}
 	}
 }
 
 // @brief start the minimization process by executing Minuit commands
 auto MinuitManager::callMinuit() -> void {
+	// Give Minuit a list of commands through arglist
 	double arglist[2];
-	arglist[0] = 1e-15L;
-	gMinuit->mnexcm("SET EPS", arglist, 1, errorflag);
 
+	// We are doing maximum likelihood fits: errors at +0.5 logL
 	arglist[0] = 0.5;
 	gMinuit ->mnexcm("SET ERR", arglist, 1, errorflag);
 
+	// STR=1: standard fit
+	// STR=2: additional search around found minimum, needs derivatives
 	arglist[0] = 2;
+	// Disable STR=2 if at least one parameter is fixed
+	auto atLeastOneFixed_ = fitCtnr.atLeastOneFixed();
+	if (atLeastOneFixed_) {
+		arglist[0] = 2;
+	}
 	gMinuit->mnexcm("SET STR", arglist, 1, errorflag);
 
+	// Call MIGRAD (+ SIMPLEX method if Migrad fails)
 	arglist[0] = 50000;
 	arglist[1] = 0.001;
 	gMinuit->mnexcm("CALL FCN", arglist, 2, errorflag);
 	gMinuit->mnexcm("MINIMIZE", arglist, 2, errorflag);
 
-	// TODO: Use config to decide whether to call hesse/minos?
-	if (config.doHesse)
+	// Optional: call extra Hesse calculation
+	if (config.doHesse && !atLeastOneFixed_) {
 		gMinuit->mnexcm("HESSE", arglist, 2, errorflag);
-	if (config.doMinos)
+	}
+	// Optional: do exact non-linear error calculation
+	if (config.doMinos) {
 		gMinuit->mnexcm("MINOS", arglist, 2, errorflag);
+	}
 }
 
 // @brief Convert fit results to vectors, store in member variables popt/pcov
