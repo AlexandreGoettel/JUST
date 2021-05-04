@@ -64,16 +64,6 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 	assert(data_vector.size() == pdf_vectors[0].size());
 }
 
-// @brief Returns true if at least one of the fit parameters is fixed
-auto NuFitContainer::atLeastOneFixed() -> bool {
-	for (auto i = 0U; i < config.npdfs; i++) {
-		if (config.param_fixed[i] == 1) {
-			return true;
-		}
-	}
-	return false;
-}
-
 // @brief The fit function (parameters * pdfs)
 auto NuFitContainer::fitFunction(unsigned int i, unsigned int npar, const double *par)
 		-> double {
@@ -149,11 +139,6 @@ auto MinuitManager::callMinuit() -> void {
 	// STR=1: standard fit
 	// STR=2: additional search around found minimum, needs derivatives
 	arglist[0] = 2;
-	// Disable STR=2 if at least one parameter is fixed
-	auto atLeastOneFixed_ = fitCtnr.atLeastOneFixed();
-	if (atLeastOneFixed_) {
-		arglist[0] = 2;
-	}
 	gMinuit->mnexcm("SET STR", arglist, 1, errorflag);
 
 	// Call MIGRAD (+ SIMPLEX method if Migrad fails)
@@ -163,7 +148,7 @@ auto MinuitManager::callMinuit() -> void {
 	gMinuit->mnexcm("MINIMIZE", arglist, 2, errorflag);
 
 	// Optional: call extra Hesse calculation
-	if (config.doHesse && !atLeastOneFixed_) {
+	if (config.doHesse) {
 		gMinuit->mnexcm("HESSE", arglist, 2, errorflag);
 	}
 	// Optional: do exact non-linear error calculation
