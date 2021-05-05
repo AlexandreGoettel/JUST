@@ -67,9 +67,6 @@ public:  // Member variables
 	NuFitConfig config;
 	TMinuit *gMinuit;
 	int errorflag;
-	// std::vector<double> popt;
-	// std::vector<double> popt_err;
-	// std::vector<std::vector<double>> pcov;
 
 public:  // Functions
 	void initMinuit();

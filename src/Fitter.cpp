@@ -21,6 +21,8 @@ namespace MCFit {
 NuFitContainer fitCtnr;
 
 // @brief Constructor for NuFitContainer
+// @brief Create new data/pdf vector objects with applied fit range cuts
+// @brief Then separate free/fixed parameters and create the index maps
 NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 	                           const NuFitConfig config_) {
 	data = data_;
@@ -88,6 +90,7 @@ auto NuFitContainer::fitFunction(unsigned int i, unsigned int npar, const double
 		auto idx = fitCtnr.idx_map[j];  // Convert to param index space
 		yi += par[j] * pdf_vectors[idx][i];
 	}
+
 	// Now contributions from the fixed parameters
 	// TODO: can speed-up with look-up since the result from below is constant
 	auto tmp {0.};
@@ -144,7 +147,7 @@ auto MinuitManager::initMinuit() -> void {
 		// Convert index space
 		auto i = fitCtnr.idx_map[j];
 		// Give the parameter information to Minuit
-		gMinuit->mnparm(i, config.param_names[i],
+		gMinuit->mnparm(j, config.param_names[i],
 			config.param_initial_guess[i], config.param_stepsize[i],
 			config.param_lowerlim[i], config.param_upperlim[i], errorflag);
 	}
@@ -225,9 +228,7 @@ auto Fit(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config)
 	// 3. Start minimization
 	manager->callMinuit();
 
-	// 4. Pass output to NuFitResults
-	// TODO
-
+	// 4. Return results
 	return manager->getResults();
 }
 
