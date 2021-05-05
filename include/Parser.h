@@ -26,7 +26,7 @@ public:
 	NuFitCmdlArgs &operator=(NuFitCmdlArgs&&) = default;  // move assignment
 
 public:
-	std::string gen, spec, toy;
+	std::string gen, spec, toy, output_name;
 };
 
 class NuFitConfig {
@@ -46,9 +46,7 @@ public:  // Initialise variables to be filled by parser
 	// Parameters with no standard value must be given in the config file
 	double lifetime, mass_target;  // seconds, kilotons
 	unsigned int nbins;
-	std::string output_name;
-	std::string pdf_name;
-	std::string data_name;
+	std::string pdf_name, data_name, output_name;
 	std::string histo_data;
 
 	unsigned int nparams;

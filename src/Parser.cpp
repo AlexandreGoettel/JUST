@@ -46,6 +46,10 @@ auto Parse(int argc, char* argv[]) -> NuFitCmdlArgs{
 				args->toy = argv[i+1];
 				i++;
 			}
+			else if (std::strcmp(argv[i], "--output") == 0 || std::strcmp(argv[i], "-o") == 0){
+				args->output_name = argv[i+1];
+				i++;
+			}
 			else {
 				std::cout << "ERROR: something went wrong. Please read carefully the instructions below.\n";
 				NuFitter::HelpMessage(argv[0]);
@@ -63,6 +67,7 @@ namespace ConfigParser {
 
 auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	auto config = std::make_unique<NuFitConfig>();
+	config->output_name = args.output_name;
 
 	// -------------------------------------------------------------------------
 	// Read the general_options config file
@@ -71,13 +76,12 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	NuFitter::ErrorReading(ReadGen,args.gen);
 
 	//placeholder variables
-	std::string output, pdffile, datafile, datahist, likelihood;
+	std::string pdffile, datafile, datahist, likelihood;
 	bool toy, hesse, minos = false;
 	double ltime, mass, min, max = 0;
 
 	// general_options.txt: read and fill the NuFitConfig variable
 	// TODO: loop over the file, can probably auto placeholder
-	NuFitter::ReadAndFill_Gen(ReadGen,output,config->output_name);
 	NuFitter::ReadAndFill_Gen(ReadGen,pdffile,config->pdf_name);
 	NuFitter::ReadAndFill_Gen(ReadGen,datafile,config->data_name);
 	NuFitter::ReadAndFill_Gen(ReadGen,datahist,config->histo_data);
@@ -189,6 +193,7 @@ auto HelpMessage(char* a) -> void {
         << "\t-h,--help\n\tShow this help message\n"
         << "\t-g,--general-options\n\tSpecify the file containing PDFs, data, output rootfiles paths and other info.\n"
         << "\t-s,--species-list\n\tSpecify the file containing the number of parameters, the list of species (also if they are free/fixed/constrained) and the min/man energy range\n"
+		<< "\t-o,--output\n\tSpecify the path containing the output, without the extension since the fitter will create an output.root and output.txt.\n"
         << "\t-t,--toy-rates\n\tTO BE WRITTEN"
 		<< std::endl;
 }

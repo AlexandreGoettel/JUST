@@ -25,7 +25,8 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	TH1D* PDFsSum_histo = new TH1D("PDFsSum_histo","PDFsSum_histo", config.nbins, pdfs->bin_edges.front(), pdfs->bin_edges.back());
 
 	// Open file to save the plots in
-	TFile *f = new TFile(config.output_name.c_str(), "RECREATE");
+	auto root_filename = config.output_name + ".root";
+	TFile *f = new TFile(root_filename.c_str(), "RECREATE");
 	f->cd();
 
 	TCanvas *c = new TCanvas("Results","Results",1500,700);
@@ -109,8 +110,8 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	}
 
 	std::ofstream outf;
-	// TODO: filename from cmdl args
-	outf.open("output.txt");
+	auto out_filename = config.output_name + ".txt";
+	outf.open(out_filename.c_str());
 	// TODO: add pcov and minuit results
 	outf << "Species\tpopt\tsigma\tpopt(cpd/kton)\tsigma\n";
 	for (auto i = 0U; i < config.nparams; i++) {
