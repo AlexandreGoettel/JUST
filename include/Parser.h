@@ -44,7 +44,7 @@ public:  // Initialise variables to be filled by parser
 	std::string likelihood = "extended";
 
 	// Parameters with no standard value must be given in the config file
-	double lifetime, mass_target;
+	double lifetime, mass_target;  // seconds, kilotons
 	unsigned int nbins;
 	std::string output_name;
 	std::string pdf_name;

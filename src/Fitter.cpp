@@ -20,6 +20,13 @@ namespace MCFit {
 
 NuFitContainer fitCtnr;
 
+// TODO: if needed, move this to a more accessible location?
+// @brief Multiply all vector elements by the same number
+template <class Q, class P>
+void MultiplyVectorByScalar(std::vector<Q> &v, P k){
+    transform(v.begin(), v.end(), v.begin(), [k](auto &c){ return c*k; });
+}
+
 // @brief Constructor for NuFitContainer
 // @brief Create new data/pdf vector objects with applied fit range cuts
 // @brief Then separate free/fixed parameters and create the index maps
@@ -60,8 +67,11 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 				current_efficiency += el[i];
 			}
 		}
+		// Renormalise vector
+		MultiplyVectorByScalar(current_pdf, 1. / (1. - current_efficiency));
+
 		pdf_vectors.push_back(current_pdf);
-		efficiencies.push_back(current_efficiency);
+		efficiencies.push_back(1. - current_efficiency);
 	}
 	assert(data_vector.size() == pdf_vectors[0].size());
 	assert(data_vector.size() != 0);
@@ -205,7 +215,7 @@ auto MinuitManager::getResults() -> NuFitResults {
 	}
 
 	// TODO: also save correlation/error matrix?
-	auto results = NuFitResults(popt, popt_err);
+	auto results = NuFitResults(popt, popt_err, fitCtnr.efficiencies);
 	return results;
 }
 

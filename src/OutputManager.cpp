@@ -3,21 +3,24 @@
 //! @author	Alexandre Göttel
 //! @date	2021-03-18
 
-// Includes
+// Standard Includes
 #include <iostream>
+#include <fstream>
+// ROOT includes
 #include "TH1D.h"
 #include "TFile.h"
 #include "TStyle.h"
-#include <TLegend.h>
-#include <TGraph.h>
+#include "TLegend.h"
+#include "TGraph.h"
 #include "TCanvas.h"
+// Project includes
 #include "OutputManager.h"
 
 namespace NuFitter {
 
 // @brief For now, simply plot the results (simple fit example)
-auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config, NuFitResults results) -> void {
-
+auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
+                    NuFitResults results) -> void {
 	// Create a histogram with fit results (maybe we can move it FitResults and make it become a member of it)
 	TH1D* PDFsSum_histo = new TH1D("PDFsSum_histo","PDFsSum_histo", config.nbins, pdfs->bin_edges.front(), pdfs->bin_edges.back());
 
@@ -91,9 +94,35 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config, 
 
 	c->Write();
 	f->Close();
+
+	//----------------------------------------
+	//------ Create the output txt file ------
+	//----------------------------------------
+	// Convert counts to cpd/100t
+	// cpd = count / (lifetime*86400.) / mass_target / efficiency;
+	std::vector<double> popt_cpd, popt_err_cpd;
+	auto factor {1. / (config.lifetime*86400.*config.mass_target)};
+	for (auto i = 0U; i < config.nparams; i++) {
+		auto eff_exposure = factor / results.efficiencies[i];
+		popt_cpd.push_back(results.popt[i] * eff_exposure);
+		popt_err_cpd.push_back(results.popt_err[i] * eff_exposure);
+	}
+
+	std::ofstream outf;
+	// TODO: filename from cmdl args
+	outf.open("output.txt");
+	// TODO: add pcov and minuit results
+	outf << "Species\tpopt\tsigma\tpopt(cpd/kton)\tsigma\n";
+	for (auto i = 0U; i < config.nparams; i++) {
+		outf << config.param_names[i] << "\t";
+		outf << results.popt[i] << "\t" << results.popt_err[i] << "\t";
+		outf << popt_cpd[i] << "\t" << popt_err_cpd[i];
+		outf << "\n";
+	}
+	outf.close();
 }
 
-// @brief For now, simply plot the results (simple fit example)
+// @brief Same as the other ProcessResults() but for toy data fit(s)
 auto ProcessResults(std::vector<NuFitData*> data, NuFitPDFs *pdfs, const NuFitConfig config, NuFitResults results) -> void {
 
 }

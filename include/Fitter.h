@@ -49,9 +49,10 @@ public:  // Minuit functions
 public:  // Member variables
 	double n_params, n_fixed;
 	std::vector<int> idx_map, idx_map_fixed;
+	std::vector<double> efficiencies;
 private:  // Member variables
 	std::vector<std::vector<double>> pdf_vectors;
-	std::vector<double> data_vector, efficiencies;
+	std::vector<double> data_vector;
 };
 
 class MinuitManager {
