@@ -69,9 +69,9 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 	// 4. Create a vector of indices to map free params to pdfs
 	for (auto i = 0U; i < config.npdfs; i++) {
 		auto isFixed = config.param_fixed[i];
-		assert(isFixed == 0 || isFixed == 1);
+		assert(isFixed == 0 || isFixed == 1 || isFixed == 2);
 
-		if (isFixed == 0) {
+		if (isFixed != 1) {
 			idx_map.push_back(i);
 		} else {
 			idx_map_fixed.push_back(i);
@@ -93,11 +93,9 @@ auto NuFitContainer::fitFunction(unsigned int i, unsigned int npar, const double
 
 	// Now contributions from the fixed parameters
 	// TODO: can speed-up with look-up since the result from below is constant
-	auto tmp {0.};
 	for (auto j = 0U; j < fitCtnr.n_fixed; j++) {
 		auto idx = fitCtnr.idx_map_fixed[j];  // Convert to param index space
 		yi += fitCtnr.config.param_initial_guess[idx] * pdf_vectors[idx][i];
-		tmp += fitCtnr.config.param_initial_guess[idx] * pdf_vectors[idx][i];
 	}
 
 	return yi;
@@ -250,6 +248,7 @@ auto Fit(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
 
 // @brief Used by TMinuit to sample the likelihood
 auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
+	// Calculate the log-likelihood according to different methods
 	if (fitCtnr.config.likelihood.compare("poisson") == 0) {
 		f = fitCtnr.NLL_poisson(npar, par);
 	} else if (fitCtnr.config.likelihood.compare("extended") == 0) {
@@ -258,6 +257,16 @@ auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
 		throw std::invalid_argument("'" + fitCtnr.config.likelihood +
 			"' is not a valid likelihood.\nAllowed: ['poisson', 'extended']" +
 			"\nPay attention to the capitalisation!");
+	}
+
+	// In case of parameter constraints, add (Gaussian) pull terms here
+	for (auto i = 0U; i < fitCtnr.n_params; i++) {
+		auto j = fitCtnr.idx_map[i];  // Convert to free param index space
+		if (fitCtnr.config.param_fixed[j] != 2) continue;
+
+		auto diff = par[i] - fitCtnr.config.param_initial_guess[j];
+		auto sigma = fitCtnr.config.param_constr_sigma[j];
+		f += 0.5*diff*diff/sigma/sigma;
 	}
 }
 

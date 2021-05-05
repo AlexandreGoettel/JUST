@@ -55,7 +55,7 @@ public:  // Initialise variables to be filled by parser
 	unsigned int npdfs;
 	std::vector<TString> param_names;
 	std::vector<double> param_initial_guess, param_stepsize,
-	                    param_lowerlim, param_upperlim;
+	                    param_lowerlim, param_upperlim, param_constr_sigma;
 	std::vector<int> param_fixed;
 };
 

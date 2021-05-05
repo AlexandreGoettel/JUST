@@ -64,9 +64,9 @@ namespace ConfigParser {
 auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	auto config = std::make_unique<NuFitConfig>();
 
+	// -------------------------------------------------------------------------
 	// Read the general_options config file
 	std::ifstream ReadGen;
-
 	ReadGen.open(args.gen);
 	NuFitter::ErrorReading(ReadGen,args.gen);
 
@@ -91,33 +91,69 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	NuFitter::ReadAndFill_Gen(ReadGen,likelihood,config->likelihood);
 	ReadGen.close();
 
+
+	// -------------------------------------------------------------------------
 	// Read the species-list
 	std::ifstream ReadSpec;
-
-	//count the number of species from species_list.txt
-	int N = HowManySpecies(ReadSpec,args.spec);
-	config->nparams = N;
-	config->npdfs = N;
-
 	ReadSpec.open(args.spec);
-	NuFitter::ErrorReading(ReadSpec,args.spec);
 
-	//placeholder variables
-	TString namepar;
-	double inguess, lowlim, uplim, step;
-	int fixed;
+	std::string line, word;
+	auto nSpecies{0};
+	while (std::getline(ReadSpec, line)) {
+		std::stringstream line_stream(line);
+		auto nElements {0};
 
-	//loop over the number of species and fill the NuFitConfig variable
-	for(int i = 0; i < N; i++){
-		NuFitter::ReadAndFill_Spec(ReadSpec, namepar, config->param_names);
-		NuFitter::ReadAndFill_Spec(ReadSpec, inguess, config->param_initial_guess);
-		NuFitter::ReadAndFill_Spec(ReadSpec, lowlim, config->param_lowerlim);
-		NuFitter::ReadAndFill_Spec(ReadSpec, uplim, config->param_upperlim);
-		NuFitter::ReadAndFill_Spec(ReadSpec, step, config->param_stepsize);
-		NuFitter::ReadAndFill_Spec(ReadSpec, fixed, config->param_fixed);
+		while (line_stream >> word) {
+			// Ignore commented lines
+			if (nElements == 0 && std::strcmp(&word[0], "#") == 0) continue;
+
+			// Read the (expected) variables
+			switch (nElements) {
+				case 0:
+					config->param_names.push_back(word);
+					break;
+				case 1:
+					config->param_initial_guess.push_back(std::stod(word));
+					break;
+				case 2:
+					config->param_lowerlim.push_back(std::stod(word));
+					break;
+				case 3:
+					config->param_upperlim.push_back(std::stod(word));
+					break;
+				case 4:
+					config->param_stepsize.push_back(std::stod(word));
+					break;
+				case 5:
+					config->param_fixed.push_back(std::stoi(word));
+					break;
+				case 6:
+					config->param_constr_sigma.push_back(std::stod(word));
+					break;
+				default:
+					std::cout << "[Warning] In file: " + args.spec +
+						": Too many arguments in a line." << std::endl;
+			}
+			nElements++;
+		}
+		// Make sure line is correct
+		if (nElements < 6) {
+			throw std::invalid_argument("A line in file: '" + args.spec +
+				"' does not have enough arguments to be valid.."
+				+ std::to_string(nElements));
+		}
+		if (nElements == 6) {  // If no param constraint was given, fill zero
+			config->param_constr_sigma.push_back(0.);
+		}
+
+		// Bookkeeping
+		nSpecies++;
 	}
 
+	config->nparams = nSpecies;
+	config->npdfs = nSpecies;
 	ReadSpec.close();
+	// -------------------------------------------------------------------------
 
 	// Get nbins from the data hist
 	// TODO: make sure pdfs are compatible?
@@ -131,7 +167,7 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 
 }  // namespace ConfigParser
 
-//problems in opening or reading input files
+// @brief problems in opening or reading input files
 auto ErrorReading(const std::ifstream& filename, const std::string& s) -> void {
 	if(filename.fail()){
 		std::cout << "Opening " << s << " for reading.\n";
@@ -143,7 +179,7 @@ auto ErrorReading(const std::ifstream& filename, const std::string& s) -> void {
 	}
 }
 
-//help message to run the software
+// @brief help message to run the software
 auto HelpMessage(char* a) -> void {
 	std::cerr << "Usage: " << a << " [-h] [-g GENERAL OPTIONS] [-s SPECIES] [-t TOY]"
         << "\nOptions:\n"
@@ -154,32 +190,13 @@ auto HelpMessage(char* a) -> void {
 		<< std::endl;
 }
 
-//Read and Fill for general_options.txt
-template<class T> auto ReadAndFill_Gen(std::ifstream& filename, T& var1, T& var2) -> void {
+// @brief Read and Fill for general_options.txt
+template<class T>
+auto ReadAndFill_Gen(std::ifstream& filename, T& var1, T& var2) -> void {
 	std::string appo;
 	filename >> appo;  // read the labels
 	filename >> var1;
 	var2 = var1;
 }
 
-//Read and Fill for species_list.txt
-template<class T> auto ReadAndFill_Spec(std::ifstream& filename, T& var1, std::vector<T>& var2) -> void {
-	filename >> var1;
-	var2.push_back(var1);
-}
-
-//count the number of species from species_list.txt
-auto HowManySpecies(std::ifstream& filename, const std::string& s) -> int {
-	// TODO: Can this be removed?
-	filename.open(s);
-	std::string unused;
-	int n = 0;
-
-	while(std::getline(filename,unused)) {
-		++n;
-	}
-
-	filename.close();
-	return n;
-}
 }  // namespace NuFitter
