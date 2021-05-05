@@ -62,15 +62,41 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 		efficiencies.push_back(current_efficiency);
 	}
 	assert(data_vector.size() == pdf_vectors[0].size());
+	assert(data_vector.size() != 0);
+
+	// 4. Create a vector of indices to map free params to pdfs
+	for (auto i = 0U; i < config.npdfs; i++) {
+		auto isFixed = config.param_fixed[i];
+		assert(isFixed == 0 || isFixed == 1);
+
+		if (isFixed == 0) {
+			idx_map.push_back(i);
+		} else {
+			idx_map_fixed.push_back(i);
+		}
+	}
+	n_params = idx_map.size();
+	n_fixed = idx_map_fixed.size();
 }
 
 // @brief The fit function (parameters * pdfs)
 auto NuFitContainer::fitFunction(unsigned int i, unsigned int npar, const double *par)
 		-> double {
+	// Add contributions from the free parameters
 	auto yi {0.};
 	for (auto j = 0U; j < npar; j++) {
-		yi += par[j] * pdf_vectors[j][i];
+		auto idx = fitCtnr.idx_map[j];  // Convert to param index space
+		yi += par[j] * pdf_vectors[idx][i];
 	}
+	// Now contributions from the fixed parameters
+	// TODO: can speed-up with look-up since the result from below is constant
+	auto tmp {0.};
+	for (auto j = 0U; j < fitCtnr.n_fixed; j++) {
+		auto idx = fitCtnr.idx_map_fixed[j];  // Convert to param index space
+		yi += fitCtnr.config.param_initial_guess[idx] * pdf_vectors[idx][i];
+		tmp += fitCtnr.config.param_initial_guess[idx] * pdf_vectors[idx][i];
+	}
+
 	return yi;
 }
 
@@ -114,16 +140,13 @@ auto MinuitManager::initMinuit() -> void {
 	gMinuit = new TMinuit();  // TODO: Add protection?
 	gMinuit->SetFCN(fcn);
 	// Set each parameter in Minuit
-	for (auto i = 0U; i < config.nparams; i++) {
+	for (auto j = 0U; j < fitCtnr.n_params; j++) {
+		// Convert index space
+		auto i = fitCtnr.idx_map[j];
 		// Give the parameter information to Minuit
 		gMinuit->mnparm(i, config.param_names[i],
 			config.param_initial_guess[i], config.param_stepsize[i],
 			config.param_lowerlim[i], config.param_upperlim[i], errorflag);
-
-		// Fix parameters
-		if (config.param_fixed[i] == 1) {
-			gMinuit->FixParameter(i);
-		}
 	}
 }
 
@@ -158,28 +181,29 @@ auto MinuitManager::callMinuit() -> void {
 }
 
 // @brief Convert fit results to vectors, store in member variables popt/pcov
-auto MinuitManager::getResults() -> void {
+auto MinuitManager::getResults() -> NuFitResults {
+	// TODO: Add zeros and ones where the fixed parameters would be
 	// Get the covariance matrix
 	TMatrixDSym mat(config.nparams);
 	gMinuit->mnemat(mat.GetMatrixArray(), config.nparams);
 
-	// Convert to vector
-	for (auto i = 0U; i < config.nparams; i++) {
-		std::vector<double> pcov_row;
-		for (auto j = 0U; j < config.nparams; j++) {
-			pcov_row.push_back(mat[i][j]);
-		}
-		pcov.push_back(pcov_row);
+	// Fill with free and fixed results...
+	std::vector<double> popt(config.npdfs);
+	std::vector<double> popt_err(config.npdfs);
+	double x, sigmax;
+	for (auto i : fitCtnr.idx_map) {
+		gMinuit->GetParameter(i, x, sigmax);
+		popt[i] = x;
+		popt_err[i] = sigmax;
+	}
+	for (auto i : fitCtnr.idx_map_fixed) {
+		popt[i] = config.param_initial_guess[i];
+		popt_err[i] = 0.;
 	}
 
-	// Put the parameter estimates into another vector
-	double x, sigmax;
-	for (auto i = 0U; i < config.nparams; i++) {
-		gMinuit->GetParameter(i, x, sigmax);
-		popt.push_back(x);
-		// Could also get an uncertainty vector here.
-		popt_err.push_back(sigmax);
-	}
+	// TODO: also save correlation/error matrix
+	auto results = NuFitResults(popt, popt_err);
+	return results;
 }
 
 // @brief Perform a binned likelihood fit of the pdfs on the data
@@ -200,12 +224,11 @@ auto Fit(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config)
 
 	// 3. Start minimization
 	manager->callMinuit();
-	manager->getResults();
 
 	// 4. Pass output to NuFitResults
 	// TODO
-	auto results = NuFitResults(manager->popt, manager->popt_err, manager->pcov);
-	return results;
+
+	return manager->getResults();
 }
 
 // @brief Fit for each entry in vector<NuFitData*>

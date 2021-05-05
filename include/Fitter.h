@@ -46,7 +46,9 @@ public:  // Minuit functions
 	double NLL_extended(int, const double*);
 	double NLL_poisson(int, const double*);
 	double fitFunction(unsigned int, unsigned int, const double*);
-
+public:  // Member variables
+	double n_params, n_fixed;
+	std::vector<int> idx_map, idx_map_fixed;
 private:  // Member variables
 	std::vector<std::vector<double>> pdf_vectors;
 	std::vector<double> data_vector, efficiencies;
@@ -65,14 +67,14 @@ public:  // Member variables
 	NuFitConfig config;
 	TMinuit *gMinuit;
 	int errorflag;
-	std::vector<double> popt;
-	std::vector<double> popt_err;
-	std::vector<std::vector<double>> pcov;
+	// std::vector<double> popt;
+	// std::vector<double> popt_err;
+	// std::vector<std::vector<double>> pcov;
 
 public:  // Functions
 	void initMinuit();
 	void callMinuit();
-	void getResults();
+	NuFitResults getResults();
 };
 
 NuFitResults Fit(NuFitData*, NuFitPDFs*, const NuFitConfig);

@@ -53,7 +53,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config, 
 		current_hist->Scale(results.popt[i]);
 		current_hist->Draw("SAME");
 
-		for(int j = 1; j <= config.nbins; j++)	PDFsSum_histo->SetBinContent(j,PDFsSum_histo->GetBinContent(j)+pdfs->pdf_histograms[i]->GetBinContent(j));
+		for(auto j = 1U; j <= config.nbins; j++)	PDFsSum_histo->SetBinContent(j,PDFsSum_histo->GetBinContent(j)+pdfs->pdf_histograms[i]->GetBinContent(j));
 
 		leg->AddEntry(current_hist,config.param_names.at(i));
 		leg->Draw("SAME");
@@ -67,7 +67,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config, 
 	double res[config.nbins];
 	double rec_energy[config.nbins];
 
-	for(int i = 0; i < config.nbins; i++){
+	for(auto i = 0U; i < config.nbins; i++){
 		rec_energy[i] = i + pdfs->bin_edges.front();
 		res[i] = (data->data_histograms[0]->GetBinContent(i)-PDFsSum_histo->GetBinContent(i))/sqrt(data->data_histograms[0]->GetBinContent(i));
 	}
@@ -76,7 +76,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config, 
   	TPad* Pad_down = new TPad("Pad_down", "Pad_down", 0.0, 0.0, 1.0, 0.3);
   	Pad_down->Draw();
   	Pad_down->cd();
-	
+
 	TGraph *Residuals = new TGraph(config.nbins,rec_energy,res);
 	Residuals->SetTitle("Residuals");
 	Residuals->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
