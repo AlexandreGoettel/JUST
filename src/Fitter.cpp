@@ -194,17 +194,19 @@ auto MinuitManager::getResults() -> NuFitResults {
 	std::vector<double> popt(config.npdfs);
 	std::vector<double> popt_err(config.npdfs);
 	double x, sigmax;
-	for (auto i : fitCtnr.idx_map) {
+
+	for (auto i = 0U; i < fitCtnr.idx_map.size(); i++) {
+		auto j = fitCtnr.idx_map[i];
 		gMinuit->GetParameter(i, x, sigmax);
-		popt[i] = x;
-		popt_err[i] = sigmax;
+		popt[j] = x;
+		popt_err[j] = sigmax;
 	}
 	for (auto i : fitCtnr.idx_map_fixed) {
 		popt[i] = config.param_initial_guess[i];
 		popt_err[i] = 0.;
 	}
 
-	// TODO: also save correlation/error matrix
+	// TODO: also save correlation/error matrix?
 	auto results = NuFitResults(popt, popt_err);
 	return results;
 }
