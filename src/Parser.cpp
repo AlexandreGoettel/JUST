@@ -101,11 +101,13 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	auto nSpecies{0};
 	while (std::getline(ReadSpec, line)) {
 		std::stringstream line_stream(line);
-		auto nElements {0};
+		auto nElements {0U};
 
 		while (line_stream >> word) {
 			// Ignore commented lines
-			if (nElements == 0 && std::strcmp(&word[0], "#") == 0) continue;
+			if (nElements == 0 && std::strncmp(word.c_str(), "#", 1) == 0) {
+				break;
+			}
 
 			// Read the (expected) variables
 			switch (nElements) {
@@ -137,6 +139,7 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 			nElements++;
 		}
 		// Make sure line is correct
+		if (nElements == 0) continue;
 		if (nElements < 6) {
 			throw std::invalid_argument("A line in file: '" + args.spec +
 				"' does not have enough arguments to be valid.."
