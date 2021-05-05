@@ -2,6 +2,7 @@ build/*
 install/*
 *.o
 *.root
+*.txt
 include/*.gch
 config/*
 data/*
