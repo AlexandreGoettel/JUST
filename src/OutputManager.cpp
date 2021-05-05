@@ -54,7 +54,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		auto current_hist = pdfs->pdf_histograms[i];
 		current_hist->SetLineColor(Colors[i]);
 		current_hist->SetMarkerColor(Colors[i]);
-		current_hist->Scale(results.popt[i]);
+		current_hist->Scale(results.popt[i]/results.efficiencies[i]);
 		current_hist->Draw("SAME");
 
 		for(auto j = 1U; j <= config.nbins; j++)	PDFsSum_histo->SetBinContent(j,PDFsSum_histo->GetBinContent(j)+pdfs->pdf_histograms[i]->GetBinContent(j));
