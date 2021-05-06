@@ -3,26 +3,30 @@
 //! @author	Alexandre Göttel
 //! @date	2021-03-18
 
-// Includes
+// Standard Includes
 #include <iostream>
+#include <fstream>
+// ROOT includes
 #include "TH1D.h"
 #include "TFile.h"
 #include "TStyle.h"
-#include <TLegend.h>
-#include <TGraph.h>
+#include "TLegend.h"
+#include "TGraph.h"
 #include "TCanvas.h"
+// Project includes
 #include "OutputManager.h"
 
 namespace NuFitter {
 
 // @brief For now, simply plot the results (simple fit example)
-auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config, NuFitResults results) -> void {
-
+auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
+                    NuFitResults results) -> void {
 	// Create a histogram with fit results (maybe we can move it FitResults and make it become a member of it)
 	TH1D* PDFsSum_histo = new TH1D("PDFsSum_histo","PDFsSum_histo", config.nbins, pdfs->bin_edges.front(), pdfs->bin_edges.back());
 
 	// Open file to save the plots in
-	TFile *f = new TFile(config.output_name.c_str(), "RECREATE");
+	auto root_filename = config.output_name + ".root";
+	TFile *f = new TFile(root_filename.c_str(), "RECREATE");
 	f->cd();
 
 	TCanvas *c = new TCanvas("Results","Results",1500,700);
@@ -50,10 +54,10 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config, 
 		auto current_hist = pdfs->pdf_histograms[i];
 		current_hist->SetLineColor(Colors[i]);
 		current_hist->SetMarkerColor(Colors[i]);
-		current_hist->Scale(results.popt[i]);
+		current_hist->Scale(results.popt[i]/results.efficiencies[i]);
 		current_hist->Draw("SAME");
 
-		for(int j = 1; j <= config.nbins; j++)	PDFsSum_histo->SetBinContent(j,PDFsSum_histo->GetBinContent(j)+pdfs->pdf_histograms[i]->GetBinContent(j));
+		for(auto j = 1U; j <= config.nbins; j++)	PDFsSum_histo->SetBinContent(j,PDFsSum_histo->GetBinContent(j)+pdfs->pdf_histograms[i]->GetBinContent(j));
 
 		leg->AddEntry(current_hist,config.param_names.at(i));
 		leg->Draw("SAME");
@@ -67,7 +71,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config, 
 	double res[config.nbins];
 	double rec_energy[config.nbins];
 
-	for(int i = 0; i < config.nbins; i++){
+	for(auto i = 0U; i < config.nbins; i++){
 		rec_energy[i] = i + pdfs->bin_edges.front();
 		res[i] = (data->data_histograms[0]->GetBinContent(i)-PDFsSum_histo->GetBinContent(i))/sqrt(data->data_histograms[0]->GetBinContent(i));
 	}
@@ -76,7 +80,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config, 
   	TPad* Pad_down = new TPad("Pad_down", "Pad_down", 0.0, 0.0, 1.0, 0.3);
   	Pad_down->Draw();
   	Pad_down->cd();
-	
+
 	TGraph *Residuals = new TGraph(config.nbins,rec_energy,res);
 	Residuals->SetTitle("Residuals");
 	Residuals->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
@@ -91,9 +95,35 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config, 
 
 	c->Write();
 	f->Close();
+
+	//----------------------------------------
+	//------ Create the output txt file ------
+	//----------------------------------------
+	// Convert counts to cpd/100t
+	// cpd = count / (lifetime*86400.) / mass_target / efficiency;
+	std::vector<double> popt_cpd, popt_err_cpd;
+	auto factor {1. / (config.lifetime*86400.*config.mass_target)};
+	for (auto i = 0U; i < config.nparams; i++) {
+		auto eff_exposure = factor / results.efficiencies[i];
+		popt_cpd.push_back(results.popt[i] * eff_exposure);
+		popt_err_cpd.push_back(results.popt_err[i] * eff_exposure);
+	}
+
+	std::ofstream outf;
+	auto out_filename = config.output_name + ".txt";
+	outf.open(out_filename.c_str());
+	// TODO: add pcov and minuit results
+	outf << "Species\tpopt\tsigma\tpopt(cpd/kton)\tsigma\n";
+	for (auto i = 0U; i < config.nparams; i++) {
+		outf << config.param_names[i] << "\t";
+		outf << results.popt[i] << "\t" << results.popt_err[i] << "\t";
+		outf << popt_cpd[i] << "\t" << popt_err_cpd[i];
+		outf << "\n";
+	}
+	outf.close();
 }
 
-// @brief For now, simply plot the results (simple fit example)
+// @brief Same as the other ProcessResults() but for toy data fit(s)
 auto ProcessResults(std::vector<NuFitData*> data, NuFitPDFs *pdfs, const NuFitConfig config, NuFitResults results) -> void {
 
 }

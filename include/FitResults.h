@@ -9,7 +9,6 @@
 //============================================================================
 // Includes
 #include <vector>
-#include <memory>
 
 //============================================================================
 // Class definition
@@ -20,7 +19,8 @@ class NuFitResults {
 // Constructors and operator assignments
 public:
 	NuFitResults() = default;
-	NuFitResults(std::vector<double>, std::vector<double>, std::vector<std::vector<double>>);  // constructor
+	NuFitResults(std::vector<double>, std::vector<double>,
+		std::vector<double>);  // constructor
 	~NuFitResults() = default;  // destructor
 	NuFitResults(const NuFitResults&) = default;  // copy constructor
 	NuFitResults(NuFitResults&&) = default;  // move constructor
@@ -28,9 +28,7 @@ public:
 	NuFitResults &operator=(NuFitResults&&) = default;  // move assignment
 
 public: // Member variables
-	std::vector<double> popt;
-	std::vector<double> popt_err;
-	std::vector<std::vector<double>> pcov;
+	std::vector<double> popt, popt_err, efficiencies;
 
 public: // Functions
 	void addResults(NuFitResults);

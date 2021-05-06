@@ -46,6 +46,10 @@ auto Parse(int argc, char* argv[]) -> NuFitCmdlArgs{
 				args->toy = argv[i+1];
 				i++;
 			}
+			else if (std::strcmp(argv[i], "--output") == 0 || std::strcmp(argv[i], "-o") == 0){
+				args->output_name = argv[i+1];
+				i++;
+			}
 			else {
 				std::cout << "ERROR: something went wrong. Please read carefully the instructions below.\n";
 				NuFitter::HelpMessage(argv[0]);
@@ -63,21 +67,21 @@ namespace ConfigParser {
 
 auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	auto config = std::make_unique<NuFitConfig>();
+	config->output_name = args.output_name;
 
+	// -------------------------------------------------------------------------
 	// Read the general_options config file
 	std::ifstream ReadGen;
-
 	ReadGen.open(args.gen);
 	NuFitter::ErrorReading(ReadGen,args.gen);
 
 	//placeholder variables
-	std::string output, pdffile, datafile, datahist, likelihood;
+	std::string pdffile, datafile, datahist, likelihood;
 	bool toy, hesse, minos = false;
 	double ltime, mass, min, max = 0;
 
 	// general_options.txt: read and fill the NuFitConfig variable
 	// TODO: loop over the file, can probably auto placeholder
-	NuFitter::ReadAndFill_Gen(ReadGen,output,config->output_name);
 	NuFitter::ReadAndFill_Gen(ReadGen,pdffile,config->pdf_name);
 	NuFitter::ReadAndFill_Gen(ReadGen,datafile,config->data_name);
 	NuFitter::ReadAndFill_Gen(ReadGen,datahist,config->histo_data);
@@ -91,37 +95,74 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	NuFitter::ReadAndFill_Gen(ReadGen,likelihood,config->likelihood);
 	ReadGen.close();
 
+
+	// -------------------------------------------------------------------------
 	// Read the species-list
 	std::ifstream ReadSpec;
-
-	//count the number of species from species_list.txt
-	int N = HowManySpecies(ReadSpec,args.spec);
-	config->nparams = N;
-	config->npdfs = N;
-
 	ReadSpec.open(args.spec);
-	NuFitter::ErrorReading(ReadSpec,args.spec);
 
-	//placeholder variables
-	TString namepar;
-	double inguess, lowlim, uplim, step = 0;
+	std::string line, word;
+	auto nSpecies{0};
+	while (std::getline(ReadSpec, line)) {
+		std::stringstream line_stream(line);
+		auto nElements {0U};
 
-	//loop over the number of species and fill the NuFitConfig variable
-	for(int i = 0; i < N; i++){
+		while (line_stream >> word) {
+			// Ignore commented lines
+			if (nElements == 0 && std::strncmp(word.c_str(), "#", 1) == 0) {
+				break;
+			}
 
-		NuFitter::ReadAndFill_Spec(ReadSpec,namepar,config->param_names);
-		NuFitter::ReadAndFill_Spec(ReadSpec,inguess,config->param_initial_guess);
-		NuFitter::ReadAndFill_Spec(ReadSpec,lowlim,config->param_lowerlim);
-		NuFitter::ReadAndFill_Spec(ReadSpec,uplim,config->param_upperlim);
-		NuFitter::ReadAndFill_Spec(ReadSpec,step,config->param_stepsize);
+			// Read the (expected) variables
+			switch (nElements) {
+				case 0:
+					config->param_names.push_back(word);
+					break;
+				case 1:
+					config->param_initial_guess.push_back(std::stod(word));
+					break;
+				case 2:
+					config->param_lowerlim.push_back(std::stod(word));
+					break;
+				case 3:
+					config->param_upperlim.push_back(std::stod(word));
+					break;
+				case 4:
+					config->param_stepsize.push_back(std::stod(word));
+					break;
+				case 5:
+					config->param_fixed.push_back(std::stoi(word));
+					break;
+				case 6:
+					config->param_constr_sigma.push_back(std::stod(word));
+					break;
+				default:
+					std::cout << "[Warning] In file: " + args.spec +
+						": Too many arguments in a line." << std::endl;
+			}
+			nElements++;
+		}
+		// Make sure line is correct
+		if (nElements == 0) continue;
+		if (nElements < 6) {
+			throw std::invalid_argument("A line in file: '" + args.spec +
+				"' does not have enough arguments to be valid.."
+				+ std::to_string(nElements));
+		}
+		if (nElements == 6) {  // If no param constraint was given, fill zero
+			config->param_constr_sigma.push_back(0.);
+		}
 
+		// Bookkeeping
+		nSpecies++;
 	}
 
+	config->nparams = nSpecies;
+	config->npdfs = nSpecies;
 	ReadSpec.close();
+	// -------------------------------------------------------------------------
 
-	// Get nbins from the
-	//
-	// data hist
+	// Get nbins from the data hist
 	// TODO: make sure pdfs are compatible?
 	TFile *fdata = new TFile(config->data_name.c_str());
 	TH1D* hdata = (TH1D*)fdata->Get(config->histo_data.c_str());
@@ -133,61 +174,37 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 
 }  // namespace ConfigParser
 
-//problems in opening or reading input files
+// @brief problems in opening or reading input files
 auto ErrorReading(const std::ifstream& filename, const std::string& s) -> void {
-
-        if(filename.fail()){
-                std::cout << "Opening " << s << " for reading.\n";
-                std::cout <<"The "<< s <<" file could not be opened!\n";
-                std::cout << "Possible errors:\n";
+	if(filename.fail()){
+		std::cout << "Opening " << s << " for reading.\n";
+		std::cout <<"The "<< s <<" file could not be opened!\n";
+		std::cout << "Possible errors:\n";
 		std::cout <<"1. The file does not exist.\n";
-                std::cout <<"2. The path was not found.\n";
-                std::exit(-1);
-        }
+		std::cout <<"2. The path was not found.\n";
+		std::exit(-1);
+	}
 }
 
-//help message to run the software
+// @brief help message to run the software
 auto HelpMessage(char* a) -> void {
-
 	std::cerr << "Usage: " << a << " [-h] [-g GENERAL OPTIONS] [-s SPECIES] [-t TOY]"
         << "\nOptions:\n"
-        << "\t-h,--help\tShow this help message\n"
-        << "\t-g,--gen GENERAL OPTIONS\tSpecify the file containing PDFs, data, output rootfiles paths and other info.\n"
-        << "\t-s,--species SPECIES\tSpecify the file containing the number of parameters, the list of species (also if they are free/fixed/constrained) and the min/man energy range\n"
-        << "\t-t,--toy TOY\tTO BE WRITTEN"
-	<< std::endl;
+        << "\t-h,--help\n\tShow this help message\n"
+        << "\t-g,--general-options\n\tSpecify the file containing PDFs, data, output rootfiles paths and other info.\n"
+        << "\t-s,--species-list\n\tSpecify the file containing the number of parameters, the list of species (also if they are free/fixed/constrained) and the min/man energy range\n"
+		<< "\t-o,--output\n\tSpecify the path containing the output, without the extension since the fitter will create an output.root and output.txt.\n"
+        << "\t-t,--toy-rates\n\tTO BE WRITTEN"
+		<< std::endl;
 }
 
-//Read and Fill for general_options.txt
-template<class T> auto ReadAndFill_Gen(std::ifstream& filename, T& var1, T& var2) -> void {
-
+// @brief Read and Fill for general_options.txt
+template<class T>
+auto ReadAndFill_Gen(std::ifstream& filename, T& var1, T& var2) -> void {
 	std::string appo;
-	filename >> appo;//read the labels
+	filename >> appo;  // read the labels
 	filename >> var1;
 	var2 = var1;
-
 }
 
-//Read and Fill for species_list.txt
-template<class T> auto ReadAndFill_Spec(std::ifstream& filename, T& var1, std::vector<T>& var2) -> void {
-
-        filename >> var1;
-        var2.push_back(var1);
-
-}
-
-//count the number of species from species_list.txt
-auto HowManySpecies(std::ifstream& filename, const std::string& s) -> int {
-
-	filename.open(s);
-	std::string unused;
-	int n = 0;
-
-        while(std::getline(filename,unused))	++n;
-
-	filename.close();
-
-	return n;
-
-}
 }  // namespace NuFitter
