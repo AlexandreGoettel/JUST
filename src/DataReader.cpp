@@ -93,7 +93,7 @@ auto Read(const NuFitConfig config) -> NuFitPDFs* {
 	}
 
 	// Create bin_edges vector
-	auto bin_edges = getBinEdges(hPDFs[1], config.nbins);
+	auto bin_edges = getBinEdges(hPDFs[0], config.nbins);
 
 	// Create and return NuFitPDFs object with the variables
 	auto *output = new NuFitPDFs(pdfs, bin_edges, hPDFs);
