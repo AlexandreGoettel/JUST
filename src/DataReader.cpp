@@ -34,7 +34,7 @@ NuFitData::NuFitData(std::vector<double>data_, std::vector<double> bin_edges_,
 auto getBinEdges(TH1D *hist, unsigned int nbins) -> std::vector<double> {
 	// Create bin_edges vector
 	std::vector<double> bin_edges;
-	for (auto i = 1U; i <= nbins; i++){
+	for (auto i = 0U; i <= nbins; i++){
 		bin_edges.push_back(hist->GetBinLowEdge(i));
 	}
 	bin_edges.push_back(hist->GetBinLowEdge(nbins) +
@@ -53,7 +53,7 @@ auto Read(const NuFitConfig config) -> NuFitData* {
 
 	// Convert histogram to vector
 	std::vector<double> vec_data;
-	for (auto i = 1U; i <= config.nbins; i++) {
+	for (auto i = 0U; i <= config.nbins; i++) {
 		vec_data.push_back(hdata->GetBinContent(i));
 	}
 
@@ -86,7 +86,7 @@ auto Read(const NuFitConfig config) -> NuFitPDFs* {
 	std::vector<std::vector<double>> pdfs;
 	for (auto n = 0U; n < config.npdfs; n++) {
 		std::vector<double> current_pdf;
-		for (auto i = 1U; i <= config.nbins; i++) {
+		for (auto i = 0U; i <= config.nbins; i++) {
 			current_pdf.push_back(hPDFs[n]->GetBinContent(i));
 		}
 		pdfs.push_back(current_pdf);

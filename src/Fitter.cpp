@@ -10,6 +10,7 @@
 #include <iostream>
 // ROOT includes
 #include "Math/Util.h"
+#include "TMath.h"
 #include "TMatrixDSym.h"
 // Project includes
 #include "Fitter.h"
@@ -23,7 +24,7 @@ NuFitContainer fitCtnr;
 // TODO: if needed, move this to a more accessible location?
 // @brief Multiply all vector elements by the same number
 template <class Q, class P>
-void MultiplyVectorByScalar(std::vector<Q> &v, P k){
+auto MultiplyVectorByScalar(std::vector<Q> &v, P k) -> void {
     transform(v.begin(), v.end(), v.begin(), [k](auto &c){ return c*k; });
 }
 
@@ -139,8 +140,12 @@ auto NuFitContainer::NLL_poisson(int npar, const double *par) -> double {
 		auto yi = fitFunction(i, npar, par);
 		auto ni = data_vector[i];
 
-		logL += ni - yi + ni*(ROOT::Math::Util::EvalLog(yi) -
-		                      ROOT::Math::Util::EvalLog(ni));
+        if (ni < 0)
+            continue;
+        else if (ni == 0)
+            logL += -yi;
+        else
+            logL += ni*ROOT::Math::Util::EvalLog(yi)-yi-TMath::LnGamma(ni+1);
 	}
 	return -logL;
 }
@@ -184,8 +189,9 @@ auto MinuitManager::callMinuit() -> void {
 	// Call MIGRAD (+ SIMPLEX method if Migrad fails)
 	arglist[0] = 50000;
 	arglist[1] = 0.001;
-	gMinuit->mnexcm("CALL FCN", arglist, 2, errorflag);
+	// gMinuit->mnexcm("CALL FCN", arglist, 2, errorflag);
 	gMinuit->mnexcm("MINIMIZE", arglist, 2, errorflag);
+    // gMinuit->mnexcm("MIGRAD", arglist, 2, errorflag);
 
 	// Optional: call extra Hesse calculation
 	if (config.doHesse) {
