@@ -27,6 +27,15 @@ void MultiplyVectorByScalar(std::vector<Q> &v, P k){
     transform(v.begin(), v.end(), v.begin(), [k](auto &c){ return c*k; });
 }
 
+// @brief Evaluate whether the bin between lower_edge and upper edge is
+// inside of the bin range
+template <class T>
+auto NuFitContainer::InFitRange(T lower_edge, T upper_edge) -> bool {
+    // return upper_edge > config.emin && lower_edge < config.emax;
+    auto bin_center = (upper_edge + lower_edge) / 2. + 1;
+    return config.emin <= bin_center && bin_center < config.emax;
+}
+
 // @brief Constructor for NuFitContainer
 // @brief Create new data/pdf vector objects with applied fit range cuts
 // @brief Then separate free/fixed parameters and create the index maps
@@ -42,15 +51,11 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 	auto bin_edges = data->bin_edges;
 	assert(bin_edges == pdfs->bin_edges);
 
-	// TODO: Extend to multiple histograms..
-	auto emin = config.emin;
-	auto emax = config.emax;
-
 	// 2. Create the data vector
 	for (auto i = 0U; i < bin_edges.size()-1; i++) {
 		// Assuming the bin_edges is ordered
 		// Fill data_vector with the raw_data between emin and emax
-		if (bin_edges[i+1] > emin && bin_edges[i] < emax) {
+		if (InFitRange(bin_edges[i], bin_edges[i+1])) {
 			data_vector.push_back(data_raw[i]);
 		}
 	}
@@ -61,7 +66,7 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 		std::vector<double> current_pdf;
 
 		for (auto i = 0U; i < bin_edges.size()-1; i++) {
-			if (bin_edges[i+1] > emin && bin_edges[i] < emax) {
+			if (InFitRange(bin_edges[i], bin_edges[i+1])) {
 				current_pdf.push_back(el[i]);
 			} else {
 				current_efficiency += el[i];
@@ -134,7 +139,8 @@ auto NuFitContainer::NLL_poisson(int npar, const double *par) -> double {
 		auto yi = fitFunction(i, npar, par);
 		auto ni = data_vector[i];
 
-		logL += ni*ROOT::Math::Util::EvalLog(yi) - yi;
+		logL += ni - yi + ni*(ROOT::Math::Util::EvalLog(yi) -
+		                      ROOT::Math::Util::EvalLog(ni));
 	}
 	return -logL;
 }

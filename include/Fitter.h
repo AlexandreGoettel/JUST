@@ -53,6 +53,7 @@ public:  // Member variables
 private:  // Member variables
 	std::vector<std::vector<double>> pdf_vectors;
 	std::vector<double> data_vector;
+	template <class T> bool InFitRange(T, T);
 };
 
 class MinuitManager {
