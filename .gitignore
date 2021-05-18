@@ -1,7 +1,6 @@
 build/*
 install/*
 *.o
-*.txt
 include/*.gch
 config/*
 data/*
