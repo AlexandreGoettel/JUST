@@ -11,7 +11,8 @@ build-job:
         - export SIM_DIR=$CI_PROJECT_DIR
         - ./RebuildAndInstall_sh.sh
     artifacts:
-        - install/bin/NuSolarFit
+        paths:
+            - install/bin/NuSolarFit
 
 compare-job:
     stage: test
