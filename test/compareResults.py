@@ -70,7 +70,19 @@ def main():
     popt_fit, pcov_fit = getResults(out + ".txt")
     popt_ref, pcov_ref = getResults(ref)
 
-    return 0 if popt_fit == popt_ref and pcov_fit == pcov_ref else -1
+    # Handle output
+    if popt_fit == popt_ref and pcov_fit == pcov_ref:
+        print("Comparison successful!")
+        exit(0)
+    else:
+        print("Comparison failed!\npopt:")
+        if popt_fit != popt_ref:
+            print(popt_ref)
+            print(popt_fit)
+        else:
+            print(pcov_ref)
+            print(pcov_fit)
+        exit(-1)
 
 
 if __name__ == '__main__':
