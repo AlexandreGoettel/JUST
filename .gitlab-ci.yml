@@ -17,6 +17,7 @@ compare-job:
         ROOTSYS: /home/alexandregoettel/Software/root/install
     script:
         - echo "Re-building project"
+        - source /home/alexandregoettel/Software/root/install/bin/thisroot.sh
         - export SIM_DIR=$CI_PROJECT_DIR
         - ./RebuildAndInstall_sh.sh
         - echo "Launching fit and comparing..."
