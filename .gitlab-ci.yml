@@ -1,5 +1,6 @@
 stages:
     - build
+    - test
 
 build-job:
     stage: build
@@ -8,5 +9,9 @@ build-job:
     script:
         - echo "Hello, $GITLAB_USER_LOGIN!"
         - export SIM_DIR=$CI_PROJECT_DIR
-        - echo "Setting SIM_DIR to $CI_PROJECT_DIR"
         - ./RebuildAndInstall_sh.sh
+
+compare-job:
+    stage: test
+    script:
+        - python test/compareResults.py
