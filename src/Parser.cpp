@@ -96,6 +96,7 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	NuFitter::ReadAndFill_Gen(ReadGen,likelihood,config->likelihood);
 	ReadGen.close();
 
+	config->exposure = config->lifetime*config->mass_target;
 
 	// -------------------------------------------------------------------------
 	// Read the species-list
@@ -120,13 +121,13 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 					config->param_names.push_back(word);
 					break;
 				case 1:
-					config->param_initial_guess.push_back(std::stod(word));
+					config->param_initial_guess.push_back(std::stod(word)*config->exposure);
 					break;
 				case 2:
-					config->param_lowerlim.push_back(std::stod(word));
+					config->param_lowerlim.push_back(std::stod(word)*config->exposure);
 					break;
 				case 3:
-					config->param_upperlim.push_back(std::stod(word));
+					config->param_upperlim.push_back(std::stod(word)*config->exposure);
 					break;
 				case 4:
 					config->param_stepsize.push_back(std::stod(word));

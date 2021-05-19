@@ -104,16 +104,16 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	std::vector<double> popt_cpd, popt_err_cpd;
 	auto factor {1. / (config.lifetime*config.mass_target)};
 	for (auto i = 0U; i < config.nparams; i++) {
-		auto eff_exposure = factor / results.efficiencies[i];
-		popt_cpd.push_back(results.popt[i] * eff_exposure);
-		popt_err_cpd.push_back(results.popt_err[i] * eff_exposure);
+		//auto eff_exposure = factor / results.efficiencies[i];
+		popt_cpd.push_back(results.popt[i] * factor);
+		popt_err_cpd.push_back(results.popt_err[i] * factor);
 	}
 
 	std::ofstream outf;
 	auto out_filename = config.output_name + ".txt";
 	outf.open(out_filename.c_str());
 	// TODO: add pcov and minuit results
-	outf << "Species\tpopt\tsigma\tpopt(cpd/kton)\tsigma\n";
+	outf << "Species\tpopt\tsigma\tpopt(cpd/kton)\tsigma(cpd/kton)\n";
 	for (auto i = 0U; i < config.nparams; i++) {
 		outf << config.param_names[i] << "\t";
 		outf << results.popt[i] << "\t" << results.popt_err[i] << "\t";
