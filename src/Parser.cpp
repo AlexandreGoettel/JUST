@@ -72,31 +72,23 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 
 	// -------------------------------------------------------------------------
 	// Read the general_options config file
-	std::ifstream ReadGen;
-	ReadGen.open(args.gen);
-	NuFitter::ErrorReading(ReadGen,args.gen);
+	NuFitter::ErrorReading(args.gen);
 
-	//placeholder variables
-	std::string pdffile, datafile, datahist, likelihood;
-	bool toy, hesse, minos = false;
-	double ltime, mass, min, max = 0;
+	std::vector<std::string> labels = {"PDFsRootfile", "DataRootfile", "HistoName", "Lifetime", "MassTarget", "emin", "emax", "ToyData", "Hesse", "Minos", "Likelihood"};
 
-	// general_options.txt: read and fill the NuFitConfig variable
-	// TODO: loop over the file, can probably auto placeholder
-	NuFitter::ReadAndFill_Gen(ReadGen,pdffile,config->pdf_name);
-	NuFitter::ReadAndFill_Gen(ReadGen,datafile,config->data_name);
-	NuFitter::ReadAndFill_Gen(ReadGen,datahist,config->histo_data);
-	NuFitter::ReadAndFill_Gen(ReadGen,ltime,config->lifetime);
-	NuFitter::ReadAndFill_Gen(ReadGen,mass,config->mass_target);
-	NuFitter::ReadAndFill_Gen(ReadGen,min,config->emin);
-	NuFitter::ReadAndFill_Gen(ReadGen,max,config->emax);
-	NuFitter::ReadAndFill_Gen(ReadGen,toy,config->doToyData_);
-	NuFitter::ReadAndFill_Gen(ReadGen,hesse,config->doHesse);
-	NuFitter::ReadAndFill_Gen(ReadGen,minos,config->doMinos);
-	NuFitter::ReadAndFill_Gen(ReadGen,likelihood,config->likelihood);
-	ReadGen.close();
+	config->pdf_name = NuFitter::GetValue(labels.at(0),args.gen);
+	config->data_name = NuFitter::GetValue(labels.at(1),args.gen);
+	config->histo_data = NuFitter::GetValue(labels.at(2),args.gen);
+	config->lifetime = std::stod(NuFitter::GetValue(labels.at(3),args.gen));
+	config->mass_target = std::stod(NuFitter::GetValue(labels.at(4),args.gen));
+	config->emin = std::stod(NuFitter::GetValue(labels.at(5),args.gen));
+	config->emax = std::stod(NuFitter::GetValue(labels.at(6),args.gen));
+	std::istringstream(NuFitter::GetValue(labels.at(7),args.gen)) >> config->doToyData_;
+	std::istringstream(NuFitter::GetValue(labels.at(8),args.gen)) >> config->doHesse;
+	std::istringstream(NuFitter::GetValue(labels.at(9),args.gen)) >> config->doMinos;
+	config->likelihood = NuFitter::GetValue(labels.at(10),args.gen);
 
-	config->exposure = config->lifetime*config->mass_target;
+	config->exposure = config->lifetime * config->mass_target;
 
 	// -------------------------------------------------------------------------
 	// Read the species-list
@@ -177,15 +169,17 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 }  // namespace ConfigParser
 
 // @brief problems in opening or reading input files
-auto ErrorReading(const std::ifstream& filename, const std::string& s) -> void {
-	if(filename.fail()){
-		std::cout << "Opening " << s << " for reading.\n";
-		std::cout <<"The "<< s <<" file could not be opened!\n";
+auto ErrorReading(std::string& filename) -> void {
+	std::ifstream setfile(filename);
+	if(setfile.fail()){
+		std::cout << "Opening " << filename << " for reading.\n";
+		std::cout <<"The "<< filename <<" file could not be opened!\n";
 		std::cout << "Possible errors:\n";
 		std::cout <<"1. The file does not exist.\n";
 		std::cout <<"2. The path was not found.\n";
 		std::exit(-1);
 	}
+	setfile.close();
 }
 
 // @brief help message to run the software
@@ -207,6 +201,29 @@ auto ReadAndFill_Gen(std::ifstream& filename, T& var1, T& var2) -> void {
 	filename >> appo;  // read the labels
 	filename >> var1;
 	var2 = var1;
+}
+// @brief Loop in filename.txt, search for "variable" and return its value
+inline auto GetValue(std::string& variable, std::string& filename) -> std::string {
+
+	std::ifstream setfile(filename);
+	std::string val;
+	std::string var;
+  bool anyfound(false);
+
+  while(1){
+
+    setfile >> var >> val;
+    if (!setfile.good()) break;
+    if(var==variable){
+			anyfound=true;
+			break;
+    }
+	}
+
+	if(!anyfound) std::cout << "warning!!: I didn't find " << variable << "...setting it to 0" << std::endl;
+
+	setfile.close();
+	return val;
 }
 
 }  // namespace NuFitter
