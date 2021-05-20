@@ -196,14 +196,6 @@ auto HelpMessage(char* a) -> void {
 		<< std::endl;
 }
 
-// @brief Read and Fill for general_options.txt
-template<class T>
-auto ReadAndFill_Gen(std::ifstream& filename, T& var1, T& var2) -> void {
-	std::string appo;
-	filename >> appo;  // read the labels
-	filename >> var1;
-	var2 = var1;
-}
 // @brief Loop in filename.txt, search for "variable" and return its value
 inline auto GetValue(std::string& variable, std::string& filename) -> std::string {
 	std::ifstream setfile(filename);

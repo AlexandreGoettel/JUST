@@ -59,8 +59,6 @@ public:  // Initialise variables to be filled by parser
 
 void ErrorReading(std::string&);
 void HelpMessage(char*);
-int HowManySpecies(std::ifstream&, const std::string&);
-template<typename T> void ReadAndFill_Gen(std::ifstream&, T&, T&);
 template<typename T> void ReadAndFill_Spec(std::ifstream&, T&, std::vector<T>&);
 inline std::string GetValue(std::string&, std::string&);
 
