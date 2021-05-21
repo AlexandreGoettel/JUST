@@ -33,8 +33,7 @@ auto Parse(int argc, char* argv[]) -> NuFitCmdlArgs{
 		NuFitter::HelpMessage(argv[0]);
 		std::exit(-1);
 	}
-	for (int i = 1; i < argc; i++){
-		if (i + 1 != argc){
+	for (int i = 1; i < argc-1; i++){
 			if (std::strcmp(argv[i], "--general-options") == 0 || std::strcmp(argv[i], "-g") == 0){
 				args->gen = argv[i+1];
 				i++;
@@ -55,7 +54,6 @@ auto Parse(int argc, char* argv[]) -> NuFitCmdlArgs{
 				std::cout << "ERROR: something went wrong. Please read carefully the instructions below.\n";
 				NuFitter::HelpMessage(argv[0]);
 				std::exit(-1);
-			}
 		}
 	}
 
@@ -221,10 +219,10 @@ inline auto GetValue(std::string& variable, std::string& filename) -> std::strin
 
 		while(!setfile.eof()){
 			setfile >> var >> val;
-			if(std::strcmp(var.c_str(),"#") == 0){
+			if(std::strcmp(var.c_str(), "#") == 0){
 				std::getline(setfile,line);
 			}
-			if (!std::strcmp(var.c_str(),"#") == 0){
+			if (!std::strcmp(var.c_str(), "#") == 0){
 				if(var == variable){
 					anyfound = true;
 					break;
