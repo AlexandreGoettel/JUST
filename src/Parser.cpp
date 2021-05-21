@@ -74,7 +74,9 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	// Read the general_options config file
 	NuFitter::ErrorReading(args.gen);
 
-	std::vector<std::string> labels = {"PDFsRootfile", "DataRootfile", "HistoName", "Lifetime", "MassTarget", "emin", "emax", "ToyData", "Hesse", "Minos", "Likelihood"};
+	std::vector<std::string> labels = {"PDFsRootfile", "DataRootfile",
+	    "HistoName", "Lifetime", "MassTarget", "emin", "emax", "ToyData",
+		"Hesse", "Minos", "Likelihood"};
 
 	config->pdf_name = NuFitter::GetValue(labels.at(0),args.gen);
 	config->data_name = NuFitter::GetValue(labels.at(1),args.gen);
@@ -204,23 +206,22 @@ auto ReadAndFill_Gen(std::ifstream& filename, T& var1, T& var2) -> void {
 }
 // @brief Loop in filename.txt, search for "variable" and return its value
 inline auto GetValue(std::string& variable, std::string& filename) -> std::string {
-
 	std::ifstream setfile(filename);
 	std::string val;
 	std::string var;
-  bool anyfound(false);
+	bool anyfound(false);
 
-  while(1){
-
-    setfile >> var >> val;
-    if (!setfile.good()) break;
-    if(var==variable){
-			anyfound=true;
+	while(1){
+		setfile >> var >> val;
+		if (!setfile.good()) break;
+		if(var == variable){
+			anyfound = true;
 			break;
-    }
+		}
 	}
 
-	if(!anyfound) std::cout << "warning!!: I didn't find " << variable << "...setting it to 0" << std::endl;
+	if(!anyfound) std::cout << "warning!!: I didn't find " << variable
+	                        << "...setting it to 0" << std::endl;
 
 	setfile.close();
 	return val;
