@@ -52,6 +52,17 @@ def writeConfigFile(filename):
     print("Written to {}.".format(filename))
 
 
+def closeEnough(arr1, arr2, margin=1):
+    """Check within the values in arr1 and arr2 differ > margin %."""
+    for i, (val1, val2) in enumerate(zip(arr1, arr2)):
+        diff = abs(val1 - val2) / (val1 + val2) * 2
+        if diff*100 > margin:
+            print("Detected difference of {:.2f}%! in param {:d}"
+                  .format(diff*100, i+1))
+            return False
+    return True
+
+
 def main():
     # Prepare the config file
     gen_opt = getPath("test", "config", "gen_opt.cfg")
@@ -71,12 +82,12 @@ def main():
     popt_ref, pcov_ref = getResults(ref)
 
     # Handle output
-    if popt_fit == popt_ref and pcov_fit == pcov_ref:
+    if closeEnough(popt_fit, popt_ref) and closeEnough(pcov_fit, pcov_ref):
         print("Comparison successful!")
         exit(0)
     else:
         print("Comparison failed!\npopt:")
-        if popt_fit != popt_ref:
+        if not closeEnough(popt_fit, popt_ref):
             print(popt_ref)
             print(popt_fit)
         else:
