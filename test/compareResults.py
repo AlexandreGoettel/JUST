@@ -40,15 +40,17 @@ def writeConfigFile(filename):
 
     # Write one arg for each prefix
     prefix = ["PDFsRootfile", "DataRootfile", "HistoName", "Lifetime",
-              "MassTarget", "emin", "emax", "ToyData", "Hesse", "Minos",
+              "MassTarget", "emax", "emin", "ToyData", "Hesse", "Minos",
               "Likelihood"]
-    args = [pdfs_file, data_file, "PseudoDataset", 180, 10.2987, 650, 3000,
+    args = [pdfs_file, data_file, "PseudoDataset", 180, 10.2987, 3000, 650,
             0, 0, 0, "extended"]
 
     # Write to file
     with open(filename, "w") as _file:
+        _file.write("# Commented line test\n")
         for line in zip(prefix, map(str, args)):
             _file.write("\t".join(line) + "\n")
+        _file.write("#Another comment test\n")
     print("Written to {}.".format(filename))
 
 
