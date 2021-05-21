@@ -79,15 +79,25 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 		"Hesse", "Minos", "Likelihood"};
 
 	config->pdf_name = NuFitter::GetValue(labels.at(0),args.gen);
+
 	config->data_name = NuFitter::GetValue(labels.at(1),args.gen);
+
 	config->histo_data = NuFitter::GetValue(labels.at(2),args.gen);
+
 	config->lifetime = std::stod(NuFitter::GetValue(labels.at(3),args.gen));
+
 	config->mass_target = std::stod(NuFitter::GetValue(labels.at(4),args.gen));
+
 	config->emin = std::stod(NuFitter::GetValue(labels.at(5),args.gen));
+
 	config->emax = std::stod(NuFitter::GetValue(labels.at(6),args.gen));
+
 	std::istringstream(NuFitter::GetValue(labels.at(7),args.gen)) >> config->doToyData_;
+
 	std::istringstream(NuFitter::GetValue(labels.at(8),args.gen)) >> config->doHesse;
+
 	std::istringstream(NuFitter::GetValue(labels.at(9),args.gen)) >> config->doMinos;
+
 	config->likelihood = NuFitter::GetValue(labels.at(10),args.gen);
 
 	config->exposure = config->lifetime * config->mass_target;
@@ -200,20 +210,31 @@ auto HelpMessage(char* a) -> void {
 inline auto GetValue(std::string& variable, std::string& filename) -> std::string {
 	std::ifstream setfile(filename);
 	std::string val;
-	std::string var;
-	bool anyfound(false);
+	std::string line;
 
-	while(1){
-		setfile >> var >> val;
-		if (!setfile.good()) break;
-		if(var == variable){
-			anyfound = true;
-			break;
+	if(!setfile.good()) {
+		std::cout << "ERROR in GetValue " << "unable to open the file "
+		          << filename << std::endl;
+	} else {
+		std::string var;
+		bool anyfound(false);
+
+		while(!setfile.eof()){
+			setfile >> var >> val;
+			if(std::strcmp(var.c_str(),"#") == 0){
+				std::getline(setfile,line);
+			}
+			if (!std::strcmp(var.c_str(),"#") == 0){
+				if(var == variable){
+					anyfound = true;
+					break;
+				}
+			}
 		}
-	}
 
-	if(!anyfound) std::cout << "warning!!: I didn't find " << variable
-	                        << "...setting it to 0" << std::endl;
+		if(!anyfound) std::cout << "warning!!: I didn't find " << variable
+		                        << "...setting it to 0" << std::endl;
+	}
 
 	setfile.close();
 	return val;
