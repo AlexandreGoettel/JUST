@@ -74,7 +74,7 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 			}
 		}
 		// Renormalise vector
-		//MultiplyVectorByScalar(current_pdf, 1. / (1. - current_efficiency));
+		MultiplyVectorByScalar(current_pdf, 1. / (1. - current_efficiency));
 
 		pdf_vectors.push_back(current_pdf);
 		efficiencies.push_back(1. - current_efficiency);
