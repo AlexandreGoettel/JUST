@@ -39,7 +39,7 @@ def writeConfigFile(filename):
     data_file = getPath("test", "reference", "PseudoD.root")
 
     # Write one arg for each prefix
-    prefix = ["PDFsRoofile", "DataRootFile", "HistoName", "Lifetime",
+    prefix = ["PDFsRootfile", "DataRootfile", "HistoName", "Lifetime",
               "MassTarget", "emin", "emax", "ToyData", "Hesse", "Minos",
               "Likelihood"]
     args = [pdfs_file, data_file, "PseudoDataset", 180, 10.2987, 650, 3000,
