@@ -10,6 +10,7 @@
 #include <iostream>
 // ROOT includes
 #include "Math/Util.h"
+#include "TMath.h"
 #include "TMatrixDSym.h"
 // Project includes
 #include "Fitter.h"
@@ -23,8 +24,17 @@ NuFitContainer fitCtnr;
 // TODO: if needed, move this to a more accessible location?
 // @brief Multiply all vector elements by the same number
 template <class Q, class P>
-void MultiplyVectorByScalar(std::vector<Q> &v, P k){
+auto MultiplyVectorByScalar(std::vector<Q> &v, P k) -> void {
     transform(v.begin(), v.end(), v.begin(), [k](auto &c){ return c*k; });
+}
+
+// @brief Evaluate whether the bin between lower_edge and upper edge is
+// inside of the bin range
+template <class T>
+auto NuFitContainer::InFitRange(T lower_edge, T upper_edge) -> bool {
+    // return upper_edge > config.emin && lower_edge < config.emax;
+    auto bin_center = (upper_edge + lower_edge) / 2. + 1;
+    return config.emin <= bin_center && bin_center < config.emax;
 }
 
 // @brief Constructor for NuFitContainer
@@ -42,15 +52,11 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 	auto bin_edges = data->bin_edges;
 	assert(bin_edges == pdfs->bin_edges);
 
-	// TODO: Extend to multiple histograms..
-	auto emin = config.emin;
-	auto emax = config.emax;
-
 	// 2. Create the data vector
 	for (auto i = 0U; i < bin_edges.size()-1; i++) {
 		// Assuming the bin_edges is ordered
 		// Fill data_vector with the raw_data between emin and emax
-		if (bin_edges[i+1] > emin && bin_edges[i] < emax) {
+		if (InFitRange(bin_edges[i], bin_edges[i+1])) {
 			data_vector.push_back(data_raw[i]);
 		}
 	}
@@ -61,7 +67,7 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 		std::vector<double> current_pdf;
 
 		for (auto i = 0U; i < bin_edges.size()-1; i++) {
-			if (bin_edges[i+1] > emin && bin_edges[i] < emax) {
+			if (InFitRange(bin_edges[i], bin_edges[i+1])) {
 				current_pdf.push_back(el[i]);
 			} else {
 				current_efficiency += el[i];
@@ -134,7 +140,12 @@ auto NuFitContainer::NLL_poisson(int npar, const double *par) -> double {
 		auto yi = fitFunction(i, npar, par);
 		auto ni = data_vector[i];
 
-		logL += ni*ROOT::Math::Util::EvalLog(yi) - yi;
+        if (ni < 0)
+            continue;
+        else if (ni == 0)
+            logL += -yi;
+        else
+            logL += ni*ROOT::Math::Util::EvalLog(yi)-yi-TMath::LnGamma(ni+1);
 	}
 	return -logL;
 }
@@ -178,8 +189,9 @@ auto MinuitManager::callMinuit() -> void {
 	// Call MIGRAD (+ SIMPLEX method if Migrad fails)
 	arglist[0] = 50000;
 	arglist[1] = 0.001;
-	gMinuit->mnexcm("CALL FCN", arglist, 2, errorflag);
+	// gMinuit->mnexcm("CALL FCN", arglist, 2, errorflag);
 	gMinuit->mnexcm("MINIMIZE", arglist, 2, errorflag);
+    // gMinuit->mnexcm("MIGRAD", arglist, 2, errorflag);
 
 	// Optional: call extra Hesse calculation
 	if (config.doHesse) {

@@ -1,5 +1,6 @@
 stages:
     - build
+    - test
 
 build-job:
     stage: build
@@ -8,5 +9,16 @@ build-job:
     script:
         - echo "Hello, $GITLAB_USER_LOGIN!"
         - export SIM_DIR=$CI_PROJECT_DIR
-        - echo "Setting SIM_DIR to $CI_PROJECT_DIR"
         - ./RebuildAndInstall_sh.sh
+    artifacts:
+        paths:
+            - install/bin/NuSolarFit
+
+compare-job:
+    stage: test
+    variables:
+        ROOTSYS: /home/alexandregoettel/Software/root/install
+    script:
+        - source /home/alexandregoettel/Software/root/install/bin/thisroot.sh
+        - echo "Launching fit and comparing..."
+        - python test/compareResults.py

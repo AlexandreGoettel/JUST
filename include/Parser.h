@@ -40,11 +40,11 @@ public:
 
 public:  // Initialise variables to be filled by parser
 	bool doToyData_ = false, doHesse = false, doMinos = false;
-	double emin = 0, emax = 1e308;  // Close to numeric limit
+	double emin = 0., emax = 5000.;  // Close to numeric limit
 	std::string likelihood = "extended";
 
 	// Parameters with no standard value must be given in the config file
-	double lifetime, mass_target;  // seconds, kilotons
+	double lifetime, mass_target, exposure;  // days, kilotons
 	unsigned int nbins;
 	std::string pdf_name, data_name, output_name;
 	std::string histo_data;
@@ -57,11 +57,10 @@ public:  // Initialise variables to be filled by parser
 	std::vector<int> param_fixed;
 };
 
-void ErrorReading(const std::ifstream&, const std::string&);
+void ErrorReading(std::string&);
 void HelpMessage(char*);
-int HowManySpecies(std::ifstream&, const std::string&);
-template<typename T> void ReadAndFill_Gen(std::ifstream&, T&, T&);
 template<typename T> void ReadAndFill_Spec(std::ifstream&, T&, std::vector<T>&);
+inline std::string GetValue(std::string&, std::string&);
 
 namespace CMDLParser {
 	NuFitCmdlArgs Parse(int argc, char* argv[]);

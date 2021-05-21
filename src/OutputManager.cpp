@@ -57,7 +57,10 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		current_hist->Scale(results.popt[i]/results.efficiencies[i]);
 		current_hist->Draw("SAME");
 
-		for(auto j = 1U; j <= config.nbins; j++)	PDFsSum_histo->SetBinContent(j,PDFsSum_histo->GetBinContent(j)+pdfs->pdf_histograms[i]->GetBinContent(j));
+		for(auto j = 1U; j <= config.nbins; j++) {
+			PDFsSum_histo->SetBinContent(j, PDFsSum_histo->GetBinContent(j)
+			    +pdfs->pdf_histograms[i]->GetBinContent(j));
+		}
 
 		leg->AddEntry(current_hist,config.param_names.at(i));
 		leg->Draw("SAME");
@@ -73,7 +76,9 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 
 	for(auto i = 0U; i < config.nbins; i++){
 		rec_energy[i] = i + pdfs->bin_edges.front();
-		res[i] = (data->data_histograms[0]->GetBinContent(i)-PDFsSum_histo->GetBinContent(i))/sqrt(data->data_histograms[0]->GetBinContent(i));
+		res[i] = (data->data_histograms[0]->GetBinContent(i)
+		    - PDFsSum_histo->GetBinContent(i))
+			/ sqrt(data->data_histograms[0]->GetBinContent(i));
 	}
 
 	c->cd();
@@ -100,9 +105,9 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	//------ Create the output txt file ------
 	//----------------------------------------
 	// Convert counts to cpd/100t
-	// cpd = count / (lifetime*86400.) / mass_target / efficiency;
+	// cpd = count / (lifetime) / mass_target / efficiency;
 	std::vector<double> popt_cpd, popt_err_cpd;
-	auto factor {1. / (config.lifetime*86400.*config.mass_target)};
+	auto factor {1. / (config.lifetime*config.mass_target)};
 	for (auto i = 0U; i < config.nparams; i++) {
 		auto eff_exposure = factor / results.efficiencies[i];
 		popt_cpd.push_back(results.popt[i] * eff_exposure);
@@ -113,7 +118,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	auto out_filename = config.output_name + ".txt";
 	outf.open(out_filename.c_str());
 	// TODO: add pcov and minuit results
-	outf << "Species\tpopt\tsigma\tpopt(cpd/kton)\tsigma\n";
+	outf << "Species\tpopt\tsigma\tpopt(cpd/kton)\tsigma(cpd/kton)\n";
 	for (auto i = 0U; i < config.nparams; i++) {
 		outf << config.param_names[i] << "\t";
 		outf << results.popt[i] << "\t" << results.popt_err[i] << "\t";
