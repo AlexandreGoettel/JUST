@@ -44,13 +44,8 @@ def writeConfigFile(filename):
     prefix = ["PDFsRootfile", "DataRootfile", "HistoName", "Lifetime",
               "MassTarget", "emax", "emin", "ToyData", "Hesse", "Minos",
               "Likelihood"]
-<<<<<<< HEAD
-    args = [pdfs_file, data_file, "PseudoDataset", 180, 10.2987, 3000, 650,
-            0, 0, 0, "extended"]
-=======
     args = [pdfs_file, data_file, "PseudoDataset", 180, 10.2987, 650, 3000,
             0, 0, 0, "poisson"]
->>>>>>> feature/issue12
 
     # Write to file
     with open(filename, "w") as _file:
