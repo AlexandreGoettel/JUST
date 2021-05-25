@@ -108,6 +108,38 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	//----------------------------------------
 	//------ Create the output txt file ------
 	//----------------------------------------
+	std::ofstream outf;
+	auto out_filename = config.output_name + ".txt";
+	outf.open(out_filename.c_str());
+
+	// Write the fit status
+	outf << "[STATUS] Migrad status: ";
+	if (results.errorflag != 0) {
+		outf << "FAILED - ierflg =" << results.errorflag;
+	} else {
+		outf << "SUCCESS";
+	}
+
+	// Write the covariance matrix calculation status
+	outf << std::endl << "[STATUS] Covariance matrix status: ";
+	switch (results.errorflag_cov) {
+		case 0:
+			outf << "FAILED - not calculated";
+			break;
+		case 1:
+			outf << "FAILED - not accurate";
+			break;
+		case 2:
+			outf << "FAILED - forced pos-def";
+			break;
+		case 3:
+			outf << "SUCCESS";
+			break;
+		default:
+			outf << "FAILED - istat=" << results.errorflag_cov;
+	}
+	outf << std::endl;
+
 	// Convert counts to cpd/100t
 	// cpd = count / (lifetime) / mass_target / efficiency;
 	auto factor {1. / (config.lifetime*config.mass_target)};
@@ -120,10 +152,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		popt_err_cpd.push_back(popt_err[i] * eff_exposure);
 	}
 
-	// Write to file
-	std::ofstream outf;
-	auto out_filename = config.output_name + ".txt";
-	outf.open(out_filename.c_str());
+	// Write params with uncertainties in counts and cpd/kton
 	outf << "Species\tcounts\t\tsigma\t\trate(cpd/kton)\tsigma(cpd/kton)\n"
 	     << std::scientific;
 	outf.precision(4);

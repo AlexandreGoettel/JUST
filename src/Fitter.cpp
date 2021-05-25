@@ -190,9 +190,7 @@ auto MinuitManager::callMinuit() -> void {
 	// Call MIGRAD (+ SIMPLEX method if Migrad fails)
 	arglist[0] = 50000;
 	arglist[1] = 0.001;
-	// gMinuit->mnexcm("CALL FCN", arglist, 2, errorflag);
 	gMinuit->mnexcm("MINIMIZE", arglist, 2, errorflag);
-    // gMinuit->mnexcm("MIGRAD", arglist, 2, errorflag);
 
 	// Optional: call extra Hesse calculation
 	if (config.doHesse) {
@@ -255,7 +253,12 @@ auto MinuitManager::getResults() -> NuFitResults {
 		pcov[iRow] = this_row;
 	}
 
-	auto results = NuFitResults(popt, pcov, fitCtnr.efficiencies);
+    // Get the status of the covariance matrix calculation
+    int tmp_;
+    gMinuit->mnstat(_, _, _, tmp_, tmp_, errorflag_cov);
+
+	auto results = NuFitResults(popt, pcov, fitCtnr.efficiencies,
+                                errorflag, errorflag_cov);
 	return results;
 }
 

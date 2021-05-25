@@ -68,7 +68,7 @@ public:  // Constructors and assigment operators
 public:  // Member variables
 	NuFitConfig config;
 	TMinuit *gMinuit;
-	int errorflag;
+	int errorflag, errorflag_cov;
 
 public:  // Functions
 	void initMinuit();

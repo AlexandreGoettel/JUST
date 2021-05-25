@@ -24,7 +24,7 @@ def getResults(filename):
         data = csv.reader(_file, delimiter="\t")
         skip = 0
         for row in data:
-            if skip < 1:
+            if skip < 3:
                 skip += 1
                 continue  # Skip first line
             if "Covariance" in row[0]:

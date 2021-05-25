@@ -11,11 +11,14 @@ namespace NuFitter {
 
 // @brief Constructor
 NuFitResults::NuFitResults(std::vector<double> popt_,
-	                       std::vector<std::vector<double>> pcov_,
-						   std::vector<double> eff_) {
+	std::vector<std::vector<double>> pcov_, std::vector<double> eff_,
+	int errflg, int errflg_cov) {
+
 	popt = popt_;
 	pcov = pcov_;
 	efficiencies = eff_;
+	errorflag = errflg;
+	errorflag_cov = errflg_cov;
 }
 
 // @brief Extract the uncertainties from the correlation matrix

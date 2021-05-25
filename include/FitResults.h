@@ -19,7 +19,7 @@ class NuFitResults {
 // Constructors and operator assignments
 public:
 	NuFitResults(std::vector<double>, std::vector<std::vector<double>>,
-		         std::vector<double>);  // constructor
+		         std::vector<double>, int, int);  // constructor
 	~NuFitResults() = default;  // destructor
 	NuFitResults(const NuFitResults&) = default;  // copy constructor
 	NuFitResults(NuFitResults&&) = default;  // move constructor
@@ -29,6 +29,7 @@ public:
 public: // Member variables
 	std::vector<double> popt, efficiencies;
 	std::vector<std::vector<double>> pcov;
+	unsigned int errorflag, errorflag_cov;
 
 public: // Functions
 	void addResults(NuFitResults);
