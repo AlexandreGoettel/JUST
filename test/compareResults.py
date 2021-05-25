@@ -44,7 +44,7 @@ def writeConfigFile(filename):
     prefix = ["PDFsRootfile", "DataRootfile", "HistoName", "Lifetime",
               "MassTarget", "emax", "emin", "ToyData", "Hesse", "Minos",
               "Likelihood"]
-    args = [pdfs_file, data_file, "PseudoDataset", 180, 10.2987, 650, 3000,
+    args = [pdfs_file, data_file, "PseudoDataset", 180, 10.2987, 3000, 650,
             0, 0, 0, "poisson"]
 
     # Write to file
