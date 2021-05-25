@@ -4,3 +4,8 @@ install/*
 include/*.gch
 config/*
 data/*
+
+test/config/gen_opt.cfg
+test/out.txt
+test/out.root
+tmp*

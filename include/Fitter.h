@@ -43,12 +43,12 @@ public:
 	NuFitPDFs *pdfs;
 	NuFitConfig config;
 public:  // Minuit functions
-	double NLL_extended(int, const double*);
 	double NLL_poisson(int, const double*);
+	double NLL_MUST(int, const double*);
 	double fitFunction(unsigned int, unsigned int, const double*);
 public:  // Member variables
 	double n_params, n_fixed;
-	std::vector<int> idx_map, idx_map_fixed;
+	std::vector<unsigned int> idx_map, idx_map_fixed;
 	std::vector<double> efficiencies;
 private:  // Member variables
 	std::vector<std::vector<double>> pdf_vectors;
@@ -68,7 +68,7 @@ public:  // Constructors and assigment operators
 public:  // Member variables
 	NuFitConfig config;
 	TMinuit *gMinuit;
-	int errorflag;
+	int errorflag, errorflag_cov;
 
 public:  // Functions
 	void initMinuit();

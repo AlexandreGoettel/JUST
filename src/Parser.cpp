@@ -162,7 +162,6 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 		nSpecies++;
 	}
 
-	config->nparams = nSpecies;
 	config->npdfs = nSpecies;
 	ReadSpec.close();
 	// -------------------------------------------------------------------------

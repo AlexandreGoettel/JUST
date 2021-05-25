@@ -6,6 +6,7 @@
 // Standard includes
 #include <memory>
 #include <vector>
+#include <algorithm>
 #include <cassert>  // Disabled if NDEBUG is defed
 #include <iostream>
 // ROOT includes
@@ -118,7 +119,7 @@ auto NuFitContainer::fitFunction(unsigned int i, unsigned int npar, const double
 }
 
 // @brief Define Minuit-Style binned poisson likelihood (extended)
-auto NuFitContainer::NLL_extended(int npar, const double *par) -> double {
+auto NuFitContainer::NLL_poisson(int npar, const double *par) -> double {
 	// Following Baker&Cousins 1983 definition on page 439
 	auto nbins = data_vector.size();
 	auto chi_sqr_lambda_p { 0. };
@@ -132,8 +133,8 @@ auto NuFitContainer::NLL_extended(int npar, const double *par) -> double {
 	return chi_sqr_lambda_p;
 }
 
-// @brief Define standard binned poisson likelihood
-auto NuFitContainer::NLL_poisson(int npar, const double *par) -> double {
+// @brief Define MUST Likelihood
+auto NuFitContainer::NLL_MUST(int npar, const double *par) -> double {
 	auto nbins = data_vector.size();
 	auto logL { 0. };
 	for (auto i = 0U; i < nbins; i++) {
@@ -189,9 +190,7 @@ auto MinuitManager::callMinuit() -> void {
 	// Call MIGRAD (+ SIMPLEX method if Migrad fails)
 	arglist[0] = 50000;
 	arglist[1] = 0.001;
-	// gMinuit->mnexcm("CALL FCN", arglist, 2, errorflag);
 	gMinuit->mnexcm("MINIMIZE", arglist, 2, errorflag);
-    // gMinuit->mnexcm("MIGRAD", arglist, 2, errorflag);
 
 	// Optional: call extra Hesse calculation
 	if (config.doHesse) {
@@ -205,29 +204,61 @@ auto MinuitManager::callMinuit() -> void {
 
 // @brief Convert fit results to vectors, store in member variables popt/pcov
 auto MinuitManager::getResults() -> NuFitResults {
-	// TODO: Add zeros and ones where the fixed parameters would be
-	// Get the covariance matrix
-	TMatrixDSym mat(config.nparams);
-	gMinuit->mnemat(mat.GetMatrixArray(), config.nparams);
-
-	// Fill with free and fixed results...
+	// Initialise variables
+	double x, _;
 	std::vector<double> popt(config.npdfs);
-	std::vector<double> popt_err(config.npdfs);
-	double x, sigmax;
+	std::vector<std::vector<double>> pcov(config.npdfs,
+	                                      std::vector<double>(config.npdfs));
+	unsigned int nparams = fitCtnr.idx_map.size();
 
+	// Fill parameter vector
 	for (auto i = 0U; i < fitCtnr.idx_map.size(); i++) {
 		auto j = fitCtnr.idx_map[i];
-		gMinuit->GetParameter(i, x, sigmax);
+		gMinuit->GetParameter(i, x, _);
 		popt[j] = x;
-		popt_err[j] = sigmax;
 	}
+	// Fill fixed parameter value where estimate would be
 	for (auto i : fitCtnr.idx_map_fixed) {
 		popt[i] = config.param_initial_guess[i];
-		popt_err[i] = 0.;
 	}
 
-	// TODO: also save correlation/error matrix?
-	auto results = NuFitResults(popt, popt_err, fitCtnr.efficiencies);
+	// Get the covariance matrix
+	double mat[nparams][nparams];
+	gMinuit->mnemat(&mat[0][0], nparams);
+	std::vector<std::vector<double>> pcov_(nparams,
+	                                       std::vector<double>(nparams));
+	// Convert to vector<vector>
+	for (auto i = 0U; i < nparams; i++) {
+		for (auto j = 0U; j < nparams; j++) {
+			pcov_[i][j] = mat[i][j];
+		}
+	}
+
+	// Expand pcov to include fixed params as well
+	// For each row, this var gives the idx of free params (inverse of idx_map)
+	auto idx_inverse {0U};
+	for (auto iRow = 0U; iRow < config.npdfs; iRow++){
+		// Construct row
+		std::vector<double> this_row(config.npdfs);
+		// If iRow is fixed, row[iRow]=1
+		if (std::find(fitCtnr.idx_map_fixed.begin(), fitCtnr.idx_map_fixed.end(),
+		              iRow) == fitCtnr.idx_map_fixed.end()) {
+			// If not fixed, get data from pcov_
+			for (auto i = 0U; i < fitCtnr.idx_map.size(); i++) {
+				auto j = fitCtnr.idx_map[i];
+				this_row[j] = pcov_[idx_inverse][i];
+			}
+			idx_inverse += 1;
+		}
+		pcov[iRow] = this_row;
+	}
+
+    // Get the status of the covariance matrix calculation
+    int tmp_;
+    gMinuit->mnstat(_, _, _, tmp_, tmp_, errorflag_cov);
+
+	auto results = NuFitResults(popt, pcov, fitCtnr.efficiencies,
+                                errorflag, errorflag_cov);
 	return results;
 }
 
@@ -273,11 +304,11 @@ auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
 	// Calculate the log-likelihood according to different methods
 	if (fitCtnr.config.likelihood.compare("poisson") == 0) {
 		f = fitCtnr.NLL_poisson(npar, par);
-	} else if (fitCtnr.config.likelihood.compare("extended") == 0) {
-		f = fitCtnr.NLL_extended(npar, par);
+	} else if (fitCtnr.config.likelihood.compare("must") == 0) {
+		f = fitCtnr.NLL_MUST(npar, par);
 	} else {
 		throw std::invalid_argument("'" + fitCtnr.config.likelihood +
-			"' is not a valid likelihood.\nAllowed: ['poisson', 'extended']" +
+			"' is not a valid likelihood.\nAllowed: ['poisson', 'must']" +
 			"\nPay attention to the capitalisation!");
 	}
 
