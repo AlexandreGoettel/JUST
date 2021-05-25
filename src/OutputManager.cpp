@@ -153,7 +153,8 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	}
 
 	// Write params with uncertainties in counts and cpd/kton
-	outf << "Species\tcounts\t\tsigma\t\trate(cpd/kton)\tsigma(cpd/kton)\n"
+	outf << "------------\n" << "Fit results:\n" << "------------\n"
+		 << "Species\tcounts\t\tsigma\t\trate(cpd/kton)\tsigma(cpd/kton)\n"
 	     << std::scientific;
 	outf.precision(4);
 	for (auto i = 0U; i < config.npdfs; i++) {
@@ -164,7 +165,9 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	}
 
 	// Write the covariance matrix
-	outf << "Covariance matrix:" << std::endl;
+	outf << "------------------" << std::endl
+	     << "Covariance matrix:" << std::endl
+	     << "------------------" << std::endl;
 	outf.precision(2);
 	for (auto el : results.pcov) {
 		for (auto sub : el) {
@@ -174,18 +177,33 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	}
 	// Write the correlation matrix
 	auto test = results.getCorrMatrix();
-	outf << "Correlation matrix:" << std::endl;
+	outf << "-------------------" << std::endl
+	     << "Correlation matrix:" << std::endl
+	     << "-------------------" << std::endl;
 	for (auto el : test) {
 		for (auto sub : el) {
 			outf << sub << "\t";
 		}
 		outf << std::endl;
 	}
+
+	// Write some information about the fit inputs
+	outf << std::fixed
+	     << "----------------------------------------" << std::endl
+	     << "Relevant fit inputs for the calculation:" << std::endl
+		 << "----------------------------------------" << std::endl
+	     << "Exposure: " << config.lifetime << " days * "
+		 << config.mass_target << " kton" << std::endl
+		 << "Fit range: " << config.emin << "-" << config.emax << std::endl
+		 << "Likelihood: '" << config.likelihood << "'" << std::endl;
+
+
 	outf.close();
 }
 
 // @brief Same as the other ProcessResults() but for toy data fit(s)
-auto ProcessResults(std::vector<NuFitData*> data, NuFitPDFs *pdfs, const NuFitConfig config, NuFitResults results) -> void {
+auto ProcessResults(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
+	                const NuFitConfig config, NuFitResults results) -> void {
 
 }
 

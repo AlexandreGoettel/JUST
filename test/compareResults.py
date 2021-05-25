@@ -24,10 +24,10 @@ def getResults(filename):
         data = csv.reader(_file, delimiter="\t")
         skip = 0
         for row in data:
-            if skip < 3:
+            if skip < 6:
                 skip += 1
                 continue  # Skip first line
-            if "Covariance" in row[0]:
+            if "--" in row[0]:
                 break
             popt += [float(row[3])]
             pcov += [float(row[4])]
