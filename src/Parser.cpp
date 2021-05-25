@@ -29,7 +29,7 @@ auto Parse(int argc, char* argv[]) -> NuFitCmdlArgs{
 
 	auto args = std::make_unique<NuFitCmdlArgs>();
 
-	if(argc < 4 || (std::strcmp(argv[1], "--help")) == 0 || (std::strcmp(argv[1], "-h") == 0)){
+	if(argc < 7 || (std::strcmp(argv[1], "--help")) == 0 || (std::strcmp(argv[1], "-h") == 0)){
 		NuFitter::HelpMessage(argv[0]);
 		std::exit(-1);
 	}
@@ -102,6 +102,7 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 
 	// -------------------------------------------------------------------------
 	// Read the species-list
+	NuFitter::ErrorReading(args.spec);
 	std::ifstream ReadSpec;
 	ReadSpec.open(args.spec);
 
@@ -183,10 +184,10 @@ auto ErrorReading(std::string& filename) -> void {
 	std::ifstream setfile(filename);
 	if(setfile.fail()){
 		std::cout << "Opening " << filename << " for reading.\n";
-		std::cout <<"The "<< filename <<" file could not be opened!\n";
+		std::cout << "The "<< filename <<" file cannot be opened!\n";
 		std::cout << "Possible errors:\n";
-		std::cout <<"1. The file does not exist.\n";
-		std::cout <<"2. The path was not found.\n";
+		std::cout << "1. The file does not exist.\n";
+		std::cout << "2. The path was not found.\n";
 		std::exit(-1);
 	}
 	setfile.close();
@@ -194,7 +195,8 @@ auto ErrorReading(std::string& filename) -> void {
 
 // @brief help message to run the software
 auto HelpMessage(char* a) -> void {
-	std::cerr << "Usage: " << a << " [-h] [-g GENERAL OPTIONS] [-s SPECIES] [-t TOY]"
+	std::cerr << "Pay attention to the command line arguments!\n"
+				<< "Usage: " << a << " [-h] [-g GENERAL OPTIONS] [-s SPECIES] [-t TOY]"
         << "\nOptions:\n"
         << "\t-h,--help\n\tShow this help message\n"
         << "\t-g,--general-options\n\tSpecify the file containing PDFs, data, output rootfiles paths and other info.\n"
@@ -220,20 +222,16 @@ inline auto GetValue(std::string& variable, std::string& filename) -> std::strin
 		while(!setfile.eof()){
 			setfile >> var >> val;
 			if(std::strcmp(var.c_str(), "#") == 0){
-				std::getline(setfile,line);
-			}
-			if (!std::strcmp(var.c_str(), "#") == 0){
-				if(var == variable){
-					anyfound = true;
-					break;
-				}
+				std::getline(setfile, line);
+			} else if(var == variable) {
+				anyfound = true;
+				break;
 			}
 		}
 
-		if(!anyfound) std::cout << "warning!!: I didn't find " << variable
-		                        << "...setting it to 0" << std::endl;
+	if(!anyfound) std::cout << "Warning!!: I didn't find "
+	                        << variable << std::endl;
 	}
-
 	setfile.close();
 	return val;
 }
