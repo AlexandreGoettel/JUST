@@ -49,7 +49,6 @@ public:  // Initialise variables to be filled by parser
 	std::string pdf_name, data_name, output_name;
 	std::string histo_data;
 
-	unsigned int nparams;
 	unsigned int npdfs;
 	std::vector<TString> param_names;
 	std::vector<double> param_initial_guess, param_stepsize,

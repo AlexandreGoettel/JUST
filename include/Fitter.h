@@ -48,7 +48,7 @@ public:  // Minuit functions
 	double fitFunction(unsigned int, unsigned int, const double*);
 public:  // Member variables
 	double n_params, n_fixed;
-	std::vector<int> idx_map, idx_map_fixed;
+	std::vector<unsigned int> idx_map, idx_map_fixed;
 	std::vector<double> efficiencies;
 private:  // Member variables
 	std::vector<std::vector<double>> pdf_vectors;

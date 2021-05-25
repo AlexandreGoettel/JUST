@@ -6,6 +6,7 @@
 // Standard includes
 #include <memory>
 #include <vector>
+#include <algorithm>
 #include <cassert>  // Disabled if NDEBUG is defed
 #include <iostream>
 // ROOT includes
@@ -205,44 +206,60 @@ auto MinuitManager::callMinuit() -> void {
 
 // @brief Convert fit results to vectors, store in member variables popt/pcov
 auto MinuitManager::getResults() -> NuFitResults {
-	// TODO: Add zeros and ones where the fixed parameters would be
-	// Get the covariance matrix
-	// TMatrixDSym mat(config.nparams);
-	double mat[config.nparams][config.nparams];
-	gMinuit->mnemat(&mat[0][0], config.nparams);
-	// std::vector<std::vector<double>> pcov;
-	// for (auto i = 0U; i < config.nparams; i++) {
-	// 	std::vector<double> this_row;
-	// 	for (auto j = 0U; j < config.nparams; j++) {
-	// 		this_row.push_back(mat[i][j]);
-	// 	}
-	// 	pcov.push_back(this_row);
-	// }
-	std::vector<std::vector<double>> pcov(config.nparams,
-	                                      std::vector<double>(config.nparams));
-	for (auto i = 0U; i < config.nparams; i++) {
-		for (auto j = 0U; j < config.nparams; j++) {
-			pcov[i][j] = mat[i][j];
-		}
-	}
-
 	// Initialise variables
-	double x, sigmax;
+	double x, _;
 	std::vector<double> popt(config.npdfs);
+	std::vector<std::vector<double>> pcov(config.npdfs,
+	                                      std::vector<double>(config.npdfs));
+	unsigned int nparams = fitCtnr.idx_map.size();
 
 	// Fill parameter vector
 	for (auto i = 0U; i < fitCtnr.idx_map.size(); i++) {
 		auto j = fitCtnr.idx_map[i];
-		gMinuit->GetParameter(i, x, sigmax);
+		gMinuit->GetParameter(i, x, _);
 		popt[j] = x;
 	}
-	// Take care of fixed parameters
+	// Fill fixed parameter value where estimate would be
 	for (auto i : fitCtnr.idx_map_fixed) {
 		popt[i] = config.param_initial_guess[i];
-		// TODO: mat for fixed params!!
 	}
 
-	// TODO: also save correlation/error matrix?
+	// Get the covariance matrix
+	double mat[nparams][nparams];
+	gMinuit->mnemat(&mat[0][0], nparams);
+	std::vector<std::vector<double>> pcov_(nparams,
+	                                       std::vector<double>(nparams));
+	// Convert to vector<vector>
+	for (auto i = 0U; i < nparams; i++) {
+		for (auto j = 0U; j < nparams; j++) {
+			pcov_[i][j] = mat[i][j];
+		}
+	}
+
+	// Expand pcov to include fixed params as well
+	// For each row, this var gives the idx of free params (inverse of idx_map)
+	auto idx_inverse {0U};
+	for (auto iRow = 0U; iRow < config.npdfs; iRow++){
+		// Construct row
+		std::vector<double> this_row(config.npdfs);
+		// If iRow is fixed, row[iRow]=1
+		if (std::find(fitCtnr.idx_map_fixed.begin(), fitCtnr.idx_map_fixed.end(),
+		              iRow) != fitCtnr.idx_map_fixed.end()) {
+			this_row[iRow] = 1;
+		} else {
+			// If not fixed, get data from pcov_
+			for (auto i = 0U; i < fitCtnr.idx_map.size(); i++) {
+				auto j = fitCtnr.idx_map[i];
+				this_row[j] = pcov_[idx_inverse][i];
+			}
+			for (auto i : fitCtnr.idx_map_fixed) {
+				this_row[i] = iRow == i;  // 1 or 0
+			}
+			idx_inverse += 1;
+		}
+		pcov[iRow] = this_row;
+	}
+
 	auto results = NuFitResults(popt, pcov, fitCtnr.efficiencies);
 	return results;
 }

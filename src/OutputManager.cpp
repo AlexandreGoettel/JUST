@@ -54,7 +54,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
         leg->SetBorderSize(0);
         leg->SetFillStyle(0);
 
-	for (auto i = 0U; i < config.nparams; i++) {
+	for (auto i = 0U; i < config.npdfs; i++) {
 		auto current_hist = pdfs->pdf_histograms[i];
 		current_hist->SetLineColor(Colors[i]);
 		current_hist->SetMarkerColor(Colors[i]);
@@ -115,7 +115,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 
 	std::vector<double> popt_cpd, popt_err_cpd;
 	auto popt_err = results.getUncertainties();
-	for (auto i = 0U; i < config.nparams; i++) {
+	for (auto i = 0U; i < config.npdfs; i++) {
 		auto eff_exposure = factor / results.efficiencies[i];
 		popt_cpd.push_back(results.popt[i] * eff_exposure);
 		popt_err_cpd.push_back(popt_err[i] * eff_exposure);
@@ -128,11 +128,20 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	outf << "Species\tcounts\t\tsigma\t\trate(cpd/kton)\tsigma(cpd/kton)\n"
 	     << std::scientific;
 	outf.precision(4);
-	for (auto i = 0U; i < config.nparams; i++) {
+	for (auto i = 0U; i < config.npdfs; i++) {
 		outf << config.param_names[i] << "\t";
 		outf << results.popt[i] << "\t" << popt_err[i] << "\t";
 		outf << popt_cpd[i] << "\t" << popt_err_cpd[i];
 		outf << "\n";
+	}
+
+	// Write the covariance matrix
+	outf << "Covariance matrix:" << std::endl;
+	for (auto el : results.pcov) {
+		for (auto sub : el) {
+			outf << sub << "\t";
+		}
+		outf << std::endl;
 	}
 	outf.close();
 }
