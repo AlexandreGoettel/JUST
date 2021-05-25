@@ -33,6 +33,7 @@ public: // Member variables
 public: // Functions
 	void addResults(NuFitResults);
 	std::vector<double> getUncertainties();
+	std::vector<std::vector<double>> getCorrMatrix();
 };
 
 }  // namespace NuFitter

@@ -244,16 +244,11 @@ auto MinuitManager::getResults() -> NuFitResults {
 		std::vector<double> this_row(config.npdfs);
 		// If iRow is fixed, row[iRow]=1
 		if (std::find(fitCtnr.idx_map_fixed.begin(), fitCtnr.idx_map_fixed.end(),
-		              iRow) != fitCtnr.idx_map_fixed.end()) {
-			this_row[iRow] = 1;
-		} else {
+		              iRow) == fitCtnr.idx_map_fixed.end()) {
 			// If not fixed, get data from pcov_
 			for (auto i = 0U; i < fitCtnr.idx_map.size(); i++) {
 				auto j = fitCtnr.idx_map[i];
 				this_row[j] = pcov_[idx_inverse][i];
-			}
-			for (auto i : fitCtnr.idx_map_fixed) {
-				this_row[i] = iRow == i;  // 1 or 0
 			}
 			idx_inverse += 1;
 		}

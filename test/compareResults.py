@@ -27,6 +27,8 @@ def getResults(filename):
             if skip < 1:
                 skip += 1
                 continue  # Skip first line
+            if "Covariance" in row[0]:
+                break
             popt += [float(row[3])]
             pcov += [float(row[4])]
     return popt, pcov

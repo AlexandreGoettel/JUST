@@ -27,6 +27,24 @@ auto NuFitResults::getUncertainties() -> std::vector<double> {
 	return popt_err;
 }
 
+// @brief Copy cov matrix to corr matrix, output
+auto NuFitResults::getCorrMatrix() -> std::vector<std::vector<double>> {
+	auto n = pcov.size();
+	std::vector<std::vector<double>> out(n, std::vector<double>(n));
+	for (auto i = 0U; i < n; i++) {
+		auto var_i = pcov[i][i];
+		for (auto j = 0U; j < n; j++) {
+			auto var_j = pcov[j][j];
+			if (var_i == 0 && var_j == 0) {
+				out[i][j] = 1;
+			} else if (var_i*var_j != 0){
+				out[i][j] = pcov[i][j] / std::sqrt(var_i*var_j);
+			}
+		}
+	}
+	return out;
+}
+
 // @brief Add results to existing NuFitResults. Used for ToyData fits.
 auto NuFitResults::addResults(NuFitResults results) -> void {
 	// TODO

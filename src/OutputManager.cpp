@@ -110,7 +110,6 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	//----------------------------------------
 	// Convert counts to cpd/100t
 	// cpd = count / (lifetime) / mass_target / efficiency;
-	// TODO: print error matrix
 	auto factor {1. / (config.lifetime*config.mass_target)};
 
 	std::vector<double> popt_cpd, popt_err_cpd;
@@ -137,7 +136,17 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 
 	// Write the covariance matrix
 	outf << "Covariance matrix:" << std::endl;
+	outf.precision(2);
 	for (auto el : results.pcov) {
+		for (auto sub : el) {
+			outf << sub << "\t";
+		}
+		outf << std::endl;
+	}
+	// Write the correlation matrix
+	auto test = results.getCorrMatrix();
+	outf << "Correlation matrix:" << std::endl;
+	for (auto el : test) {
 		for (auto sub : el) {
 			outf << sub << "\t";
 		}
