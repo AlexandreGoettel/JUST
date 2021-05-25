@@ -45,7 +45,7 @@ def writeConfigFile(filename):
               "MassTarget", "emin", "emax", "ToyData", "Hesse", "Minos",
               "Likelihood"]
     args = [pdfs_file, data_file, "PseudoDataset", 180, 10.2987, 650, 3000,
-            0, 0, 0, "extended"]
+            0, 0, 0, "poisson"]
 
     # Write to file
     with open(filename, "w") as _file:

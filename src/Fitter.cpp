@@ -119,7 +119,7 @@ auto NuFitContainer::fitFunction(unsigned int i, unsigned int npar, const double
 }
 
 // @brief Define Minuit-Style binned poisson likelihood (extended)
-auto NuFitContainer::NLL_extended(int npar, const double *par) -> double {
+auto NuFitContainer::NLL_poisson(int npar, const double *par) -> double {
 	// Following Baker&Cousins 1983 definition on page 439
 	auto nbins = data_vector.size();
 	auto chi_sqr_lambda_p { 0. };
@@ -133,8 +133,8 @@ auto NuFitContainer::NLL_extended(int npar, const double *par) -> double {
 	return chi_sqr_lambda_p;
 }
 
-// @brief Define standard binned poisson likelihood
-auto NuFitContainer::NLL_poisson(int npar, const double *par) -> double {
+// @brief Define MUST Likelihood
+auto NuFitContainer::NLL_MUST(int npar, const double *par) -> double {
 	auto nbins = data_vector.size();
 	auto logL { 0. };
 	for (auto i = 0U; i < nbins; i++) {
@@ -304,11 +304,11 @@ auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
 	// Calculate the log-likelihood according to different methods
 	if (fitCtnr.config.likelihood.compare("poisson") == 0) {
 		f = fitCtnr.NLL_poisson(npar, par);
-	} else if (fitCtnr.config.likelihood.compare("extended") == 0) {
-		f = fitCtnr.NLL_extended(npar, par);
+	} else if (fitCtnr.config.likelihood.compare("must") == 0) {
+		f = fitCtnr.NLL_MUST(npar, par);
 	} else {
 		throw std::invalid_argument("'" + fitCtnr.config.likelihood +
-			"' is not a valid likelihood.\nAllowed: ['poisson', 'extended']" +
+			"' is not a valid likelihood.\nAllowed: ['poisson', 'must']" +
 			"\nPay attention to the capitalisation!");
 	}
 
