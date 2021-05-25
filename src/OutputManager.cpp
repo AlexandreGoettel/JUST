@@ -21,7 +21,11 @@ namespace NuFitter {
 // @brief For now, simply plot the results (simple fit example)
 auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
                     NuFitResults results) -> void {
-	// Create a histogram with fit results (maybe we can move it FitResults and make it become a member of it)
+	//----------------------------------------
+	//----------- Plot the results -----------
+	//----------------------------------------
+	// Create a histogram with fit results
+	// (maybe we can move it FitResults and make it become a member of it)
 	TH1D* PDFsSum_histo = new TH1D("PDFsSum_histo","PDFsSum_histo", config.nbins, pdfs->bin_edges.front(), pdfs->bin_edges.back());
 
 	// Open file to save the plots in
@@ -106,22 +110,27 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	//----------------------------------------
 	// Convert counts to cpd/100t
 	// cpd = count / (lifetime) / mass_target / efficiency;
-	std::vector<double> popt_cpd, popt_err_cpd;
+	// TODO: print error matrix
 	auto factor {1. / (config.lifetime*config.mass_target)};
+
+	std::vector<double> popt_cpd, popt_err_cpd;
+	auto popt_err = results.getUncertainties();
 	for (auto i = 0U; i < config.nparams; i++) {
 		auto eff_exposure = factor / results.efficiencies[i];
 		popt_cpd.push_back(results.popt[i] * eff_exposure);
-		popt_err_cpd.push_back(results.popt_err[i] * eff_exposure);
+		popt_err_cpd.push_back(popt_err[i] * eff_exposure);
 	}
 
+	// Write to file
 	std::ofstream outf;
 	auto out_filename = config.output_name + ".txt";
 	outf.open(out_filename.c_str());
-	// TODO: add pcov and minuit results
-	outf << "Species\tpopt\tsigma\tpopt(cpd/kton)\tsigma(cpd/kton)\n";
+	outf << "Species\tcounts\t\tsigma\t\trate(cpd/kton)\tsigma(cpd/kton)\n"
+	     << std::scientific;
+	outf.precision(4);
 	for (auto i = 0U; i < config.nparams; i++) {
 		outf << config.param_names[i] << "\t";
-		outf << results.popt[i] << "\t" << results.popt_err[i] << "\t";
+		outf << results.popt[i] << "\t" << popt_err[i] << "\t";
 		outf << popt_cpd[i] << "\t" << popt_err_cpd[i];
 		outf << "\n";
 	}

@@ -207,27 +207,43 @@ auto MinuitManager::callMinuit() -> void {
 auto MinuitManager::getResults() -> NuFitResults {
 	// TODO: Add zeros and ones where the fixed parameters would be
 	// Get the covariance matrix
-	TMatrixDSym mat(config.nparams);
-	gMinuit->mnemat(mat.GetMatrixArray(), config.nparams);
+	// TMatrixDSym mat(config.nparams);
+	double mat[config.nparams][config.nparams];
+	gMinuit->mnemat(&mat[0][0], config.nparams);
+	// std::vector<std::vector<double>> pcov;
+	// for (auto i = 0U; i < config.nparams; i++) {
+	// 	std::vector<double> this_row;
+	// 	for (auto j = 0U; j < config.nparams; j++) {
+	// 		this_row.push_back(mat[i][j]);
+	// 	}
+	// 	pcov.push_back(this_row);
+	// }
+	std::vector<std::vector<double>> pcov(config.nparams,
+	                                      std::vector<double>(config.nparams));
+	for (auto i = 0U; i < config.nparams; i++) {
+		for (auto j = 0U; j < config.nparams; j++) {
+			pcov[i][j] = mat[i][j];
+		}
+	}
 
-	// Fill with free and fixed results...
-	std::vector<double> popt(config.npdfs);
-	std::vector<double> popt_err(config.npdfs);
+	// Initialise variables
 	double x, sigmax;
+	std::vector<double> popt(config.npdfs);
 
+	// Fill parameter vector
 	for (auto i = 0U; i < fitCtnr.idx_map.size(); i++) {
 		auto j = fitCtnr.idx_map[i];
 		gMinuit->GetParameter(i, x, sigmax);
 		popt[j] = x;
-		popt_err[j] = sigmax;
 	}
+	// Take care of fixed parameters
 	for (auto i : fitCtnr.idx_map_fixed) {
 		popt[i] = config.param_initial_guess[i];
-		popt_err[i] = 0.;
+		// TODO: mat for fixed params!!
 	}
 
 	// TODO: also save correlation/error matrix?
-	auto results = NuFitResults(popt, popt_err, fitCtnr.efficiencies);
+	auto results = NuFitResults(popt, pcov, fitCtnr.efficiencies);
 	return results;
 }
 

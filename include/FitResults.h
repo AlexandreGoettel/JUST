@@ -18,9 +18,8 @@ namespace NuFitter {
 class NuFitResults {
 // Constructors and operator assignments
 public:
-	NuFitResults() = default;
-	NuFitResults(std::vector<double>, std::vector<double>,
-		std::vector<double>);  // constructor
+	NuFitResults(std::vector<double>, std::vector<std::vector<double>>,
+		         std::vector<double>);  // constructor
 	~NuFitResults() = default;  // destructor
 	NuFitResults(const NuFitResults&) = default;  // copy constructor
 	NuFitResults(NuFitResults&&) = default;  // move constructor
@@ -28,10 +27,12 @@ public:
 	NuFitResults &operator=(NuFitResults&&) = default;  // move assignment
 
 public: // Member variables
-	std::vector<double> popt, popt_err, efficiencies;
+	std::vector<double> popt, efficiencies;
+	std::vector<std::vector<double>> pcov;
 
 public: // Functions
 	void addResults(NuFitResults);
+	std::vector<double> getUncertainties();
 };
 
 }  // namespace NuFitter
