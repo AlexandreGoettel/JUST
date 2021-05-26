@@ -1,0 +1,21 @@
+#pdf	param	guess	lower	upper	step	fixed	hist_id eff
+# TFC_sub params
+Be7	Be7	5e2	0	1e4	10	0	1	0.7
+pep	pep	3e1	0	1e3	10	0	1	0.7
+Bi210	Bi210	250	0	1e4	10	0	1	0.7
+Kr85	Kr85	1e2	0	1e4	10	0	1	0.7
+Po210	Po210	2e2	0	1e4	10	0	1	0.7
+U238	U238	1e2	0	1e4	10	0	1	0.7
+Th232	Th232	2e1	0	1e3	10	0	1	0.7
+K40	K40	2e1	0	1e3	10	0	1	0.7
+C11	C11	3e3	0	1e5	10	0	1	0.1
+# Now the TFC_tagged params
+#Be7	Be7	5e2	0	1e4	10	0	2	0.3
+#pep     pep     3e1     0       1e3     10      0       2       0.3
+#Bi210   Bi210   250     0       1e4     10      0       2       0.3
+#Kr85    Kr85    1e2     0       1e4     10      0       2       0.3
+#Po210   Po210   2e2     0       1e4     10      0       2       0.3
+#U238    U238    1e2     0       1e4     10      0       2       0.3
+#Th232   Th232   2e1     0       1e3     10      0       2       0.3
+#K40     K40     2e1     0       1e3     10      0       2       0.3
+#C11     C11_2	3e3     0       1e5     10      0       2       0.9

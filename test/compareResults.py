@@ -41,11 +41,11 @@ def writeConfigFile(filename):
     data_file = getPath("test", "reference", "PseudoD.root")
 
     # Write one arg for each prefix
-    prefix = ["PDFsRootfile", "DataRootfile", "HistoName", "Lifetime",
-              "MassTarget", "emax", "emin", "ToyData", "Hesse", "Minos",
-              "Likelihood"]
-    args = [pdfs_file, data_file, "PseudoDataset", 180, 10.2987, 3000, 650,
-            0, 0, 0, "poisson"]
+    prefix = ["PDFsRootfile", "DataRootfile", "HistOne", "HistTwo",
+              "Lifetime", "MassTarget", "emax", "emin", "ToyData", "Hesse",
+              "Minos", "Likelihood"]
+    args = [pdfs_file, data_file, "PseudoDataset", "tmp", 180, 10.2987, 3000,
+            650, 0, 0, 0, "poisson"]
 
     # Write to file
     with open(filename, "w") as _file:
@@ -73,7 +73,7 @@ def main():
     writeConfigFile(gen_opt)
 
     # Launch the fitter
-    species = getPath("test", "config", "specieslist.dat")
+    species = getPath("test", "config", "specieslist_v2.dat")
     exe = getPath("install", "bin", "NuSolarFit")
     out = getPath("test", "out")
 
