@@ -49,7 +49,7 @@ auto Read(const NuFitConfig config) -> NuFitData* {
 	// Read the histogram from the data file
 	std::cout << "INFO: Reading data from " << config.data_name << std::endl;
 	TFile *file_data = new TFile(config.data_name.c_str());
-	TH1D* hdata = (TH1D*)file_data->Get(config.histo_data.c_str());
+	TH1D* hdata = (TH1D*)file_data->Get(config.hist_one.c_str());
 
 	// Convert histogram to vector
 	std::vector<double> vec_data;
@@ -79,7 +79,7 @@ auto Read(const NuFitConfig config) -> NuFitPDFs* {
 	TFile *file_pdf = new TFile(config.pdf_name.c_str());
 	std::vector<TH1D*> hPDFs;
     for (auto i = 0U; i < config.npdfs; i++) {
-		hPDFs.push_back((TH1D*)file_pdf->Get(config.param_names[i]));
+		hPDFs.push_back((TH1D*)file_pdf->Get(config.pdf_names[i]));
     }
 
 	// Convert histograms to vectors
@@ -91,7 +91,6 @@ auto Read(const NuFitConfig config) -> NuFitPDFs* {
 		}
 		pdfs.push_back(current_pdf);
 	}
-
 	// Create bin_edges vector
 	auto bin_edges = getBinEdges(hPDFs[0], config.nbins);
 

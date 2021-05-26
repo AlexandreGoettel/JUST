@@ -318,7 +318,7 @@ auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
 		if (fitCtnr.config.param_fixed[j] != 2) continue;
 
 		auto diff = par[i] - fitCtnr.config.param_initial_guess[j];
-		auto sigma = fitCtnr.config.param_constr_sigma[j];
+		auto sigma = fitCtnr.config.param_stepsize[j];
 		f += 0.5*diff*diff/sigma/sigma;
 	}
 }

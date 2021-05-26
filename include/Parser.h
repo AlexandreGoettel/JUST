@@ -10,6 +10,7 @@
 // Includes
 #include <vector>
 #include <fstream>
+#include <cstring>
 #include "TString.h"
 
 //============================================================================
@@ -47,13 +48,13 @@ public:  // Initialise variables to be filled by parser
 	double lifetime, mass_target, exposure;  // days, kilotons
 	unsigned int nbins;
 	std::string pdf_name, data_name, output_name;
-	std::string histo_data;
+	std::string hist_one, hist_two;
 
 	unsigned int npdfs;
-	std::vector<TString> param_names;
+	std::vector<TString> param_names, pdf_names;
 	std::vector<double> param_initial_guess, param_stepsize,
-	                    param_lowerlim, param_upperlim, param_constr_sigma;
-	std::vector<int> param_fixed;
+	                    param_lowerlim, param_upperlim, param_eff;
+	std::vector<int> param_fixed, hist_id;
 };
 
 void ErrorReading(std::string&);
@@ -66,6 +67,8 @@ namespace CMDLParser {
 }  // namespace CMDLParser
 
 namespace ConfigParser {
+	void ParseGenOpts(std::unique_ptr<NuFitConfig>&, std::string);
+	void ParseSpeciesList(std::unique_ptr<NuFitConfig>&, std::string);
 	NuFitConfig Parse(NuFitCmdlArgs);
 }  // namespace ConfigParser
 

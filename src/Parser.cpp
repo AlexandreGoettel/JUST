@@ -10,8 +10,9 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <cstring>
 #include <cstdlib>
+#include <map>
+
 // ROOT includes
 #include "TFile.h"
 #include "TH1D.h"
@@ -64,50 +65,55 @@ auto Parse(int argc, char* argv[]) -> NuFitCmdlArgs{
 
 namespace ConfigParser {
 
-auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
-	auto config = std::make_unique<NuFitConfig>();
-	config->output_name = args.output_name;
+// @brief Parse the gen_opts content and save to config
+auto ParseGenOpts(std::unique_ptr<NuFitConfig> &config, std::string filename) -> void {
+	// Start by checking the file for errors
+	NuFitter::ErrorReading(filename);
 
-	// -------------------------------------------------------------------------
-	// Read the general_options config file
-	NuFitter::ErrorReading(args.gen);
+	// Map variable names and labels to look for in the gen_opt file
+	std::map<std::string, std::string> labels {
+		{"pdf_name", "PDFsRootfile"}, {"data_name", "DataRootfile"},
+		{"hist_one", "HistOne"}, {"lifetime", "Lifetime"},
+		{"mass_target", "MassTarget"}, {"emin", "emin"}, {"emax", "emax"},
+		{"doToyData_", "ToyData"}, {"doMinos", "Minos"},
+		{"likelihood", "Likelihood"}, {"doHesse", "Hesse"}, {"hist_two", "HistTwo"}
+	};
 
-	std::vector<std::string> labels = {"PDFsRootfile", "DataRootfile",
-	    "HistoName", "Lifetime", "MassTarget", "emin", "emax", "ToyData",
-		"Hesse", "Minos", "Likelihood"};
+	// Read in values one-by-one
+	config->pdf_name = NuFitter::GetValue(labels["pdf_name"], filename);
+	config->data_name = NuFitter::GetValue(labels["data_name"], filename);
+	config->hist_one = NuFitter::GetValue(labels["hist_one"], filename);
+	config->hist_two = NuFitter::GetValue(labels["hist_two"], filename);
 
-	config->pdf_name = NuFitter::GetValue(labels.at(0),args.gen);
-
-	config->data_name = NuFitter::GetValue(labels.at(1),args.gen);
-
-	config->histo_data = NuFitter::GetValue(labels.at(2),args.gen);
-
-	config->lifetime = std::stod(NuFitter::GetValue(labels.at(3),args.gen));
-
-	config->mass_target = std::stod(NuFitter::GetValue(labels.at(4),args.gen));
-
-	config->emin = std::stod(NuFitter::GetValue(labels.at(5),args.gen));
-
-	config->emax = std::stod(NuFitter::GetValue(labels.at(6),args.gen));
-
-	std::istringstream(NuFitter::GetValue(labels.at(7),args.gen)) >> config->doToyData_;
-
-	std::istringstream(NuFitter::GetValue(labels.at(8),args.gen)) >> config->doHesse;
-
-	std::istringstream(NuFitter::GetValue(labels.at(9),args.gen)) >> config->doMinos;
-
-	config->likelihood = NuFitter::GetValue(labels.at(10),args.gen);
-
+	config->lifetime = std::stod(NuFitter::GetValue(labels["lifetime"], filename));
+	config->mass_target = std::stod(NuFitter::GetValue(labels["mass_target"], filename));
 	config->exposure = config->lifetime * config->mass_target;
 
-	// -------------------------------------------------------------------------
-	// Read the species-list
-	NuFitter::ErrorReading(args.spec);
-	std::ifstream ReadSpec;
-	ReadSpec.open(args.spec);
+	config->emin = std::stod(NuFitter::GetValue(labels["emin"], filename));
+	config->emax = std::stod(NuFitter::GetValue(labels["emax"], filename));
 
+	std::istringstream(NuFitter::GetValue(labels["doToyData_"], filename)) >> config->doToyData_;
+	std::istringstream(NuFitter::GetValue(labels["doHesse"], filename)) >> config->doHesse;
+	std::istringstream(NuFitter::GetValue(labels["doMinos"], filename)) >> config->doMinos;
+
+	config->likelihood = NuFitter::GetValue(labels["likelihood"], filename);
+}
+
+// @brief Parse the species_list content and save to config
+auto ParseSpeciesList(std::unique_ptr<NuFitConfig>& config,
+	                  std::string filename) -> void {
+	// Make sure the file is valid
+	NuFitter::ErrorReading(filename);
+
+	// Initialise variables
 	std::string line, word;
 	auto nSpecies{0};
+
+	// Open the file
+	std::ifstream ReadSpec;
+	ReadSpec.open(filename);
+
+	// For each line in the file
 	while (std::getline(ReadSpec, line)) {
 		std::stringstream line_stream(line);
 		auto nElements {0U};
@@ -121,55 +127,70 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 			// Read the (expected) variables
 			switch (nElements) {
 				case 0:
-					config->param_names.push_back(word);
+					config->pdf_names.push_back(word);
 					break;
 				case 1:
-					config->param_initial_guess.push_back(std::stod(word)*config->exposure);
+					config->param_names.push_back(word);
 					break;
 				case 2:
-					config->param_lowerlim.push_back(std::stod(word)*config->exposure);
+					config->param_initial_guess.push_back(std::stod(word)*config->exposure);
 					break;
 				case 3:
-					config->param_upperlim.push_back(std::stod(word)*config->exposure);
+					config->param_lowerlim.push_back(std::stod(word)*config->exposure);
 					break;
 				case 4:
-					config->param_stepsize.push_back(std::stod(word));
+					config->param_upperlim.push_back(std::stod(word)*config->exposure);
 					break;
 				case 5:
-					config->param_fixed.push_back(std::stoi(word));
+					config->param_stepsize.push_back(std::stod(word));
 					break;
 				case 6:
-					config->param_constr_sigma.push_back(std::stod(word));
+					config->param_fixed.push_back(std::stoi(word));
+					break;
+				case 7:
+					config->hist_id.push_back(std::stoi(word));
+					break;
+				case 8:
+					config->param_eff.push_back(std::stod(word));
 					break;
 				default:
-					std::cout << "[Warning] In file: " + args.spec +
+					std::cout << "[Warning] In file: " + filename +
 						": Too many arguments in a line." << std::endl;
 			}
 			nElements++;
 		}
-		// Make sure line is correct
+		// Make sure line was correctly parsed
 		if (nElements == 0) continue;
-		if (nElements < 6) {
-			throw std::invalid_argument("A line in file: '" + args.spec +
+		if (nElements < 8) {
+			throw std::invalid_argument("A line in file: '" + filename +
 				"' does not have enough arguments to be valid.."
 				+ std::to_string(nElements));
 		}
-		if (nElements == 6) {  // If no param constraint was given, fill zero
-			config->param_constr_sigma.push_back(0.);
-		}
-
 		// Bookkeeping
 		nSpecies++;
 	}
 
 	config->npdfs = nSpecies;
 	ReadSpec.close();
-	// -------------------------------------------------------------------------
+}
 
+auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
+	auto config = std::make_unique<NuFitConfig>();
+	config->output_name = args.output_name;
+
+	// -------------------------------------------------------------------------
+	// Read the general_options config file
+	ParseGenOpts(config, args.gen);
+
+	// -------------------------------------------------------------------------
+	// Read the species-list
+	ParseSpeciesList(config, args.spec);
+
+	// -------------------------------------------------------------------------
 	// Get nbins from the data hist
 	// TODO: make sure pdfs are compatible?
 	TFile *fdata = new TFile(config->data_name.c_str());
-	TH1D* hdata = (TH1D*)fdata->Get(config->histo_data.c_str());
+	TH1D* hdata = (TH1D*)fdata->Get(config->hist_one.c_str());
 	config->nbins = hdata->GetNbinsX();
 	fdata->Close();
 
