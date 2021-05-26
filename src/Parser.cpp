@@ -24,6 +24,33 @@
 
 namespace NuFitter{
 
+// @brief problems in opening or reading input files
+auto ErrorReading(std::string& filename) -> void {
+	std::ifstream setfile(filename);
+	if(setfile.fail()){
+		std::cout << "Opening " << filename << " for reading.\n";
+		std::cout << "The "<< filename <<" file cannot be opened!\n";
+		std::cout << "Possible errors:\n";
+		std::cout << "1. The file does not exist.\n";
+		std::cout << "2. The path was not found.\n";
+		std::exit(-1);
+	}
+	setfile.close();
+}
+
+// @brief help message to run the software
+auto HelpMessage(char* a) -> void {
+	std::cerr << "Pay attention to the command line arguments!\n"
+				<< "Usage: " << a << " [-h] [-g GENERAL OPTIONS] [-s SPECIES] [-t TOY]"
+        << "\nOptions:\n"
+        << "\t-h,--help\n\tShow this help message\n"
+        << "\t-g,--general-options\n\tSpecify the file containing PDFs, data, output rootfiles paths and other info.\n"
+        << "\t-s,--species-list\n\tSpecify the file containing the number of parameters, the list of species (also if they are free/fixed/constrained) and the min/man energy range\n"
+		<< "\t-o,--output\n\tSpecify the path containing the output, without the extension since the fitter will create an output.root and output.txt.\n"
+        << "\t-t,--toy-rates\n\tTO BE WRITTEN"
+		<< std::endl;
+}
+
 namespace CMDLParser {
 
 auto Parse(int argc, char* argv[]) -> NuFitCmdlArgs{
@@ -65,38 +92,44 @@ auto Parse(int argc, char* argv[]) -> NuFitCmdlArgs{
 
 namespace ConfigParser {
 
-// @brief Parse the gen_opts content and save to config
 auto ParseGenOpts(std::unique_ptr<NuFitConfig> &config, std::string filename) -> void {
-	// Start by checking the file for errors
+	// Make sure the file is valid
 	NuFitter::ErrorReading(filename);
 
-	// Map variable names and labels to look for in the gen_opt file
-	std::map<std::string, std::string> labels {
-		{"pdf_name", "PDFsRootfile"}, {"data_name", "DataRootfile"},
-		{"hist_one", "HistOne"}, {"lifetime", "Lifetime"},
-		{"mass_target", "MassTarget"}, {"emin", "emin"}, {"emax", "emax"},
-		{"doToyData_", "ToyData"}, {"doMinos", "Minos"},
-		{"likelihood", "Likelihood"}, {"doHesse", "Hesse"}, {"hist_two", "HistTwo"}
-	};
+	// Loop through the file
+	std::string line, key, value;
+	std::ifstream ReadGen;
+	ReadGen.open(filename);
 
-	// Read in values one-by-one
-	config->pdf_name = NuFitter::GetValue(labels["pdf_name"], filename);
-	config->data_name = NuFitter::GetValue(labels["data_name"], filename);
-	config->hist_one = NuFitter::GetValue(labels["hist_one"], filename);
-	config->hist_two = NuFitter::GetValue(labels["hist_two"], filename);
+	while (std::getline(ReadGen, line)) {
+		std::stringstream line_stream(line);
 
-	config->lifetime = std::stod(NuFitter::GetValue(labels["lifetime"], filename));
-	config->mass_target = std::stod(NuFitter::GetValue(labels["mass_target"], filename));
+		// Ignore commented lines
+		line_stream >> key;
+		if (std::strncmp(key.c_str(), "#", 1) == 0) {
+			continue;
+		}
+
+		// Continue reading line
+		line_stream >> value;
+
+		// Assign the values to their keys
+		if (key.find("Hist") != std::string::npos) {
+			config->data_hist_names.push_back(value);
+		}
+		else if (key == "PDFsRootfile") config->pdf_name = value;
+		else if (key == "DataRootfile") config->data_name = value;
+		else if (key == "Lifetime") config->lifetime = std::stod(value);
+		else if (key == "MassTarget") config->mass_target = std::stod(value);
+		else if (key == "emax") config->emax = std::stod(value);
+		else if (key == "emin") config->emin = std::stod(value);
+		else if (key == "ToyData") config->doToyData_ = std::stoi(value);
+		else if (key == "Hesse") config->doHesse = std::stoi(value);
+		else if (key == "Minos") config->doMinos = std::stoi(value);
+		else if (key == "Likelihood") config->likelihood = value;
+		// Todo error handling in case some values are missing
+	}
 	config->exposure = config->lifetime * config->mass_target;
-
-	config->emin = std::stod(NuFitter::GetValue(labels["emin"], filename));
-	config->emax = std::stod(NuFitter::GetValue(labels["emax"], filename));
-
-	std::istringstream(NuFitter::GetValue(labels["doToyData_"], filename)) >> config->doToyData_;
-	std::istringstream(NuFitter::GetValue(labels["doHesse"], filename)) >> config->doHesse;
-	std::istringstream(NuFitter::GetValue(labels["doMinos"], filename)) >> config->doMinos;
-
-	config->likelihood = NuFitter::GetValue(labels["likelihood"], filename);
 }
 
 // @brief Parse the species_list content and save to config
@@ -187,73 +220,17 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	ParseSpeciesList(config, args.spec);
 
 	// -------------------------------------------------------------------------
-	// Get nbins from the data hist
+	// Get nbins from the data hists
 	// TODO: make sure pdfs are compatible?
-	TFile *fdata = new TFile(config->data_name.c_str());
-	TH1D* hdata = (TH1D*)fdata->Get(config->hist_one.c_str());
-	config->nbins = hdata->GetNbinsX();
-	fdata->Close();
+	for (auto i = 0U; i < config->data_hist_names.size(); i++) {
+		TFile *fdata = new TFile(config->data_name.c_str());
+		TH1D* hdata = (TH1D*)fdata->Get(config->data_hist_names[i].c_str());
+		config->nbins.push_back(hdata->GetNbinsX());
+		fdata->Close();
+	}
 
 	return *config;
 }
 
 }  // namespace ConfigParser
-
-// @brief problems in opening or reading input files
-auto ErrorReading(std::string& filename) -> void {
-	std::ifstream setfile(filename);
-	if(setfile.fail()){
-		std::cout << "Opening " << filename << " for reading.\n";
-		std::cout << "The "<< filename <<" file cannot be opened!\n";
-		std::cout << "Possible errors:\n";
-		std::cout << "1. The file does not exist.\n";
-		std::cout << "2. The path was not found.\n";
-		std::exit(-1);
-	}
-	setfile.close();
-}
-
-// @brief help message to run the software
-auto HelpMessage(char* a) -> void {
-	std::cerr << "Pay attention to the command line arguments!\n"
-				<< "Usage: " << a << " [-h] [-g GENERAL OPTIONS] [-s SPECIES] [-t TOY]"
-        << "\nOptions:\n"
-        << "\t-h,--help\n\tShow this help message\n"
-        << "\t-g,--general-options\n\tSpecify the file containing PDFs, data, output rootfiles paths and other info.\n"
-        << "\t-s,--species-list\n\tSpecify the file containing the number of parameters, the list of species (also if they are free/fixed/constrained) and the min/man energy range\n"
-		<< "\t-o,--output\n\tSpecify the path containing the output, without the extension since the fitter will create an output.root and output.txt.\n"
-        << "\t-t,--toy-rates\n\tTO BE WRITTEN"
-		<< std::endl;
-}
-
-// @brief Loop in filename.txt, search for "variable" and return its value
-inline auto GetValue(std::string& variable, std::string& filename) -> std::string {
-	std::ifstream setfile(filename);
-	std::string val;
-	std::string line;
-
-	if(!setfile.good()) {
-		std::cout << "ERROR in GetValue " << "unable to open the file "
-		          << filename << std::endl;
-	} else {
-		std::string var;
-		bool anyfound(false);
-
-		while(!setfile.eof()){
-			setfile >> var >> val;
-			if(std::strcmp(var.c_str(), "#") == 0){
-				std::getline(setfile, line);
-			} else if(var == variable) {
-				anyfound = true;
-				break;
-			}
-		}
-
-	if(!anyfound) std::cout << "Warning!!: I didn't find "
-	                        << variable << std::endl;
-	}
-	setfile.close();
-	return val;
-}
-
 }  // namespace NuFitter

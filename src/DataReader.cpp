@@ -24,13 +24,15 @@ NuFitPDFs::NuFitPDFs(std::vector<std::vector<double>> pdfs_,
 	pdf_histograms = pdf_histograms_;
 }
 
-NuFitData::NuFitData(std::vector<double>data_, std::vector<double> bin_edges_,
+NuFitData::NuFitData(std::vector<std::vector<double>> data_,
+	                 std::vector<std::vector<double>> bin_edges_,
 	                 std::vector<TH1D*> data_histograms_) {
 	data = data_;
 	bin_edges = bin_edges_;
 	data_histograms = data_histograms_;
 }
 
+// TODO: do we want this function somewhere else?
 auto getBinEdges(TH1D *hist, unsigned int nbins) -> std::vector<double> {
 	// Create bin_edges vector
 	std::vector<double> bin_edges;
@@ -46,23 +48,33 @@ auto getBinEdges(TH1D *hist, unsigned int nbins) -> std::vector<double> {
 namespace Data {
 
 auto Read(const NuFitConfig config) -> NuFitData* {
-	// Read the histogram from the data file
-	std::cout << "INFO: Reading data from " << config.data_name << std::endl;
-	TFile *file_data = new TFile(config.data_name.c_str());
-	TH1D* hdata = (TH1D*)file_data->Get(config.hist_one.c_str());
-
-	// Convert histogram to vector
-	std::vector<double> vec_data;
-	for (auto i = 0U; i <= config.nbins; i++) {
-		vec_data.push_back(hdata->GetBinContent(i));
-	}
-
-	// Create bin_edges vector
-	auto bin_edges = getBinEdges(hdata, config.nbins);
-
-	// Also save histograms (for plotting later)
+	// Initialise variables
 	std::vector<TH1D*> hists;
-	hists.push_back(hdata);
+	std::vector<std::vector<double>> vec_data, bin_edges;
+
+	// Read the histograms if their id was found in specieslist
+	std::cout << "INFO: Reading data from " << config.data_name << std::endl;
+	for (auto i = 1U; i <= config.data_hist_names.size(); i++) {
+		if (std::find(config.hist_id.begin(), config.hist_id.end(), i) != config.hist_id.end()) {
+			// Read histogram
+			TFile *file_data = new TFile(config.data_name.c_str());
+			TH1D* hdata = (TH1D*)file_data->Get(config.data_hist_names[i-1].c_str());
+
+			// Convert histogram to vector
+			std::vector<double> vec_data_hist;
+			for (auto j = 0U; j <= config.nbins[i-1]; j++) {
+				vec_data_hist.push_back(hdata->GetBinContent(j));
+			}
+
+			// Create bin_edges vector
+			auto bin_edges_hist = getBinEdges(hdata, config.nbins[i-1]);
+
+			// Save to vectors
+			hists.push_back(hdata);
+			bin_edges.push_back(bin_edges_hist);
+			vec_data.push_back(vec_data_hist);
+	    }
+	}
 
 	// Create and return NuFitData object
 	auto *data = new NuFitData(vec_data, bin_edges, hists);

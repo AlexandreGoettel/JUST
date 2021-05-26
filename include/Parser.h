@@ -46,9 +46,10 @@ public:  // Initialise variables to be filled by parser
 
 	// Parameters with no standard value must be given in the config file
 	double lifetime, mass_target, exposure;  // days, kilotons
-	unsigned int nbins;
 	std::string pdf_name, data_name, output_name;
-	std::string hist_one, hist_two;
+
+	std::vector<std::string> data_hist_names;
+	std::vector<unsigned int> nbins;
 
 	unsigned int npdfs;
 	std::vector<TString> param_names, pdf_names;

@@ -49,8 +49,8 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 
 	// Create the data, pdf vectors according to config, save efficiencies
 	// 1. Get relevant variables
-	auto data_raw = data->data;
-	auto bin_edges = data->bin_edges;
+	auto data_raw = data->data[0];
+	auto bin_edges = data->bin_edges[0];
 	assert(bin_edges == pdfs->bin_edges);
 
 	// 2. Create the data vector
