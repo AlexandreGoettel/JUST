@@ -36,8 +36,8 @@ public: // Variables
 
 class NuFitPDFs {
 public:  // Constructors and operator assigments
-	NuFitPDFs(std::vector<std::vector<double>>, std::vector<double>,
-	          std::vector<TH1D*>);  // constructor
+	NuFitPDFs(std::vector<std::vector<double>>,  // constructor
+		      std::vector<std::vector<double>>, std::vector<TH1D*>);
 	~NuFitPDFs() = default;  // destructor
 	NuFitPDFs(const NuFitPDFs&) = default;  // copy constructor
 	NuFitPDFs(NuFitPDFs&&) = default;  // move constructor
@@ -45,8 +45,7 @@ public:  // Constructors and operator assigments
 	NuFitPDFs &operator=(NuFitPDFs&&) = default;  // move assignment
 
 public:  // Variables
-	std::vector<double> bin_edges;
-	std::vector<std::vector<double>> pdfs;
+	std::vector<std::vector<double>> pdfs, bin_edges;
 	std::vector<TH1D*> pdf_histograms;
 };
 

@@ -17,7 +17,7 @@
 
 namespace NuFitter {
 NuFitPDFs::NuFitPDFs(std::vector<std::vector<double>> pdfs_,
-	                 std::vector<double> bin_edges_,
+	                 std::vector<std::vector<double>> bin_edges_,
 				     std::vector<TH1D*> pdf_histograms_) {
 	pdfs = pdfs_;
 	bin_edges = bin_edges_;
@@ -98,13 +98,20 @@ auto Read(const NuFitConfig config) -> NuFitPDFs* {
 	std::vector<std::vector<double>> pdfs;
 	for (auto n = 0U; n < config.npdfs; n++) {
 		std::vector<double> current_pdf;
-		for (auto i = 0U; i <= config.nbins; i++) {
+		for (auto i = 0U; i <= config.nbins[config.hist_id[n-1]]; i++) {
 			current_pdf.push_back(hPDFs[n]->GetBinContent(i));
 		}
 		pdfs.push_back(current_pdf);
 	}
-	// Create bin_edges vector
-	auto bin_edges = getBinEdges(hPDFs[0], config.nbins);
+
+	// Create bin_edges vector for each used data histogram
+	std::vector<std::vector<double>> bin_edges;
+	for (auto i = 1U; i <= config.data_hist_names.size(); i++) {
+		if (std::find(config.hist_id.begin(), config.hist_id.end(), i) != config.hist_id.end()) {
+			auto bin_edges_tmp = getBinEdges(hPDFs[0], config.nbins[i-1]);
+			bin_edges.push_back(bin_edges_tmp);
+		}
+	}
 
 	// Create and return NuFitPDFs object with the variables
 	auto *output = new NuFitPDFs(pdfs, bin_edges, hPDFs);
