@@ -51,7 +51,7 @@ public:  // Initialise variables to be filled by parser
 	std::vector<std::string> data_hist_names;
 	std::vector<unsigned int> nbins;
 
-	unsigned int npdfs;
+	unsigned int npdfs, nparams;
 	std::vector<TString> param_names, pdf_names;
 	std::vector<double> param_initial_guess, param_stepsize,
 	                    param_lowerlim, param_upperlim, param_eff;

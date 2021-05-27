@@ -140,7 +140,7 @@ auto ParseSpeciesList(std::unique_ptr<NuFitConfig>& config,
 
 	// Initialise variables
 	std::string line, word;
-	auto nSpecies{0};
+	auto nPDFs{0}, nParams{0};
 
 	// Open the file
 	std::ifstream ReadSpec;
@@ -160,9 +160,15 @@ auto ParseSpeciesList(std::unique_ptr<NuFitConfig>& config,
 			// Read the (expected) variables
 			switch (nElements) {
 				case 0:
+					nPDFs += 1;
 					config->pdf_names.push_back(word);
 					break;
 				case 1:
+					// Check if param_names already contains the same word
+					if (std::find(config->param_names.begin(), config->param_names.end(), word)
+						== config->param_names.end()) {
+						nParams++;
+					}
 					config->param_names.push_back(word);
 					break;
 				case 2:
@@ -179,6 +185,8 @@ auto ParseSpeciesList(std::unique_ptr<NuFitConfig>& config,
 					break;
 				case 6:
 					config->param_fixed.push_back(std::stoi(word));
+					// Fixed parameters do not count in the fit
+					if (std::stoi(word) == 1) nParams--;
 					break;
 				case 7:
 					config->hist_id.push_back(std::stoi(word));
@@ -199,11 +207,12 @@ auto ParseSpeciesList(std::unique_ptr<NuFitConfig>& config,
 				"' does not have enough arguments to be valid.."
 				+ std::to_string(nElements));
 		}
-		// Bookkeeping
-		nSpecies++;
+
+		// TODO: additional error handling
 	}
 
-	config->npdfs = nSpecies;
+	config->npdfs = nPDFs;
+	config->nparams = nParams;
 	ReadSpec.close();
 }
 
