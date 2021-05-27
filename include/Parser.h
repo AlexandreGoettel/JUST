@@ -55,7 +55,7 @@ public:  // Initialise variables to be filled by parser
 	std::vector<TString> param_names, pdf_names;
 	std::vector<double> param_initial_guess, param_stepsize,
 	                    param_lowerlim, param_upperlim, param_eff;
-	std::vector<int> param_fixed, hist_id;
+	std::vector<unsigned int> param_fixed, hist_id;
 };
 
 void ErrorReading(std::string&);

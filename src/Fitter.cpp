@@ -29,13 +29,25 @@ auto MultiplyVectorByScalar(std::vector<Q> &v, P k) -> void {
     transform(v.begin(), v.end(), v.begin(), [k](auto &c){ return c*k; });
 }
 
+// @brief Get the index of element el in vector v
+template <class T>
+auto getIndexOf(T el, std::vector<T> v) -> int {
+	auto it = std::find(v.begin(), v.end(), el);
+
+	// If element was found, calculate the index
+	if (it != v.end()) {
+		return it - v.begin();
+	}
+	else {
+		return -1;
+	}
+}
+
 // @brief Evaluate whether the bin between lower_edge and upper edge is
 // inside of the bin range
 template <class T>
 auto NuFitContainer::InFitRange(T lower_edge, T upper_edge) -> bool {
-    // return upper_edge > config.emin && lower_edge < config.emax;
-    auto bin_center = (upper_edge + lower_edge) / 2. + 1;
-    return config.emin <= bin_center && bin_center < config.emax;
+    return upper_edge > config.emin && lower_edge < config.emax;
 }
 
 // @brief Constructor for NuFitContainer
@@ -47,41 +59,53 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 	pdfs = pdfs_;
 	config = config_;
 
-	// Create the data, pdf vectors according to config, save efficiencies
-	// 1. Get relevant variables
-	auto data_raw = data->data[0];
-	auto bin_edges = data->bin_edges[0];
-	assert(bin_edges == pdfs->bin_edges);
+	// Adjust the data, pdf vectors according to config, save efficiencies
+	// 1. Create the data vector for all histograms
+    for (auto n = 0U; n < data->data.size(); n++) {
+        auto bin_edges = data->bin_edges[n];
+        auto hist_data = data->data[n];
+        std::vector<double> current_hist;
 
-	// 2. Create the data vector
-	for (auto i = 0U; i < bin_edges.size()-1; i++) {
-		// Assuming the bin_edges is ordered
-		// Fill data_vector with the raw_data between emin and emax
-		if (InFitRange(bin_edges[i], bin_edges[i+1])) {
-			data_vector.push_back(data_raw[i]);
-		}
-	}
+        for (auto i = 0U; i < bin_edges.size()-1; i++) {
+    		// Assuming bin_edges is ordered
+    		// Fill data_vector with the hist data between emin and emax
+    		if (InFitRange(bin_edges[i], bin_edges[i+1])) {
+    			current_hist.push_back(hist_data[i]);
+    		}
+    	}
+        data_vector.push_back(current_hist);
+    }
 
-	// 3. Create a vector of PDF vectors. Save efficiencies
-	for (auto el : pdfs->pdfs) {
-		auto current_efficiency {0.};
-		std::vector<double> current_pdf;
+	// 2. Create a vector of PDF vectors. Save efficiencies
+    for (auto n = 0U; n < pdfs->pdfs.size(); n++) {
+        std::vector<double> current_pdf;
+        auto raw_pdf = pdfs->pdfs[n];
+        auto current_efficiency {0.};
+        auto bin_edges = pdfs->bin_edges[config.hist_id[n]-1];
 
-		for (auto i = 0U; i < bin_edges.size()-1; i++) {
+        // Assuming bin_edges is orderd, fill pdfs between emin and emax
+        for (auto i = 0U; i < bin_edges.size()-1; i++) {
 			if (InFitRange(bin_edges[i], bin_edges[i+1])) {
-				current_pdf.push_back(el[i]);
+				current_pdf.push_back(raw_pdf[i]);
 			} else {
-				current_efficiency += el[i];
+				current_efficiency += raw_pdf[i];
 			}
 		}
-		// Renormalise vector
+
+        // Renormalise vector
 		MultiplyVectorByScalar(current_pdf, 1. / (1. - current_efficiency));
 
+        // Save output
 		pdf_vectors.push_back(current_pdf);
 		efficiencies.push_back(1. - current_efficiency);
-	}
-	assert(data_vector.size() == pdf_vectors[0].size());
-	assert(data_vector.size() != 0);
+    }
+
+    // Quick check that everything went according to plan
+    for (auto i = 0U; i < config.hist_id.size(); i++) {
+        auto n = config.hist_id[i];
+        assert(data_vector[n-1].size() == pdf_vectors[i].size());
+        assert(data_vector[n-1].size() != 0);
+    }
 
 	// 4. Create a vector of indices to map free params to pdfs
 	for (auto i = 0U; i < config.npdfs; i++) {
@@ -96,15 +120,81 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 	}
 	n_params = idx_map.size();
 	n_fixed = idx_map_fixed.size();
+
+	// 5. Fill the paramVector object which contains useful information
+	//    about the parameters to be used in the fit
+	std::vector<TString> used_names;
+	for (auto i = 0U; i < fitCtnr.config.param_names.size(); i++) {
+		paramData current_paramData {i, fitCtnr.config.hist_id[i]};
+
+		auto name = fitCtnr.config.param_names[i];
+		if (std::find(used_names.begin(), used_names.end(), name) == used_names.end()) {
+			std::vector<paramData> tmp_paramVector;
+			tmp_paramVector.push_back(current_paramData);
+			paramVector.push_back(tmp_paramVector);
+			used_names.push_back(name);
+		} else {
+			auto idx_name = getIndexOf(name, used_names);
+			assert(idx_name != -1);
+			paramVector[idx_name].push_back(current_paramData);
+		}
+	}
+    // 6. Make sure params are fixed/constr properly in the new setup
+    // 7. If same var same pdf on same hist->raise error?
+
 }
 
-// @brief The fit function (parameters * pdfs)
-auto NuFitContainer::fitFunction(unsigned int i, unsigned int npar, const double *par)
-		-> double {
+// Maybe return answer as a vector?
+auto NuFitContainer::fitFunction(unsigned int npar, const double *par)
+	                             -> std::vector<std::vector<double>> {
+	// TODO: fixed params
+	// Initialise output vector
+	std::vector<std::vector<double>> fitFuncVal;
+	for (auto el : data->data) {
+		std::vector<double> tmp (el.size(), 0);
+		fitFuncVal.push_back(tmp);
+	}
+
+	// Fill the output vector with function values
+	// for (auto i = 0U; i < data->data.size(); i++) {  // each hist
+	// 	for (auto j = 0U; j < data->data[i].size(); j++) {  // each bin
+	// 		for (auto k = 0U; k < paramVector.size(); k++) {  // each independent param
+	// 			auto parDataVec = paramVector[k];
+	// 			for (auto h = 0U; h < parDataVec.size(); h++) {  // each hist in parData
+	// 				auto parData = parDataVec[h];
+	// 				if (parData.idx_hist-1 == i) {
+	// 					auto idx = idx_map[parData.idx_pdf];
+	// 					fitFuncVal[i][j] += pdf_vectors[idx][j] *
+	// 						par[k] * config.param_eff[parData.idx_pdf];
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
+
+	for (auto k = 0U; k < paramVector.size(); k++) {  // each parameter
+		auto parDataVec = paramVector[k];
+		for (auto h = 0U; h < parDataVec.size(); h++) {  // each hist in parData
+			auto parData = parDataVec[h];
+			for (auto j = 0U; j < data->data[h].size(); j++) {  // each bin
+				auto idx = idx_map[parData.idx_pdf];
+				fitFuncVal[h][j] += pdf_vectors[idx][j] * par[k] *
+					config.param_eff[parData.idx_pdf];
+			}
+		}
+	}
+
+	return fitFuncVal;
+}
+
+@brief The fit function (parameters * pdfs)
+auto NuFitContainer::fitFunction(unsigned int i, unsigned int npar,
+	                             const double *par, int nHist) -> double {
 	// Add contributions from the free parameters
 	auto yi {0.};
 	for (auto j = 0U; j < npar; j++) {
 		auto idx = fitCtnr.idx_map[j];  // Convert to param index space
+		if (config.hist_id[idx] != nHist) continue;  // Ignore other hists
 		yi += par[j] * pdf_vectors[idx][i];
 	}
 
@@ -112,6 +202,7 @@ auto NuFitContainer::fitFunction(unsigned int i, unsigned int npar, const double
 	// TODO: can speed-up with look-up since the result from below is constant
 	for (auto j = 0U; j < fitCtnr.n_fixed; j++) {
 		auto idx = fitCtnr.idx_map_fixed[j];  // Convert to param index space
+		if (config.hist_id[idx] != nHist) continue;  // Ignore other hists
 		yi += fitCtnr.config.param_initial_guess[idx] * pdf_vectors[idx][i];
 	}
 
@@ -121,35 +212,50 @@ auto NuFitContainer::fitFunction(unsigned int i, unsigned int npar, const double
 // @brief Define Minuit-Style binned poisson likelihood (extended)
 auto NuFitContainer::NLL_poisson(int npar, const double *par) -> double {
 	// Following Baker&Cousins 1983 definition on page 439
-	auto nbins = data_vector.size();
 	auto chi_sqr_lambda_p { 0. };
-	for (auto i = 0U; i < nbins; i++) {
-		auto yi = fitFunction(i, npar, par);
-		auto ni = data_vector[i];
+	auto fitFuncVal = fitFunction(npar, par);
 
-		chi_sqr_lambda_p += yi - ni + ni*(ROOT::Math::Util::EvalLog(ni) -
-		                                  ROOT::Math::Util::EvalLog(yi));
+	// test
+	assert(data_vector.size() == fitFuncVal.size());
+	assert(data_vector[0].size() == fitFuncVal[0].size());
+
+	// Loop over data
+	for (auto i = 0U; i < data_vector.size(); i++) {
+		for (auto j = 0U; j < data_vector[i].size(); j++) {
+			auto yi = fitFuncVal[i][j];
+			auto ni = data_vector[i][j];
+
+			chi_sqr_lambda_p += yi - ni + ni*(ROOT::Math::Util::EvalLog(ni) -
+			                                  ROOT::Math::Util::EvalLog(yi));
+		}
 	}
+
 	return chi_sqr_lambda_p;
 }
 
-// @brief Define MUST Likelihood
-auto NuFitContainer::NLL_MUST(int npar, const double *par) -> double {
-	auto nbins = data_vector.size();
-	auto logL { 0. };
-	for (auto i = 0U; i < nbins; i++) {
-		auto yi = fitFunction(i, npar, par);
-		auto ni = data_vector[i];
-
-        if (ni < 0)
-            continue;
-        else if (ni == 0)
-            logL += -yi;
-        else
-            logL += ni*ROOT::Math::Util::EvalLog(yi)-yi-TMath::LnGamma(ni+1);
-	}
-	return -logL;
-}
+// @brief Define MUST Likelihood (for comparison purposes)
+// TODO: Re-introduce
+// auto NuFitContainer::NLL_MUST(int npar, const double *par) -> double {
+// 	auto logL { 0. };
+//
+// 	// Loop over possible histograms
+// 	for (auto n = 0U; n < data_vector.size(); n++) {
+// 		auto data_hist = data_vector[n];
+// 		auto nbins = data_hist.size();
+// 		for (auto i = 0U; i < nbins; i++) {
+// 			auto yi = fitFunction(i, npar, par, n);
+// 			auto ni = data_hist[i];
+//
+// 			if (ni < 0)
+// 				continue;
+// 			else if (ni == 0)
+// 				logL += -yi;
+// 			else
+// 				logL += ni*ROOT::Math::Util::EvalLog(yi)-yi-TMath::LnGamma(ni+1);
+// 		}
+// 	}
+// 	return -logL;
+// }
 
 // @brief MinuitManager constructor
 MinuitManager::MinuitManager(const NuFitConfig config_) {
@@ -262,6 +368,31 @@ auto MinuitManager::getResults() -> NuFitResults {
 	return results;
 }
 
+// @brief Used by TMinuit to sample the likelihood
+auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
+	// Calculate the log-likelihood according to different methods
+	if (fitCtnr.config.likelihood.compare("poisson") == 0) {
+		f = fitCtnr.NLL_poisson(npar, par);
+	// } else if (fitCtnr.config.likelihood.compare("must") == 0) {
+	// 	f = fitCtnr.NLL_MUST(npar, par);
+	} else {
+		throw std::invalid_argument("'" + fitCtnr.config.likelihood +
+			"' is not a valid likelihood.\nAllowed: ['poisson']" +
+			"\nPay attention to the capitalisation!");
+	}
+
+	// In case of parameter constraints, add (Gaussian) pull terms here
+	// TODO
+	// for (auto i = 0U; i < fitCtnr.n_params; i++) {
+	// 	auto j = fitCtnr.idx_map[i];  // Convert to free param index space
+	// 	if (fitCtnr.config.param_fixed[j] != 2) continue;
+	//
+	// 	auto diff = par[i] - fitCtnr.config.param_initial_guess[j];
+	// 	auto sigma = fitCtnr.config.param_stepsize[j];
+	// 	f += 0.5*diff*diff/sigma/sigma;
+	// }
+}
+
 // @brief Perform a binned likelihood fit of the pdfs on the data
 // @param data data to be fitted
 // @param pdfs MC PDFs to fit to
@@ -297,30 +428,6 @@ auto Fit(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
 		results.addResults(Fit(data[i], pdfs, config));
 	}
 	return results;
-}
-
-// @brief Used by TMinuit to sample the likelihood
-auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
-	// Calculate the log-likelihood according to different methods
-	if (fitCtnr.config.likelihood.compare("poisson") == 0) {
-		f = fitCtnr.NLL_poisson(npar, par);
-	} else if (fitCtnr.config.likelihood.compare("must") == 0) {
-		f = fitCtnr.NLL_MUST(npar, par);
-	} else {
-		throw std::invalid_argument("'" + fitCtnr.config.likelihood +
-			"' is not a valid likelihood.\nAllowed: ['poisson', 'must']" +
-			"\nPay attention to the capitalisation!");
-	}
-
-	// In case of parameter constraints, add (Gaussian) pull terms here
-	for (auto i = 0U; i < fitCtnr.n_params; i++) {
-		auto j = fitCtnr.idx_map[i];  // Convert to free param index space
-		if (fitCtnr.config.param_fixed[j] != 2) continue;
-
-		auto diff = par[i] - fitCtnr.config.param_initial_guess[j];
-		auto sigma = fitCtnr.config.param_stepsize[j];
-		f += 0.5*diff*diff/sigma/sigma;
-	}
 }
 
 }  // namespace MCFit

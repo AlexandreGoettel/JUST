@@ -45,14 +45,20 @@ public:
 public:  // Minuit functions
 	double NLL_poisson(int, const double*);
 	double NLL_MUST(int, const double*);
-	double fitFunction(unsigned int, unsigned int, const double*);
+	std::vector<std::vector<double>> fitFunction(unsigned int, const double*);
 public:  // Member variables
 	double n_params, n_fixed;
 	std::vector<unsigned int> idx_map, idx_map_fixed;
 	std::vector<double> efficiencies;
+
+	struct paramData {
+		unsigned int idx_pdf;
+		unsigned int idx_hist;
+	};
+	std::vector<std::vector<paramData>> paramVector;
 private:  // Member variables
 	std::vector<std::vector<double>> pdf_vectors;
-	std::vector<double> data_vector;
+	std::vector<std::vector<double>> data_vector;
 	template <class T> bool InFitRange(T, T);
 };
 
