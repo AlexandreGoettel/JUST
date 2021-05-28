@@ -20,10 +20,7 @@ namespace NuFitter {
 
 template <class T>
 auto vec2Array(std::vector<T> v) -> T* {
-    T array[v.size()];
-    for (auto i = 0U; i < v.size(); i++) {
-        array[i] = v[i];
-    }
+    T *array = &v[0];
     return array;
 }
 
