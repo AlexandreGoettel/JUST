@@ -203,6 +203,18 @@ auto ParseSpeciesList(std::unique_ptr<NuFitConfig>& config,
 		nSpecies++;
 	}
 
+// nSp_histos[0]: number of species in Histo1, nSp_histos[1]: number of species in Histo2
+int appoint = 0;
+TString appo;
+appo = config->pdf_names.front();
+for (auto i=0U; i < config->pdf_names.size(); i++){
+	appoint++;
+	if(!i==0 && appo==config->pdf_names.at(i)){
+		nSp_histos.push_back(appoint);
+		nSp_histos.push_back(config->pdf_names.size()-appoint);
+		break;
+	}
+}
 	config->npdfs = nSpecies;
 	ReadSpec.close();
 }

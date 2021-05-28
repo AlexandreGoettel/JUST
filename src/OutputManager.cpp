@@ -24,9 +24,13 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	//----------------------------------------
 	//----------- Plot the results -----------
 	//----------------------------------------
-	// Create a histogram with fit results
-	// (maybe we can move it FitResults and make it become a member of it)
-	TH1D* PDFsSum_histo = new TH1D("PDFsSum_histo","PDFsSum_histo", config.nbins, pdfs->bin_edges.front(), pdfs->bin_edges.back());
+	// Create a vector of histograms with fit results
+	std::vector<TH1D*> PDFsSum;
+
+	for (auto i = 1U; i <= config.data_hist_names.size(); i++) {
+		TH1D* hPDFs = new TH1D("PDFsSum_" + config.data_hist_names[i-1].c_str(),"PDFsSum_" + config.data_hist_names[i-1].c_str(),config.nbins[i-1],pdfs->bin_edges[i-1].front(),pdfs->bin_edges[i-1].back());
+		PDFsSum.push_back(hPDFs);
+	 }
 
 	// Open file to save the plots in
 	auto root_filename = config.output_name + ".root";
@@ -36,71 +40,114 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	TCanvas *c = new TCanvas("Results","Results",1500,700);
 	gPad->SetLogy();
 
-	TPad* Pad_up = new TPad("Pad_up", "Pad_up", 0, 0.3, 1.0, 1.0);
-	Pad_up->Draw();
-	Pad_up->cd();
-
+	//Histo_Sub
+	TPad* Pad_UpLeft = new TPad("Pad_UpLeft","Pad_UpLeft", 0, 0.3, 1.0, 1.0);
+	Pad_UpLeft->Draw();
+	Pad_UpLeft->cd();
 	data->data_histograms[0]->SetLineColor(kBlack);
 	data->data_histograms[0]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
 	data->data_histograms[0]->GetYaxis()->SetTitle("Events");
 	data->data_histograms[0]->Draw();
 
-	//the maximum number of the species is 12 (Be7,pep,CNO,Bi210,K40,Kr85,U238,Th232,Po210,C10,He6,C11)
-	int *Colors = new int [12]{632,632,409,616,400,600,870,921,632,801,881,419};
+	//Histo_Tag
+	TPad* Pad_UpRight = new TPad("Pad_UpRight","Pad_UpRight", 0, 0.3, 1.0, 1.0);
+	Pad_UpRight->Draw();
+	Pad_UpRight->cd();
+	data->data_histograms[1]->SetLineColor(kBlack);
+	data->data_histograms[1]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
+	data->data_histograms[1]->GetYaxis()->SetTitle("Events");
+	data->data_histograms[1]->Draw();
 
-	TLegend *leg = new TLegend(0.54,0.55,0.74,0.85,NULL,"brNDC");
-        leg->SetTextAlign(13);
-        leg->SetTextSize(0.04);
-        leg->SetBorderSize(0);
-        leg->SetFillStyle(0);
+	//Legends
+	TLegend *leg_UpLeft = new TLegend(0.54,0.55,0.74,0.85,NULL,"brNDC");
+  leg_UpLeft->SetTextAlign(13);
+  leg_UpLeft->SetTextSize(0.04);
+  leg_UpLeft->SetBorderSize(0);
+  leg_UpLeft->SetFillStyle(0);
 
-	for (auto i = 0U; i < config.npdfs; i++) {
-		auto current_hist = pdfs->pdf_histograms[i];
-		current_hist->SetLineColor(Colors[i]);
-		current_hist->SetMarkerColor(Colors[i]);
-		current_hist->Scale(results.popt[i]/results.efficiencies[i]);
-		current_hist->Draw("SAME");
+	TLegend *leg_UpRight = new TLegend(0.54,0.55,0.74,0.85,NULL,"brNDC");
+  leg_UpRight->SetTextAlign(13);
+  leg_UpRight->SetTextSize(0.04);
+  leg_UpRight->SetBorderSize(0);
+  leg_UpRight->SetFillStyle(0);
 
-		for(auto j = 1U; j <= config.nbins; j++) {
-			PDFsSum_histo->SetBinContent(j, PDFsSum_histo->GetBinContent(j)
-			    +pdfs->pdf_histograms[i]->GetBinContent(j));
+	//Be7,pep,Bi210,K40,Kr85,U238,Th232,Po210,C10,He6,C11)
+	int *Colors = new int [11]{632,632,409,616,400,600,870,921,801,881,419};
+
+	for (auto i = 1U; i <= config.data_hist_names.size(); i++) {
+		for(auto j = 0U; j < config.nSp_histos[i-1]; j++){
+			auto current_hist = pdfs->pdf_histograms[j];
+			current_hist->SetLineColor(Colors[i]);
+			current_hist->SetMarkerColor(Colors[i]);
+			current_hist->Scale(results.popt[i]/results.efficiencies[i]);
+			current_hist->Draw("SAME");
+
+			for (auto k = 1U; k <= config.nbins[i-1]; k++){
+				PDFsSum[i]->SetBinContent(k,PDFsSum[i]->GetBinContent(k)+pdfs->pdf_histograms[j]->GetBinContent(k));
+				PDFsSum[i]->SetLineColor(632);
+				PDFsSum[i]->SetMarkerColor(632);
+			}
+
+			if(i==1){
+				Pad_UpLeft->cd();
+				leg_UpLeft->AddEntry(current_hist,config.param_names.at(j));
+				leg_UpLeft->Draw("SAME");
+			} else {
+				Pad_UpRight->cd();
+				leg_UpRight->AddEntry(current_hist,config.param_names.at(j));
+				leg_UpRight->Draw("SAME");
+			}
 		}
-
-		leg->AddEntry(current_hist,config.param_names.at(i));
-		leg->Draw("SAME");
 	}
-	PDFsSum_histo->SetLineColor(632);
-	PDFsSum_histo->SetMarkerColor(632);
-	PDFsSum_histo->Draw("SAME");
+	Pad_UpLeft->cd();
+	PDFsSum[0]->Draw("SAME");
+	Pad_UpRight->cd();
+	PDFsSum[1]->Draw("SAME");
 	gPad->SetLogy();
 
 	// Residuals
-	double res[config.nbins];
-	double rec_energy[config.nbins];
+	std::vector<std::vector<double>> residuals;
+	std::vector<std::vector<double>> rec_energy;
 
-	for(auto i = 0U; i < config.nbins; i++){
-		rec_energy[i] = i + pdfs->bin_edges.front();
-		res[i] = (data->data_histograms[0]->GetBinContent(i)
-		    - PDFsSum_histo->GetBinContent(i))
-			/ sqrt(data->data_histograms[0]->GetBinContent(i));
+	for (auto i = 1U; i <= config.data_hist_names.size(); i++){
+		for(auto j = 0U; j < config.nbins[i-1]; j++){
+			rec_energy[i-1].push_back(j+pdfs->bin_edges[i-1].front());
+			residuals[i-1].push_back((data->data_histograms[i-1]->GetBinContent(j)-PDFsSum[i-1]->GetBinContent(j))/sqrt(data->data_histograms[i]->GetBinContent(j)));
+		}
 	}
 
 	c->cd();
-  	TPad* Pad_down = new TPad("Pad_down", "Pad_down", 0.0, 0.0, 1.0, 0.3);
-  	Pad_down->Draw();
-  	Pad_down->cd();
+  TPad* Pad_DownLeft = new TPad("Pad_DownLeft", "Pad_DownLeft", 0.0, 0.0, 1.0, 0.3);
+  Pad_DownLeft->Draw();
+  Pad_DownLeft->cd();
 
-	TGraph *Residuals = new TGraph(config.nbins,rec_energy,res);
-	Residuals->SetTitle("Residuals");
-	Residuals->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
-	Residuals->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
-	Residuals->GetYaxis()->CenterTitle(true);
-	Residuals->GetYaxis()->SetTitleSize(.05);
-	Residuals->GetXaxis()->SetTitleSize(.05);
-	Residuals->GetXaxis()->SetRangeUser(pdfs->bin_edges.front(),pdfs->bin_edges.back());
-	Residuals->GetYaxis()->SetRangeUser(-4.,4.);
-	Residuals->SetLineWidth(1);
-	Residuals->Draw("AL");
+	TGraph *ResLeft = new TGraph(config.nbins[0],rec_energy[0],res[0]);
+	ResLeft->SetTitle("Residuals");
+	ResLeft->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
+	ResLeft->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
+	ResLeft->GetYaxis()->CenterTitle(true);
+	ResLeft->GetYaxis()->SetTitleSize(.05);
+	ResLeft->GetXaxis()->SetTitleSize(.05);
+	ResLeft->GetXaxis()->SetRangeUser(pdfs->bin_edges[0].front(),pdfs->bin_edges[0].back());
+	ResLeft->GetYaxis()->SetRangeUser(-4.,4.);
+	ResLeft->SetLineWidth(1);
+	ResLeft->Draw("AL");
+
+	TPad* Pad_DownRight = new TPad("Pad_DownRight", "Pad_DownRight", 0.0, 0.0, 1.0, 0.3);
+  Pad_DownRight->Draw();
+  Pad_DownRight->cd();
+
+	TGraph *ResRight = new TGraph(config.nbins[1],rec_energy[1],res[1]);
+	ResRight->SetTitle("Residuals");
+	ResRight->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
+	ResRight->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
+	ResRight->GetYaxis()->CenterTitle(true);
+	ResRight->GetYaxis()->SetTitleSize(.05);
+	ResRight->GetXaxis()->SetTitleSize(.05);
+	ResRight->GetXaxis()->SetRangeUser(pdfs->bin_edges[1].front(),pdfs->bin_edges[1].back());
+	ResRight->GetYaxis()->SetRangeUser(-4.,4.);
+	ResRight->SetLineWidth(1);
+	ResRight->Draw("AL");
 
 	c->Write();
 	f->Close();
