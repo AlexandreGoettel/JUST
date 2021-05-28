@@ -18,6 +18,15 @@
 
 namespace NuFitter {
 
+template <class T>
+auto vec2Array(std::vector<T> v) -> T* {
+    T array[v.size()];
+    for (auto i = 0U; i < v.size(); i++) {
+        array[i] = v[i];
+    }
+    return array;
+}
+
 // @brief For now, simply plot the results (simple fit example)
 auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
                     NuFitResults results) -> void {
@@ -26,9 +35,11 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	//----------------------------------------
 	// Create a vector of histograms with fit results
 	std::vector<TH1D*> PDFsSum;
-
 	for (auto i = 1U; i <= config.data_hist_names.size(); i++) {
-		TH1D* hPDFs = new TH1D("PDFsSum_" + config.data_hist_names[i-1].c_str(),"PDFsSum_" + config.data_hist_names[i-1].c_str(),config.nbins[i-1],pdfs->bin_edges[i-1].front(),pdfs->bin_edges[i-1].back());
+        auto name = "PDFsSum_" + config.data_hist_names[i-1];
+		TH1D* hPDFs = new TH1D(name.c_str(), name.c_str(),
+                               config.nbins[i-1], pdfs->bin_edges[i-1].front(),
+                               pdfs->bin_edges[i-1].back());
 		PDFsSum.push_back(hPDFs);
 	 }
 
@@ -116,41 +127,44 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		}
 	}
 
-	c->cd();
-  TPad* Pad_DownLeft = new TPad("Pad_DownLeft", "Pad_DownLeft", 0.0, 0.0, 1.0, 0.3);
-  Pad_DownLeft->Draw();
-  Pad_DownLeft->cd();
+    c->cd();
+    TPad* Pad_DownLeft = new TPad("Pad_DownLeft", "Pad_DownLeft", 0.0, 0.0, 1.0, 0.3);
+    Pad_DownLeft->Draw();
+    Pad_DownLeft->cd();
 
-	TGraph *ResLeft = new TGraph(config.nbins[0],rec_energy[0],res[0]);
-	ResLeft->SetTitle("Residuals");
-	ResLeft->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
-	ResLeft->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
-	ResLeft->GetYaxis()->CenterTitle(true);
-	ResLeft->GetYaxis()->SetTitleSize(.05);
-	ResLeft->GetXaxis()->SetTitleSize(.05);
-	ResLeft->GetXaxis()->SetRangeUser(pdfs->bin_edges[0].front(),pdfs->bin_edges[0].back());
-	ResLeft->GetYaxis()->SetRangeUser(-4.,4.);
-	ResLeft->SetLineWidth(1);
-	ResLeft->Draw("AL");
+    // auto resArray = vec2Array(residuals[0]);
+    TGraph *ResLeft = new TGraph(config.nbins[0], vec2Array(rec_energy[0]),
+                                 vec2Array(residuals[0]));
+    ResLeft->SetTitle("Residuals");
+    ResLeft->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
+    ResLeft->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
+    ResLeft->GetYaxis()->CenterTitle(true);
+    ResLeft->GetYaxis()->SetTitleSize(.05);
+    ResLeft->GetXaxis()->SetTitleSize(.05);
+    ResLeft->GetXaxis()->SetRangeUser(pdfs->bin_edges[0].front(),pdfs->bin_edges[0].back());
+    ResLeft->GetYaxis()->SetRangeUser(-4.,4.);
+    ResLeft->SetLineWidth(1);
+    ResLeft->Draw("AL");
 
-	TPad* Pad_DownRight = new TPad("Pad_DownRight", "Pad_DownRight", 0.0, 0.0, 1.0, 0.3);
-  Pad_DownRight->Draw();
-  Pad_DownRight->cd();
+    TPad* Pad_DownRight = new TPad("Pad_DownRight", "Pad_DownRight", 0.0, 0.0, 1.0, 0.3);
+    Pad_DownRight->Draw();
+    Pad_DownRight->cd();
 
-	TGraph *ResRight = new TGraph(config.nbins[1],rec_energy[1],res[1]);
-	ResRight->SetTitle("Residuals");
-	ResRight->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
-	ResRight->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
-	ResRight->GetYaxis()->CenterTitle(true);
-	ResRight->GetYaxis()->SetTitleSize(.05);
-	ResRight->GetXaxis()->SetTitleSize(.05);
-	ResRight->GetXaxis()->SetRangeUser(pdfs->bin_edges[1].front(),pdfs->bin_edges[1].back());
-	ResRight->GetYaxis()->SetRangeUser(-4.,4.);
-	ResRight->SetLineWidth(1);
-	ResRight->Draw("AL");
+    TGraph *ResRight = new TGraph(config.nbins[1], vec2Array(rec_energy[1]),
+                                  vec2Array(residuals[1]));
+    ResRight->SetTitle("Residuals");
+    ResRight->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
+    ResRight->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
+    ResRight->GetYaxis()->CenterTitle(true);
+    ResRight->GetYaxis()->SetTitleSize(.05);
+    ResRight->GetXaxis()->SetTitleSize(.05);
+    ResRight->GetXaxis()->SetRangeUser(pdfs->bin_edges[1].front(),pdfs->bin_edges[1].back());
+    ResRight->GetYaxis()->SetRangeUser(-4.,4.);
+    ResRight->SetLineWidth(1);
+    ResRight->Draw("AL");
 
-	c->Write();
-	f->Close();
+    c->Write();
+    f->Close();
 
 	//----------------------------------------
 	//------ Create the output txt file ------
