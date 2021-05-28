@@ -42,7 +42,7 @@ public:
 public:  // Initialise variables to be filled by parser
 	bool doToyData_ = false, doHesse = false, doMinos = false;
 	double emin = 0., emax = 5000.;  // Close to numeric limit
-	std::string likelihood = "extended";
+	std::string likelihood = "poisson";
 
 	// Parameters with no standard value must be given in the config file
 	double lifetime, mass_target, exposure;  // days, kilotons
@@ -51,6 +51,7 @@ public:  // Initialise variables to be filled by parser
 	std::vector<std::string> data_hist_names;
 	std::vector<unsigned int> nbins;
 
+	std::vector<unsigned int> nSp_histos;
 	unsigned int npdfs, nparams;
 	std::vector<TString> param_names, pdf_names;
 	std::vector<double> param_initial_guess, param_stepsize,
