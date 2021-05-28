@@ -48,7 +48,6 @@ public:  // Minuit functions
 	std::vector<std::vector<double>> fitFunction(unsigned int, const double*);
 public:  // Member variables
 	double n_params, n_fixed;
-	std::vector<unsigned int> idx_map, idx_map_fixed;
 	std::vector<double> efficiencies;
 
 	struct paramData {

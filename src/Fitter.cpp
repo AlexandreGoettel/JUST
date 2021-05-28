@@ -29,7 +29,7 @@ auto MultiplyVectorByScalar(std::vector<Q> &v, P k) -> void {
     transform(v.begin(), v.end(), v.begin(), [k](auto &c){ return c*k; });
 }
 
-// @brief Get the index of element el in vector v
+// @brief Get the index of element el in vector v (first occurence)
 template <class T>
 auto getIndexOf(T el, std::vector<T> v) -> int {
 	auto it = std::find(v.begin(), v.end(), el);
@@ -107,21 +107,7 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
         assert(data_vector[n-1].size() != 0);
     }
 
-	// 4. Create a vector of indices to map free params to pdfs
-	for (auto i = 0U; i < config.npdfs; i++) {
-		auto isFixed = config.param_fixed[i];
-		assert(isFixed == 0 || isFixed == 1 || isFixed == 2);
-
-		if (isFixed != 1) {
-			idx_map.push_back(i);
-		} else {
-			idx_map_fixed.push_back(i);
-		}
-	}
-	n_params = idx_map.size();
-	n_fixed = idx_map_fixed.size();
-
-	// 5. Fill the paramVector object which contains useful information
+	// 4. Fill the paramVector object which contains useful information
 	//    about the parameters to be used in the fit
 	std::vector<TString> used_names;
 	for (auto i = 0U; i < fitCtnr.config.param_names.size(); i++) {
@@ -139,6 +125,21 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 			paramVector[idx_name].push_back(current_paramData);
 		}
 	}
+    n_params = paramVector.size();
+
+    // 5. Create a vector of indices to map free params to pdfs
+	// for (auto i = 0U; i < config.npdfs; i++) {
+	// 	auto isFixed = config.param_fixed[i];
+	// 	assert(isFixed == 0 || isFixed == 1 || isFixed == 2);
+    //
+	// 	if (isFixed != 1) {
+	// 		idx_map.push_back(i);
+	// 	} else {
+	// 		idx_map_fixed.push_back(i);
+	// 	}
+	// }
+	// n_fixed = idx_map_fixed.size();
+
     // 6. Make sure params are fixed/constr properly in the new setup
     // 7. If same var same pdf on same hist->raise error?
 
@@ -176,38 +177,37 @@ auto NuFitContainer::fitFunction(unsigned int npar, const double *par)
 		auto parDataVec = paramVector[k];
 		for (auto h = 0U; h < parDataVec.size(); h++) {  // each hist in parData
 			auto parData = parDataVec[h];
-			for (auto j = 0U; j < data->data[h].size(); j++) {  // each bin
-				auto idx = idx_map[parData.idx_pdf];
-				fitFuncVal[h][j] += pdf_vectors[idx][j] * par[k] *
-					config.param_eff[parData.idx_pdf];
+			for (auto j = 0U; j < data->data[parData.idx_hist].size(); j++) {  // each bin
+                fitFuncVal[parData.idx_hist][j] += pdf_vectors[parData.idx_pdf][j]
+                    * par[k] * config.param_eff[parData.idx_pdf];
 			}
 		}
 	}
 
 	return fitFuncVal;
 }
-
-@brief The fit function (parameters * pdfs)
-auto NuFitContainer::fitFunction(unsigned int i, unsigned int npar,
-	                             const double *par, int nHist) -> double {
-	// Add contributions from the free parameters
-	auto yi {0.};
-	for (auto j = 0U; j < npar; j++) {
-		auto idx = fitCtnr.idx_map[j];  // Convert to param index space
-		if (config.hist_id[idx] != nHist) continue;  // Ignore other hists
-		yi += par[j] * pdf_vectors[idx][i];
-	}
-
-	// Now contributions from the fixed parameters
-	// TODO: can speed-up with look-up since the result from below is constant
-	for (auto j = 0U; j < fitCtnr.n_fixed; j++) {
-		auto idx = fitCtnr.idx_map_fixed[j];  // Convert to param index space
-		if (config.hist_id[idx] != nHist) continue;  // Ignore other hists
-		yi += fitCtnr.config.param_initial_guess[idx] * pdf_vectors[idx][i];
-	}
-
-	return yi;
-}
+//
+// @brief The fit function (parameters * pdfs)
+// auto NuFitContainer::fitFunction(unsigned int i, unsigned int npar,
+// 	                             const double *par, int nHist) -> double {
+// 	// Add contributions from the free parameters
+// 	auto yi {0.};
+// 	for (auto j = 0U; j < npar; j++) {
+// 		auto idx = fitCtnr.idx_map[j];  // Convert to param index space
+// 		if (config.hist_id[idx] != nHist) continue;  // Ignore other hists
+// 		yi += par[j] * pdf_vectors[idx][i];
+// 	}
+//
+// 	// Now contributions from the fixed parameters
+// 	// TODO: can speed-up with look-up since the result from below is constant
+// 	for (auto j = 0U; j < fitCtnr.n_fixed; j++) {
+// 		auto idx = fitCtnr.idx_map_fixed[j];  // Convert to param index space
+// 		if (config.hist_id[idx] != nHist) continue;  // Ignore other hists
+// 		yi += fitCtnr.config.param_initial_guess[idx] * pdf_vectors[idx][i];
+// 	}
+//
+// 	return yi;
+// }
 
 // @brief Define Minuit-Style binned poisson likelihood (extended)
 auto NuFitContainer::NLL_poisson(int npar, const double *par) -> double {
@@ -215,7 +215,7 @@ auto NuFitContainer::NLL_poisson(int npar, const double *par) -> double {
 	auto chi_sqr_lambda_p { 0. };
 	auto fitFuncVal = fitFunction(npar, par);
 
-	// test
+	// Make sure data and model shapes are compatible
 	assert(data_vector.size() == fitFuncVal.size());
 	assert(data_vector[0].size() == fitFuncVal[0].size());
 
@@ -266,12 +266,12 @@ MinuitManager::MinuitManager(const NuFitConfig config_) {
 // @brief Initialise Minuit with params etc.
 auto MinuitManager::initMinuit() -> void {
 	// Create a new instance
-	gMinuit = new TMinuit();  // TODO: Add protection?
+	gMinuit = new TMinuit();  // TODO: Add protection -> v0.3?
 	gMinuit->SetFCN(fcn);
 	// Set each parameter in Minuit
 	for (auto j = 0U; j < fitCtnr.n_params; j++) {
 		// Convert index space
-		auto i = fitCtnr.idx_map[j];
+		auto i = fitCtnr.paramVector[j][0].idx_pdf;
 		// Give the parameter information to Minuit
 		gMinuit->mnparm(j, config.param_names[i],
 			config.param_initial_guess[i], config.param_stepsize[i],
@@ -312,21 +312,19 @@ auto MinuitManager::callMinuit() -> void {
 auto MinuitManager::getResults() -> NuFitResults {
 	// Initialise variables
 	double x, _;
-	std::vector<double> popt(config.npdfs);
-	std::vector<std::vector<double>> pcov(config.npdfs,
-	                                      std::vector<double>(config.npdfs));
-	unsigned int nparams = fitCtnr.idx_map.size();
+    unsigned int nparams = fitCtnr.n_params;
+	std::vector<double> popt(nparams);
+	std::vector<std::vector<double>> pcov(nparams,
+	                                      std::vector<double>(nparams));
 
 	// Fill parameter vector
-	for (auto i = 0U; i < fitCtnr.idx_map.size(); i++) {
-		auto j = fitCtnr.idx_map[i];
+    for (auto i = 0U; i < fitCtnr.n_params; i++) {
+        auto j = fitCtnr.paramVector[i][0].idx_pdf;
 		gMinuit->GetParameter(i, x, _);
 		popt[j] = x;
 	}
 	// Fill fixed parameter value where estimate would be
-	for (auto i : fitCtnr.idx_map_fixed) {
-		popt[i] = config.param_initial_guess[i];
-	}
+	// TODO
 
 	// Get the covariance matrix
 	double mat[nparams][nparams];
@@ -341,23 +339,24 @@ auto MinuitManager::getResults() -> NuFitResults {
 	}
 
 	// Expand pcov to include fixed params as well
+    // TODO
 	// For each row, this var gives the idx of free params (inverse of idx_map)
-	auto idx_inverse {0U};
-	for (auto iRow = 0U; iRow < config.npdfs; iRow++){
-		// Construct row
-		std::vector<double> this_row(config.npdfs);
-		// If iRow is fixed, row[iRow]=1
-		if (std::find(fitCtnr.idx_map_fixed.begin(), fitCtnr.idx_map_fixed.end(),
-		              iRow) == fitCtnr.idx_map_fixed.end()) {
-			// If not fixed, get data from pcov_
-			for (auto i = 0U; i < fitCtnr.idx_map.size(); i++) {
-				auto j = fitCtnr.idx_map[i];
-				this_row[j] = pcov_[idx_inverse][i];
-			}
-			idx_inverse += 1;
-		}
-		pcov[iRow] = this_row;
-	}
+	// auto idx_inverse {0U};
+	// for (auto iRow = 0U; iRow < config.npdfs; iRow++){
+	// 	// Construct row
+	// 	std::vector<double> this_row(config.npdfs);
+	// 	// If iRow is fixed, row[iRow]=1
+	// 	if (std::find(fitCtnr.idx_map_fixed.begin(), fitCtnr.idx_map_fixed.end(),
+	// 	              iRow) == fitCtnr.idx_map_fixed.end()) {
+	// 		// If not fixed, get data from pcov_
+	// 		for (auto i = 0U; i < fitCtnr.idx_map.size(); i++) {
+	// 			auto j = fitCtnr.idx_map[i];
+	// 			this_row[j] = pcov_[idx_inverse][i];
+	// 		}
+	// 		idx_inverse += 1;
+	// 	}
+	// 	pcov[iRow] = this_row;
+	// }
 
     // Get the status of the covariance matrix calculation
     int tmp_;
