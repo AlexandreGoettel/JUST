@@ -127,19 +127,6 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 	}
     n_params = paramVector.size();
 
-    // 5. Create a vector of indices to map free params to pdfs
-	// for (auto i = 0U; i < config.npdfs; i++) {
-	// 	auto isFixed = config.param_fixed[i];
-	// 	assert(isFixed == 0 || isFixed == 1 || isFixed == 2);
-    //
-	// 	if (isFixed != 1) {
-	// 		idx_map.push_back(i);
-	// 	} else {
-	// 		idx_map_fixed.push_back(i);
-	// 	}
-	// }
-	// n_fixed = idx_map_fixed.size();
-
     // 6. Make sure params are fixed/constr properly in the new setup
     // 7. If same var same pdf on same hist->raise error?
 
@@ -303,9 +290,10 @@ auto MinuitManager::getResults() -> NuFitResults {
 
 	// Fill parameter vector
     for (auto i = 0U; i < fitCtnr.n_params; i++) {
-        auto j = fitCtnr.paramVector[i][0].idx_pdf;
+        // auto j = fitCtnr.paramVector[i][0].idx_pdf;
 		gMinuit->GetParameter(i, x, _);
-		popt[j] = x;
+		popt[i] = x;
+		// std::cout << i << ", " << j << std::endl;
 	}
 	// Fill fixed parameter value where estimate would be
 	// TODO
@@ -347,7 +335,7 @@ auto MinuitManager::getResults() -> NuFitResults {
     gMinuit->mnstat(_, _, _, tmp_, tmp_, errorflag_cov);
 
 	auto results = NuFitResults(popt, pcov, fitCtnr.efficiencies,
-                                errorflag, errorflag_cov);
+                                errorflag, errorflag_cov, fitCtnr.paramVector);
 	return results;
 }
 

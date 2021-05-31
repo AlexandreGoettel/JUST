@@ -49,11 +49,6 @@ public:  // Minuit functions
 public:  // Member variables
 	double n_params, n_fixed;
 	std::vector<double> efficiencies;
-
-	struct paramData {
-		unsigned int idx_pdf;
-		unsigned int idx_hist;
-	};
 	std::vector<std::vector<paramData>> paramVector;
 private:  // Member variables
 	std::vector<std::vector<double>> pdf_vectors;
