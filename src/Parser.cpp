@@ -227,13 +227,15 @@ auto ParseSpeciesList(std::unique_ptr<NuFitConfig>& config,
 	for (auto i=0U; i < config->pdf_names.size(); i++){
 		appoint++;
 		if(!i==0 && appo==config->pdf_names.at(i)){
-			config->nSp_histos.push_back(appoint);
-			config->nSp_histos.push_back(config->pdf_names.size()-appoint);
+			config->nSp_histos.push_back(appoint-1);
+			config->nSp_histos.push_back(config->pdf_names.size()-(appoint-1));
 			break;
 		}
 	}
 	config->npdfs = nPDFs;
 	config->nparams = nParams;
+	std::cout << "nSp histo 1 = " << config->nSp_histos[0] << std::endl;
+	std::cout << "nSp histo 2 = " << config->nSp_histos[1] << std::endl;
 	ReadSpec.close();
 }
 

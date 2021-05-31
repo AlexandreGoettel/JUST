@@ -34,12 +34,21 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	std::vector<TH1D*> PDFsSum;
 	for (auto i : data->hist_ids) {
         auto name = "PDFsSum_" + config.data_hist_names[i];
-		TH1D* hPDFs = new TH1D(name.c_str(), name.c_str(),
+				TH1D *hPDFs = new TH1D(name.c_str(), name.c_str(),
                                config.nbins[i], pdfs->bin_edges[i].front(),
                                pdfs->bin_edges[i].back());
+
+				for(auto j = 0U; j < config.nSp_histos[i]; j++){
+						for (auto k = 1U; k <= config.nbins[i]; k++){
+								hPDFs->SetBinContent(k,hPDFs->GetBinContent(k)+pdfs->pdf_histograms[j]->GetBinContent(k));
+								hPDFs->SetLineColor(632);
+								hPDFs->SetMarkerColor(632);
+							}
+				}
+
 		PDFsSum.push_back(hPDFs);
 	 }
-
+	 std::cout << "DEBUG[OUTPUTMANAGER]: 1" << std::endl;
 	// Open file to save the plots in
 	auto root_filename = config.output_name + ".root";
 	TFile *f = new TFile(root_filename.c_str(), "RECREATE");
@@ -49,7 +58,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	gPad->SetLogy();
 
 	//Histo_Sub
-	TPad* Pad_UpLeft = new TPad("Pad_UpLeft","Pad_UpLeft", 0, 0.3, 1.0, 1.0);
+	TPad* Pad_UpLeft = new TPad("Pad_UpLeft","Pad_UpLeft", 0., 0.3, 0.5, 1.0);
 	Pad_UpLeft->Draw();
 	Pad_UpLeft->cd();
 	data->data_histograms[0]->SetLineColor(kBlack);
@@ -57,75 +66,86 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	data->data_histograms[0]->GetYaxis()->SetTitle("Events");
 	data->data_histograms[0]->Draw();
 
+	std::cout << "DEBUG[OUTPUTMANAGER]: 2" << std::endl;
+
 	//Histo_Tag
-	TPad* Pad_UpRight = new TPad("Pad_UpRight","Pad_UpRight", 0, 0.3, 1.0, 1.0);
+	TPad* Pad_UpRight = new TPad("Pad_UpRight","Pad_UpRight", 0.5, 0.3, 1.0, 1.0);
 	Pad_UpRight->Draw();
 	Pad_UpRight->cd();
+
+	std::cout << "DEBUG[OUTPUTMANAGER]: 3" << std::endl;
+
 	data->data_histograms[1]->SetLineColor(kBlack);
 	data->data_histograms[1]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
 	data->data_histograms[1]->GetYaxis()->SetTitle("Events");
 	data->data_histograms[1]->Draw();
 
+	std::cout << "DEBUG[OUTPUTMANAGER]: 4" << std::endl;
 	//Legends
-	TLegend *leg_UpLeft = new TLegend(0.54,0.55,0.74,0.85,NULL,"brNDC");
+	TLegend *leg_UpLeft = new TLegend(0.34,0.55,0.54,0.85,NULL,"brNDC");
 	leg_UpLeft->SetTextAlign(13);
 	leg_UpLeft->SetTextSize(0.04);
 	leg_UpLeft->SetBorderSize(0);
 	leg_UpLeft->SetFillStyle(0);
 
-	TLegend *leg_UpRight = new TLegend(0.54,0.55,0.74,0.85,NULL,"brNDC");
+	TLegend *leg_UpRight = new TLegend(0.34,0.75,0.54,0.85,NULL,"brNDC");
 	leg_UpRight->SetTextAlign(13);
 	leg_UpRight->SetTextSize(0.04);
 	leg_UpRight->SetBorderSize(0);
 	leg_UpRight->SetFillStyle(0);
 
+	std::cout << "DEBUG[OUTPUTMANAGER]: 5" << std::endl;
+
 	//Be7,pep,Bi210,K40,Kr85,U238,Th232,Po210,C10,He6,C11)
 	int *Colors = new int [11]{632,632,409,616,400,600,870,921,801,881,419};
 
-	for (auto i = 1U; i <= config.data_hist_names.size(); i++) {
-		for(auto j = 0U; j < config.nSp_histos[i-1]; j++){
-			auto current_hist = pdfs->pdf_histograms[j];
-			current_hist->SetLineColor(Colors[i]);
-			current_hist->SetMarkerColor(Colors[i]);
-			current_hist->Scale(results.popt[i]/results.efficiencies[i]);
-			current_hist->Draw("SAME");
+	for (auto i : data->hist_ids) {
+		for(auto j = 0U; j < config.nSp_histos[i]; j++){
 
-			for (auto k = 1U; k <= config.nbins[i-1]; k++){
-				PDFsSum[i]->SetBinContent(k,PDFsSum[i]->GetBinContent(k)+pdfs->pdf_histograms[j]->GetBinContent(k));
-				PDFsSum[i]->SetLineColor(632);
-				PDFsSum[i]->SetMarkerColor(632);
-			}
-
-			if(i==1){
+			if(i==0){
+				auto current_hist = pdfs->pdf_histograms[j];
+				current_hist->SetLineColor(Colors[j]);
+				current_hist->SetMarkerColor(Colors[j]);
+				current_hist->Scale(results.popt[j]/results.efficiencies[j]);
 				Pad_UpLeft->cd();
+				current_hist->Draw("SAME");
+				PDFsSum[0]->Draw("SAME");
+				gPad->SetLogy();
 				leg_UpLeft->AddEntry(current_hist,config.param_names.at(j));
 				leg_UpLeft->Draw("SAME");
-			} else {
+			}
+			if(i==1){
+				auto current_hist = pdfs->pdf_histograms[j+config.nSp_histos[0]];
+				current_hist->SetLineColor(Colors[j]);
+				current_hist->SetMarkerColor(Colors[j]);
+				current_hist->Scale(results.popt[j]/results.efficiencies[j]);
 				Pad_UpRight->cd();
-				leg_UpRight->AddEntry(current_hist,config.param_names.at(j));
+				current_hist->Draw("SAME");
+				PDFsSum[1]->Draw("SAME");
+				gPad->SetLogy();
+				Pad_UpRight->cd();
+				leg_UpRight->AddEntry(current_hist,config.param_names.at(j+config.nSp_histos[0]));
 				leg_UpRight->Draw("SAME");
 			}
 		}
 	}
-	Pad_UpLeft->cd();
-	PDFsSum[0]->Draw("SAME");
-	Pad_UpRight->cd();
-	PDFsSum[1]->Draw("SAME");
-	gPad->SetLogy();
+
+	std::cout << "DEBUG[OUTPUTMANAGER]: 6" << std::endl;
 
 	// Residuals
-	std::vector<std::vector<double>> residuals;
+	/*std::vector<std::vector<double>> residuals;
 	std::vector<std::vector<double>> rec_energy;
 
-	for (auto i = 1U; i <= config.data_hist_names.size(); i++){
-		for(auto j = 0U; j < config.nbins[i-1]; j++){
-			rec_energy[i-1].push_back(j+pdfs->bin_edges[i-1].front());
-			residuals[i-1].push_back((data->data_histograms[i-1]->GetBinContent(j)-PDFsSum[i-1]->GetBinContent(j))/sqrt(data->data_histograms[i]->GetBinContent(j)));
+	for (auto i : data->hist_ids) {
+		for(auto j = 0U; j < config.nbins[i]; j++){
+			rec_energy[i].push_back(j+pdfs->bin_edges[i].front());
+			residuals[i].push_back((data->data_histograms[i]->GetBinContent(j)-PDFsSum[i]->GetBinContent(j))/sqrt(data->data_histograms[i]->GetBinContent(j)));
 		}
 	}
 
+std::cout << "DEBUG[OUTPUTMANAGER]: 8" << std::endl;
     c->cd();
-    TPad* Pad_DownLeft = new TPad("Pad_DownLeft", "Pad_DownLeft", 0.0, 0.0, 1.0, 0.3);
+    TPad* Pad_DownLeft = new TPad("Pad_DownLeft", "Pad_DownLeft", 0.0, 0.0, 0.5, 0.3);
     Pad_DownLeft->Draw();
     Pad_DownLeft->cd();
 
@@ -143,7 +163,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
     ResLeft->SetLineWidth(1);
     ResLeft->Draw("AL");
 
-    TPad* Pad_DownRight = new TPad("Pad_DownRight", "Pad_DownRight", 0.0, 0.0, 1.0, 0.3);
+    TPad* Pad_DownRight = new TPad("Pad_DownRight", "Pad_DownRight", 0.5, 0.0, 1.0, 0.3);
     Pad_DownRight->Draw();
     Pad_DownRight->cd();
 
@@ -158,7 +178,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
     ResRight->GetXaxis()->SetRangeUser(pdfs->bin_edges[1].front(),pdfs->bin_edges[1].back());
     ResRight->GetYaxis()->SetRangeUser(-4.,4.);
     ResRight->SetLineWidth(1);
-    ResRight->Draw("AL");
+    ResRight->Draw("AL");*/
 
     c->Write();
     f->Close();
