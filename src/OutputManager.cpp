@@ -30,31 +30,6 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	//----------------------------------------
 	//----------- Plot the results -----------
 	//----------------------------------------
-	// Create a vector of histograms with fit results
-	/*std::vector<TH1D*> PDFsSum;
-	for (auto i : data->hist_ids) {
-        auto name = "PDFsSum_" + config.data_hist_names[i];
-				TH1D *hPDFs = new TH1D(name.c_str(), name.c_str(),
-                               config.nbins[i], pdfs->bin_edges[i].front(),
-                               pdfs->bin_edges[i].back());
-
-				for(auto j = 0U; j < config.nSp_histos[i]; j++){
-						for (auto k = 1U; k <= config.nbins[i]; k++){
-
-							if(i==0){
-								hPDFs->SetBinContent(k,hPDFs->GetBinContent(k)+pdfs->pdf_histograms[j]->GetBinContent(k));
-								hPDFs->SetLineColor(632);
-								hPDFs->SetMarkerColor(632);
-							}else{
-								hPDFs->SetBinContent(k,hPDFs->GetBinContent(k)+pdfs->pdf_histograms[j+config.nSp_histos[0]]->GetBinContent(k));
-								hPDFs->SetLineColor(632);
-								hPDFs->SetMarkerColor(632);
-							}
-							}
-				}
-
-		PDFsSum.push_back(hPDFs);
-	}*/
 	// Open file to save the plots in
 	auto root_filename = config.output_name + ".root";
 	TFile *f = new TFile(root_filename.c_str(), "RECREATE");
@@ -75,15 +50,15 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	data->data_histograms[0]->Draw();
 
 	//Histo_Tag
-	c->cd();
-	TPad* Pad_UpRight = new TPad("Pad_UpRight","Pad_UpRight", 0.5, 0.3, 1.0, 1.0);
-	Pad_UpRight->Draw();
-	Pad_UpRight->cd();
-	gPad->SetLogy();
-	data->data_histograms[1]->SetLineColor(kBlack);
-	data->data_histograms[1]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
-	data->data_histograms[1]->GetYaxis()->SetTitle("Events");
-	data->data_histograms[1]->Draw();
+	// c->cd();
+	// TPad* Pad_UpRight = new TPad("Pad_UpRight","Pad_UpRight", 0.5, 0.3, 1.0, 1.0);
+	// Pad_UpRight->Draw();
+	// Pad_UpRight->cd();
+	// gPad->SetLogy();
+	// data->data_histograms[1]->SetLineColor(kBlack);
+	// data->data_histograms[1]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
+	// data->data_histograms[1]->GetYaxis()->SetTitle("Events");
+	// data->data_histograms[1]->Draw();
 
 	//Legends
 	TLegend *leg_UpLeft = new TLegend(0.34,0.55,0.54,0.85,NULL,"brNDC");
@@ -92,45 +67,61 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	leg_UpLeft->SetBorderSize(0);
 	leg_UpLeft->SetFillStyle(0);
 
-	TLegend *leg_UpRight = new TLegend(0.34,0.75,0.54,0.85,NULL,"brNDC");
-	leg_UpRight->SetTextAlign(13);
-	leg_UpRight->SetTextSize(0.04);
-	leg_UpRight->SetBorderSize(0);
-	leg_UpRight->SetFillStyle(0);
+	// TLegend *leg_UpRight = new TLegend(0.34,0.75,0.54,0.85,NULL,"brNDC");
+	// leg_UpRight->SetTextAlign(13);
+	// leg_UpRight->SetTextSize(0.04);
+	// leg_UpRight->SetBorderSize(0);
+	// leg_UpRight->SetFillStyle(0);
 
 	//Be7,pep,Bi210,K40,Kr85,U238,Th232,Po210,C10,He6,C11)
 	int *Colors = new int [11]{632,632,409,616,400,600,870,921,801,881,419};
 
-	for (auto i : data->hist_ids) {
-		for(auto j = 0U; j < config.nSp_histos[i]; j++){
+	for (auto i = 0U; i < results.paramVector.size(); i++) {
+		if (results.paramVector[i][0].idx_hist != 1) continue;
+		auto j = results.paramVector[i][0].idx_pdf;
 
-			if(i==0){
-				auto current_hist = pdfs->pdf_histograms[j];
-				current_hist->SetLineColor(Colors[j]);
-				current_hist->SetMarkerColor(Colors[j]);
-				current_hist->Scale(results.popt[j]/results.efficiencies[j]);
-				Pad_UpLeft->cd();
-				current_hist->Draw("SAME");
-				//PDFsSum[0]->Draw("SAME");
-				//gPad->SetLogy();
-				leg_UpLeft->AddEntry(current_hist,config.param_names.at(j));
-				leg_UpLeft->Draw("SAME");
-			}
-			if(i==1){
-				auto current_hist = pdfs->pdf_histograms[j+config.nSp_histos[0]];
-				current_hist->SetLineColor(Colors[j]);
-				current_hist->SetMarkerColor(Colors[j]);
-				current_hist->Scale(results.popt[j]/results.efficiencies[j]);
-				Pad_UpRight->cd();
-				current_hist->Draw("SAME");
-				//PDFsSum[1]->Draw("SAME");
-				//gPad->SetLogy();
-				Pad_UpRight->cd();
-				leg_UpRight->AddEntry(current_hist,config.param_names.at(j+config.nSp_histos[0]));
-				leg_UpRight->Draw("SAME");
-			}
-		}
+		auto current_hist = pdfs->pdf_histograms[j];
+		current_hist->SetLineColor(Colors[j]);
+		current_hist->SetMarkerColor(Colors[j]);
+		current_hist->Scale(1./current_hist->Integral());
+		current_hist->Scale(results.popt[i]/results.efficiencies[j]*config.param_eff[j]);
+		Pad_UpLeft->cd();
+		current_hist->Draw("SAME");
+		leg_UpLeft->AddEntry(current_hist, config.param_names.at(j));
+		leg_UpLeft->Draw("SAME");
 	}
+
+
+	// for (auto i : data->hist_ids) {
+	// 	for(auto j = 0U; j < config.nSp_histos[i]; j++){
+	//
+	// 		if(i==0){
+	// 			auto current_hist = pdfs->pdf_histograms[j];
+	// 			current_hist->SetLineColor(Colors[j]);
+	// 			current_hist->SetMarkerColor(Colors[j]);
+	// 			current_hist->Scale(results.popt[j]/results.efficiencies[j]);
+	// 			Pad_UpLeft->cd();
+	// 			current_hist->Draw("SAME");
+	// 			//PDFsSum[0]->Draw("SAME");
+	// 			//gPad->SetLogy();
+	// 			leg_UpLeft->AddEntry(current_hist,config.param_names.at(j));
+	// 			leg_UpLeft->Draw("SAME");
+	// 		}
+	// 		// if(i==1){
+	// 		// 	auto current_hist = pdfs->pdf_histograms[j+config.nSp_histos[0]];
+	// 		// 	current_hist->SetLineColor(Colors[j]);
+	// 		// 	current_hist->SetMarkerColor(Colors[j]);
+	// 		// 	current_hist->Scale(results.popt[j]/results.efficiencies[j]);
+	// 		// 	Pad_UpRight->cd();
+	// 		// 	current_hist->Draw("SAME");
+	// 		// 	//PDFsSum[1]->Draw("SAME");
+	// 		// 	//gPad->SetLogy();
+	// 		// 	Pad_UpRight->cd();
+	// 		// 	leg_UpRight->AddEntry(current_hist,config.param_names.at(j+config.nSp_histos[0]));
+	// 		// 	leg_UpRight->Draw("SAME");
+	// 		// }
+	// 	}
+	// }
 
 
 	// Residuals
@@ -229,6 +220,13 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		popt_cpd.push_back(results.popt[i] * eff_exposure);
 		popt_err_cpd.push_back(popt_err[i] * eff_exposure);
 	}
+
+	// Counts = PDF * parameter * param_eff
+	// std::cout << "popt:" << std::endl;
+	// for (auto i = 0U; i < results.paramVector.size(); i++) {
+	// 	auto conv = results.popt[i]*config.param_eff[results.paramVector[i][0].idx_pdf]*factor/results.efficiencies[i];
+	// 	std::cout << results.popt[i] << ", " << conv << ", " << config.param_eff[results.paramVector[i][0].idx_pdf] << ", " << results.efficiencies[i] << "; " << factor << std::endl;
+	// }
 
 	// Write params with uncertainties in counts and cpd/kton
 	outf << "------------\n" << "Fit results:\n" << "------------\n"

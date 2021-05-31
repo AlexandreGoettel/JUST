@@ -290,10 +290,8 @@ auto MinuitManager::getResults() -> NuFitResults {
 
 	// Fill parameter vector
     for (auto i = 0U; i < fitCtnr.n_params; i++) {
-        // auto j = fitCtnr.paramVector[i][0].idx_pdf;
 		gMinuit->GetParameter(i, x, _);
 		popt[i] = x;
-		// std::cout << i << ", " << j << std::endl;
 	}
 	// Fill fixed parameter value where estimate would be
 	// TODO
