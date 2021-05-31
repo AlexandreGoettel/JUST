@@ -50,15 +50,15 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	data->data_histograms[0]->Draw();
 
 	//Histo_Tag
-	// c->cd();
-	// TPad* Pad_UpRight = new TPad("Pad_UpRight","Pad_UpRight", 0.5, 0.3, 1.0, 1.0);
-	// Pad_UpRight->Draw();
-	// Pad_UpRight->cd();
-	// gPad->SetLogy();
-	// data->data_histograms[1]->SetLineColor(kBlack);
-	// data->data_histograms[1]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
-	// data->data_histograms[1]->GetYaxis()->SetTitle("Events");
-	// data->data_histograms[1]->Draw();
+	c->cd();
+	TPad* Pad_UpRight = new TPad("Pad_UpRight","Pad_UpRight", 0.5, 0.3, 1.0, 1.0);
+	Pad_UpRight->Draw();
+	Pad_UpRight->cd();
+	gPad->SetLogy();
+	data->data_histograms[1]->SetLineColor(kBlack);
+	data->data_histograms[1]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
+	data->data_histograms[1]->GetYaxis()->SetTitle("Events");
+	data->data_histograms[1]->Draw();
 
 	//Legends
 	TLegend *leg_UpLeft = new TLegend(0.34,0.55,0.54,0.85,NULL,"brNDC");
@@ -67,61 +67,38 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	leg_UpLeft->SetBorderSize(0);
 	leg_UpLeft->SetFillStyle(0);
 
-	// TLegend *leg_UpRight = new TLegend(0.34,0.75,0.54,0.85,NULL,"brNDC");
-	// leg_UpRight->SetTextAlign(13);
-	// leg_UpRight->SetTextSize(0.04);
-	// leg_UpRight->SetBorderSize(0);
-	// leg_UpRight->SetFillStyle(0);
+	TLegend *leg_UpRight = new TLegend(0.34,0.75,0.54,0.85,NULL,"brNDC");
+	leg_UpRight->SetTextAlign(13);
+	leg_UpRight->SetTextSize(0.04);
+	leg_UpRight->SetBorderSize(0);
+	leg_UpRight->SetFillStyle(0);
 
 	//Be7,pep,Bi210,K40,Kr85,U238,Th232,Po210,C10,He6,C11)
-	int *Colors = new int [11]{632,632,409,616,400,600,870,921,801,881,419};
+	int *Colors = new int [12]{632,632,409,616,400,600,870,921,801,881,419,419};
 
-	for (auto i = 0U; i < results.paramVector.size(); i++) {
-		if (results.paramVector[i][0].idx_hist != 1) continue;
-		auto j = results.paramVector[i][0].idx_pdf;
+    for (auto i = 0U; i < results.paramVector.size(); i++) {
+        auto parData = results.paramVector[i];
+        for (auto el : parData) {
+            auto j = el.idx_pdf;
 
-		auto current_hist = pdfs->pdf_histograms[j];
-		current_hist->SetLineColor(Colors[j]);
-		current_hist->SetMarkerColor(Colors[j]);
-		current_hist->Scale(1./current_hist->Integral());
-		current_hist->Scale(results.popt[i]/results.efficiencies[j]*config.param_eff[j]);
-		Pad_UpLeft->cd();
-		current_hist->Draw("SAME");
-		leg_UpLeft->AddEntry(current_hist, config.param_names.at(j));
-		leg_UpLeft->Draw("SAME");
-	}
+            auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
+            current_hist->SetLineColor(Colors[i]);
+            current_hist->SetMarkerColor(Colors[i]);
+            current_hist->Scale(results.popt[i]/results.efficiencies[j]*config.param_eff[j]);
 
-
-	// for (auto i : data->hist_ids) {
-	// 	for(auto j = 0U; j < config.nSp_histos[i]; j++){
-	//
-	// 		if(i==0){
-	// 			auto current_hist = pdfs->pdf_histograms[j];
-	// 			current_hist->SetLineColor(Colors[j]);
-	// 			current_hist->SetMarkerColor(Colors[j]);
-	// 			current_hist->Scale(results.popt[j]/results.efficiencies[j]);
-	// 			Pad_UpLeft->cd();
-	// 			current_hist->Draw("SAME");
-	// 			//PDFsSum[0]->Draw("SAME");
-	// 			//gPad->SetLogy();
-	// 			leg_UpLeft->AddEntry(current_hist,config.param_names.at(j));
-	// 			leg_UpLeft->Draw("SAME");
-	// 		}
-	// 		// if(i==1){
-	// 		// 	auto current_hist = pdfs->pdf_histograms[j+config.nSp_histos[0]];
-	// 		// 	current_hist->SetLineColor(Colors[j]);
-	// 		// 	current_hist->SetMarkerColor(Colors[j]);
-	// 		// 	current_hist->Scale(results.popt[j]/results.efficiencies[j]);
-	// 		// 	Pad_UpRight->cd();
-	// 		// 	current_hist->Draw("SAME");
-	// 		// 	//PDFsSum[1]->Draw("SAME");
-	// 		// 	//gPad->SetLogy();
-	// 		// 	Pad_UpRight->cd();
-	// 		// 	leg_UpRight->AddEntry(current_hist,config.param_names.at(j+config.nSp_histos[0]));
-	// 		// 	leg_UpRight->Draw("SAME");
-	// 		// }
-	// 	}
-	// }
+            if (el.idx_hist == 1) {
+    			Pad_UpLeft->cd();
+    			current_hist->Draw("SAME");
+    			leg_UpLeft->AddEntry(current_hist, config.param_names.at(j));
+    			leg_UpLeft->Draw("SAME");
+    		} else {
+                Pad_UpRight->cd();
+                current_hist->Draw("SAME");
+    			leg_UpRight->AddEntry(current_hist, config.param_names.at(j));
+    			leg_UpRight->Draw("SAME");
+            }
+        }
+    }
 
 
 	// Residuals
