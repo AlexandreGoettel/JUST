@@ -76,6 +76,9 @@ auto Read(const NuFitConfig config) -> NuFitData* {
 	    }
 	}
 
+	std::cout << "[DATA READER]" << "nHists: " << vec_data.size()
+	          << ", nBins: " << config.nbins[0] << std::endl;
+
 	// Create and return NuFitData object
 	auto *data = new NuFitData(vec_data, bin_edges, hists);
 	return data;
@@ -98,7 +101,7 @@ auto Read(const NuFitConfig config) -> NuFitPDFs* {
 	std::vector<std::vector<double>> pdfs;
 	for (auto n = 0U; n < config.npdfs; n++) {
 		std::vector<double> current_pdf;
-		for (auto i = 0U; i <= config.nbins[config.hist_id[n-1]]; i++) {
+		for (auto i = 0U; i <= config.nbins[config.hist_id[n]-1]; i++) {
 			current_pdf.push_back(hPDFs[n]->GetBinContent(i));
 		}
 		pdfs.push_back(current_pdf);
@@ -112,6 +115,9 @@ auto Read(const NuFitConfig config) -> NuFitPDFs* {
 			bin_edges.push_back(bin_edges_tmp);
 		}
 	}
+
+    std::cout << "[PDF READER]" << "nPDF: " << pdfs.size() << std::endl
+              << "[PDF READER]" << "nHists: " << bin_edges.size() << std::endl;
 
 	// Create and return NuFitPDFs object with the variables
 	auto *output = new NuFitPDFs(pdfs, bin_edges, hPDFs);

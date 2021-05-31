@@ -32,11 +32,13 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	//----------------------------------------
 	// Create a vector of histograms with fit results
 	std::vector<TH1D*> PDFsSum;
-	for (auto i = 1U; i <= config.data_hist_names.size(); i++) {
-        auto name = "PDFsSum_" + config.data_hist_names[i-1];
+	std::cout << data->data_histograms.size() << std::endl;
+	for (auto i = 0U; i < config.data_hist_names.size(); i++) {
+        auto name = "PDFsSum_" + config.data_hist_names[i];
+		std::cout << config.nbins.size() << ", " << pdfs->bin_edges.size() << std::endl;
 		TH1D* hPDFs = new TH1D(name.c_str(), name.c_str(),
-                               config.nbins[i-1], pdfs->bin_edges[i-1].front(),
-                               pdfs->bin_edges[i-1].back());
+                               config.nbins[i], pdfs->bin_edges[i].front(),
+                               pdfs->bin_edges[i].back());
 		PDFsSum.push_back(hPDFs);
 	 }
 
@@ -68,16 +70,16 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 
 	//Legends
 	TLegend *leg_UpLeft = new TLegend(0.54,0.55,0.74,0.85,NULL,"brNDC");
-  leg_UpLeft->SetTextAlign(13);
-  leg_UpLeft->SetTextSize(0.04);
-  leg_UpLeft->SetBorderSize(0);
-  leg_UpLeft->SetFillStyle(0);
+	leg_UpLeft->SetTextAlign(13);
+	leg_UpLeft->SetTextSize(0.04);
+	leg_UpLeft->SetBorderSize(0);
+	leg_UpLeft->SetFillStyle(0);
 
 	TLegend *leg_UpRight = new TLegend(0.54,0.55,0.74,0.85,NULL,"brNDC");
-  leg_UpRight->SetTextAlign(13);
-  leg_UpRight->SetTextSize(0.04);
-  leg_UpRight->SetBorderSize(0);
-  leg_UpRight->SetFillStyle(0);
+	leg_UpRight->SetTextAlign(13);
+	leg_UpRight->SetTextSize(0.04);
+	leg_UpRight->SetBorderSize(0);
+	leg_UpRight->SetFillStyle(0);
 
 	//Be7,pep,Bi210,K40,Kr85,U238,Th232,Po210,C10,He6,C11)
 	int *Colors = new int [11]{632,632,409,616,400,600,870,921,801,881,419};

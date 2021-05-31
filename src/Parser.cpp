@@ -102,6 +102,10 @@ auto ParseGenOpts(std::unique_ptr<NuFitConfig> &config, std::string filename) ->
 	ReadGen.open(filename);
 
 	while (std::getline(ReadGen, line)) {
+        // Skip empty lines
+        if (line.empty()) continue;
+
+        // Read from line
 		std::stringstream line_stream(line);
 
 		// Ignore commented lines
@@ -130,6 +134,12 @@ auto ParseGenOpts(std::unique_ptr<NuFitConfig> &config, std::string filename) ->
 		// Todo error handling in case some values are missing
 	}
 	config->exposure = config->lifetime * config->mass_target;
+
+    std::cout << "Found " << config->data_hist_names.size()
+              << " histograms:" << std::endl;
+    for (auto i = 1U; i <= config->data_hist_names.size(); i++) {
+        std::cout << "\t" << i << ": " << config->data_hist_names[i-1] << std::endl;
+    }
 }
 
 // @brief Parse the species_list content and save to config
@@ -207,12 +217,10 @@ auto ParseSpeciesList(std::unique_ptr<NuFitConfig>& config,
 				"' does not have enough arguments to be valid.."
 				+ std::to_string(nElements));
 		}
-
-		// TODO: additional error handling
 	}
+    // TODO: additional error handling
 
-	// nSp_histos[0]: number of species in Histo1
-	// nSp_histos[1]: number of species in Histo2
+	// nSp_histos[i-1]: number of species in Histo_i
 	int appoint = 0;
 	TString appo;
 	appo = config->pdf_names.front();

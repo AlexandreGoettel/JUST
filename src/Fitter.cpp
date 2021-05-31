@@ -151,34 +151,18 @@ auto NuFitContainer::fitFunction(unsigned int npar, const double *par)
 	// TODO: fixed params
 	// Initialise output vector
 	std::vector<std::vector<double>> fitFuncVal;
-	for (auto el : data->data) {
+	for (auto el : data_vector) {
 		std::vector<double> tmp (el.size(), 0);
 		fitFuncVal.push_back(tmp);
 	}
 
 	// Fill the output vector with function values
-	// for (auto i = 0U; i < data->data.size(); i++) {  // each hist
-	// 	for (auto j = 0U; j < data->data[i].size(); j++) {  // each bin
-	// 		for (auto k = 0U; k < paramVector.size(); k++) {  // each independent param
-	// 			auto parDataVec = paramVector[k];
-	// 			for (auto h = 0U; h < parDataVec.size(); h++) {  // each hist in parData
-	// 				auto parData = parDataVec[h];
-	// 				if (parData.idx_hist-1 == i) {
-	// 					auto idx = idx_map[parData.idx_pdf];
-	// 					fitFuncVal[i][j] += pdf_vectors[idx][j] *
-	// 						par[k] * config.param_eff[parData.idx_pdf];
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
-
 	for (auto k = 0U; k < paramVector.size(); k++) {  // each parameter
 		auto parDataVec = paramVector[k];
 		for (auto h = 0U; h < parDataVec.size(); h++) {  // each hist in parData
 			auto parData = parDataVec[h];
-			for (auto j = 0U; j < data->data[parData.idx_hist].size(); j++) {  // each bin
-                fitFuncVal[parData.idx_hist][j] += pdf_vectors[parData.idx_pdf][j]
+			for (auto j = 0U; j < data_vector[parData.idx_hist-1].size(); j++) {  // each bin
+                fitFuncVal[parData.idx_hist-1][j] += pdf_vectors[parData.idx_pdf][j]
                     * par[k] * config.param_eff[parData.idx_pdf];
 			}
 		}
