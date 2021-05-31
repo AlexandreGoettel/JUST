@@ -26,10 +26,12 @@ NuFitPDFs::NuFitPDFs(std::vector<std::vector<double>> pdfs_,
 
 NuFitData::NuFitData(std::vector<std::vector<double>> data_,
 	                 std::vector<std::vector<double>> bin_edges_,
-	                 std::vector<TH1D*> data_histograms_) {
+	                 std::vector<TH1D*> data_histograms_,
+                     std::vector<unsigned int> ids_) {
 	data = data_;
 	bin_edges = bin_edges_;
 	data_histograms = data_histograms_;
+	hist_ids = ids_;
 }
 
 // TODO: do we want this function somewhere else?
@@ -51,6 +53,7 @@ auto Read(const NuFitConfig config) -> NuFitData* {
 	// Initialise variables
 	std::vector<TH1D*> hists;
 	std::vector<std::vector<double>> vec_data, bin_edges;
+	std::vector<unsigned int> hist_ids;
 
 	// Read the histograms if their id was found in specieslist
 	std::cout << "INFO: Reading data from " << config.data_name << std::endl;
@@ -73,6 +76,7 @@ auto Read(const NuFitConfig config) -> NuFitData* {
 			hists.push_back(hdata);
 			bin_edges.push_back(bin_edges_hist);
 			vec_data.push_back(vec_data_hist);
+			hist_ids.push_back(i-1);
 	    }
 	}
 
@@ -80,7 +84,7 @@ auto Read(const NuFitConfig config) -> NuFitData* {
 	          << ", nBins: " << config.nbins[0] << std::endl;
 
 	// Create and return NuFitData object
-	auto *data = new NuFitData(vec_data, bin_edges, hists);
+	auto *data = new NuFitData(vec_data, bin_edges, hists, hist_ids);
 	return data;
 }
 

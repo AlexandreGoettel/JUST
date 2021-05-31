@@ -32,10 +32,8 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	//----------------------------------------
 	// Create a vector of histograms with fit results
 	std::vector<TH1D*> PDFsSum;
-	std::cout << data->data_histograms.size() << std::endl;
-	for (auto i = 0U; i < config.data_hist_names.size(); i++) {
+	for (auto i : data->hist_ids) {
         auto name = "PDFsSum_" + config.data_hist_names[i];
-		std::cout << config.nbins.size() << ", " << pdfs->bin_edges.size() << std::endl;
 		TH1D* hPDFs = new TH1D(name.c_str(), name.c_str(),
                                config.nbins[i], pdfs->bin_edges[i].front(),
                                pdfs->bin_edges[i].back());

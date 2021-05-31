@@ -22,7 +22,7 @@ class NuFitConfig;
 class NuFitData {
 public:  // Constructros and operator assigments
 	NuFitData(std::vector<std::vector<double>>, std::vector<std::vector<double>>,
-	          std::vector<TH1D*>);  // constructor
+	          std::vector<TH1D*>, std::vector<unsigned int>);  // constructor
 	~NuFitData() = default;  // destructor
 	NuFitData(const NuFitData&) = default;  // copy constructor
 	NuFitData(NuFitData&&) = default;  // move constructor
@@ -32,6 +32,7 @@ public:  // Constructros and operator assigments
 public: // Variables
 	std::vector<std::vector<double>> data, bin_edges;
 	std::vector<TH1D*> data_histograms;
+	std::vector<unsigned int> hist_ids;
 };
 
 class NuFitPDFs {
