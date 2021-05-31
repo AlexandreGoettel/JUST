@@ -218,25 +218,21 @@ auto ParseSpeciesList(std::unique_ptr<NuFitConfig>& config,
 				+ std::to_string(nElements));
 		}
 	}
+	ReadSpec.close();
     // TODO: additional error handling
 
-	// nSp_histos[i-1]: number of species in Histo_i
-	int appoint = 0;
-	TString appo;
-	appo = config->pdf_names.front();
-	for (auto i=0U; i < config->pdf_names.size(); i++){
-		appoint++;
-		if(!i==0 && appo==config->pdf_names.at(i)){
-			config->nSp_histos.push_back(appoint-1);
-			config->nSp_histos.push_back(config->pdf_names.size()-(appoint-1));
-			break;
-		}
+	// Count how many species exist in each histogram
+	auto max = *std::max_element(std::begin(config->hist_id),
+	                             std::end(config->hist_id));
+	std::vector<unsigned int> tmp_nSp(max);
+	for (auto el : config->hist_id) {
+		tmp_nSp[el-1]++;
 	}
+	config->nSp_histos = tmp_nSp;
+
+	// Bookkeeping
 	config->npdfs = nPDFs;
 	config->nparams = nParams;
-	std::cout << "nSp histo 1 = " << config->nSp_histos[0] << std::endl;
-	std::cout << "nSp histo 2 = " << config->nSp_histos[1] << std::endl;
-	ReadSpec.close();
 }
 
 auto Parse(NuFitCmdlArgs args) -> NuFitConfig {

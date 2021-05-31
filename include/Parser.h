@@ -51,12 +51,11 @@ public:  // Initialise variables to be filled by parser
 	std::vector<std::string> data_hist_names;
 	std::vector<unsigned int> nbins;
 
-	std::vector<unsigned int> nSp_histos;
 	unsigned int npdfs, nparams;
 	std::vector<TString> param_names, pdf_names;
 	std::vector<double> param_initial_guess, param_stepsize,
 	                    param_lowerlim, param_upperlim, param_eff;
-	std::vector<unsigned int> param_fixed, hist_id;
+	std::vector<unsigned int> param_fixed, hist_id, nSp_histos;
 };
 
 void ErrorReading(std::string&);
