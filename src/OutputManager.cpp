@@ -108,7 +108,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 				auto current_hist = pdfs->pdf_histograms[j];
 				current_hist->SetLineColor(Colors[j]);
 				current_hist->SetMarkerColor(Colors[j]);
-				//current_hist->Scale(results.popt[j]/results.efficiencies[j]);
+				current_hist->Scale(results.popt[j]/results.efficiencies[j]);
 				Pad_UpLeft->cd();
 				current_hist->Draw("SAME");
 				//PDFsSum[0]->Draw("SAME");
@@ -120,7 +120,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 				auto current_hist = pdfs->pdf_histograms[j+config.nSp_histos[0]];
 				current_hist->SetLineColor(Colors[j]);
 				current_hist->SetMarkerColor(Colors[j]);
-				//current_hist->Scale(results.popt[j]/results.efficiencies[j]);
+				current_hist->Scale(results.popt[j]/results.efficiencies[j]);
 				Pad_UpRight->cd();
 				current_hist->Draw("SAME");
 				//PDFsSum[1]->Draw("SAME");
