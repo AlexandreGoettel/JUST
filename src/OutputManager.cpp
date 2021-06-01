@@ -35,6 +35,16 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	TFile *f = new TFile(root_filename.c_str(), "RECREATE");
 	f->cd();
 
+	//Create a std::vector<TH1D*> to fill with the fit results
+	std::vector<TH1D*> PDFsSum;
+
+	/*for (auto i : data->hist_ids){
+		auto name = "PDFsSum_" + config.data_hist_names[i];
+		TH1D *PDFs_hists = new TH1D(name.c_str(), name.c_str(), config.nbins[i], pdfs->bin_edges[i].front(), pdfs->bin_edges[i].back());
+		PDFsSum.push_back(PDFs_hists);
+	}*/
+
+
 	TCanvas *c = new TCanvas("Results","Results",1500,700);
 	gPad->SetLogy();
 
@@ -47,6 +57,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	data->data_histograms[0]->SetLineColor(kBlack);
 	data->data_histograms[0]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
 	data->data_histograms[0]->GetYaxis()->SetTitle("Events");
+	data->data_histograms[0]->GetYaxis()->SetRangeUser(1,1e4);
 	data->data_histograms[0]->Draw();
 
 	//Histo_Tag
@@ -58,6 +69,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	data->data_histograms[1]->SetLineColor(kBlack);
 	data->data_histograms[1]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
 	data->data_histograms[1]->GetYaxis()->SetTitle("Events");
+	data->data_histograms[1]->GetYaxis()->SetRangeUser(1,1e4);
 	data->data_histograms[1]->Draw();
 
 	//Legends
@@ -73,6 +85,9 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	leg_UpRight->SetBorderSize(0);
 	leg_UpRight->SetFillStyle(0);
 
+	TH1D *PDFs_hist1 = new TH1D("hist1", "hist1", config.nbins[0], pdfs->bin_edges[0].front(), pdfs->bin_edges[0].back());
+	TH1D *PDFs_hist2 = new TH1D("hist2", "hist2", config.nbins[1], pdfs->bin_edges[1].front(), pdfs->bin_edges[1].back());
+
 	//Be7,pep,Bi210,K40,Kr85,U238,Th232,Po210,C10,He6,C11)
 	int *Colors = new int [12]{632,632,409,616,400,600,870,921,801,881,419,419};
 
@@ -86,70 +101,87 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
             current_hist->SetMarkerColor(Colors[i]);
             current_hist->Scale(results.popt[i]/results.efficiencies[j]*config.param_eff[j]);
 
-            if (el.idx_hist == 1) {
-    			Pad_UpLeft->cd();
-    			current_hist->Draw("SAME");
-    			leg_UpLeft->AddEntry(current_hist, config.param_names.at(j));
-    			leg_UpLeft->Draw("SAME");
-    		} else {
-                Pad_UpRight->cd();
-                current_hist->Draw("SAME");
-    			leg_UpRight->AddEntry(current_hist, config.param_names.at(j));
-    			leg_UpRight->Draw("SAME");
-            }
+          if (el.idx_hist == 1) {
+
+						for(auto k = 1U; k <= config.nbins[el.idx_hist-1]; k++){
+							PDFs_hist1->SetBinContent(k,PDFs_hist1->GetBinContent(k)+current_hist->GetBinContent(k));
+						}
+
+    				Pad_UpLeft->cd();
+    				current_hist->Draw("SAME");
+    				leg_UpLeft->AddEntry(current_hist, config.param_names.at(j));
+    				leg_UpLeft->Draw("SAME");
+
+    			} else {
+
+						for(auto k = 1U; k <= config.nbins[el.idx_hist-1]; k++){
+							PDFs_hist2->SetBinContent(k,PDFs_hist2->GetBinContent(k)+current_hist->GetBinContent(k));
+						}
+
+          	Pad_UpRight->cd();
+          	current_hist->Draw("SAME");
+    				leg_UpRight->AddEntry(current_hist, config.param_names.at(j));
+    				leg_UpRight->Draw("SAME");
         }
+      }
     }
 
+		PDFsSum.push_back(PDFs_hist1);
+		PDFsSum.push_back(PDFs_hist2);
 
 	// Residuals
-	/*std::vector<std::vector<double>> residuals;
 	std::vector<std::vector<double>> rec_energy;
+	std::vector<std::vector<double>> residuals;
 
 	for (auto i : data->hist_ids) {
+		std::vector<double> res,rec;
 		for(auto j = 0U; j < config.nbins[i]; j++){
-			rec_energy[i].push_back(j+pdfs->bin_edges[i].front());
-			residuals[i].push_back((data->data_histograms[i]->GetBinContent(j)-PDFsSum[i]->GetBinContent(j))/sqrt(data->data_histograms[i]->GetBinContent(j)));
+				rec.push_back(j+pdfs->bin_edges[i].front());
+				res.push_back((data->data_histograms[i]->GetBinContent(j)-PDFsSum[i]->GetBinContent(j))/sqrt(data->data_histograms[i]->GetBinContent(j)));
 		}
+		rec_energy.push_back(rec);
+		residuals.push_back(res);
 	}
 
-    c->cd();
-    TPad* Pad_DownLeft = new TPad("Pad_DownLeft", "Pad_DownLeft", 0.0, 0.0, 0.5, 0.3);
-    Pad_DownLeft->Draw();
-    Pad_DownLeft->cd();
+  c->cd();
+  TPad* Pad_DownLeft = new TPad("Pad_DownLeft", "Pad_DownLeft", 0.0, 0.0, 0.5, 0.3);
+  Pad_DownLeft->Draw();
+  Pad_DownLeft->cd();
 
-    // auto resArray = vec2Array(residuals[0]);
-    TGraph *ResLeft = new TGraph(config.nbins[0], vec2Array(rec_energy[0]),
+  // auto resArray = vec2Array(residuals[0]);
+  TGraph *ResLeft = new TGraph(config.nbins[0], vec2Array(rec_energy[0]),
                                  vec2Array(residuals[0]));
-    ResLeft->SetTitle("Residuals");
-    ResLeft->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
-    ResLeft->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
-    ResLeft->GetYaxis()->CenterTitle(true);
-    ResLeft->GetYaxis()->SetTitleSize(.05);
-    ResLeft->GetXaxis()->SetTitleSize(.05);
-    ResLeft->GetXaxis()->SetRangeUser(pdfs->bin_edges[0].front(),pdfs->bin_edges[0].back());
-    ResLeft->GetYaxis()->SetRangeUser(-4.,4.);
-    ResLeft->SetLineWidth(1);
-    ResLeft->Draw("AL");
+  ResLeft->SetTitle("Residuals");
+  ResLeft->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
+  ResLeft->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
+  ResLeft->GetYaxis()->CenterTitle(true);
+  ResLeft->GetYaxis()->SetTitleSize(.05);
+  ResLeft->GetXaxis()->SetTitleSize(.05);
+  ResLeft->GetXaxis()->SetRangeUser(pdfs->bin_edges[0].front(),pdfs->bin_edges[0].back());
+  ResLeft->GetYaxis()->SetRangeUser(-4.,4.);
+  ResLeft->SetLineWidth(1);
+  ResLeft->Draw("AL");
 
-    TPad* Pad_DownRight = new TPad("Pad_DownRight", "Pad_DownRight", 0.5, 0.0, 1.0, 0.3);
-    Pad_DownRight->Draw();
-    Pad_DownRight->cd();
+	c->cd();
+  TPad* Pad_DownRight = new TPad("Pad_DownRight", "Pad_DownRight", 0.5, 0.0, 1.0, 0.3);
+  Pad_DownRight->Draw();
+  Pad_DownRight->cd();
 
-    TGraph *ResRight = new TGraph(config.nbins[1], vec2Array(rec_energy[1]),
+  TGraph *ResRight = new TGraph(config.nbins[1], vec2Array(rec_energy[1]),
                                   vec2Array(residuals[1]));
-    ResRight->SetTitle("Residuals");
-    ResRight->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
-    ResRight->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
-    ResRight->GetYaxis()->CenterTitle(true);
-    ResRight->GetYaxis()->SetTitleSize(.05);
-    ResRight->GetXaxis()->SetTitleSize(.05);
-    ResRight->GetXaxis()->SetRangeUser(pdfs->bin_edges[1].front(),pdfs->bin_edges[1].back());
-    ResRight->GetYaxis()->SetRangeUser(-4.,4.);
-    ResRight->SetLineWidth(1);
-    ResRight->Draw("AL");*/
+  ResRight->SetTitle("Residuals");
+  ResRight->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
+  ResRight->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
+  ResRight->GetYaxis()->CenterTitle(true);
+  ResRight->GetYaxis()->SetTitleSize(.05);
+  ResRight->GetXaxis()->SetTitleSize(.05);
+  ResRight->GetXaxis()->SetRangeUser(pdfs->bin_edges[1].front(),pdfs->bin_edges[1].back());
+  ResRight->GetYaxis()->SetRangeUser(-4.,4.);
+  ResRight->SetLineWidth(1);
+  ResRight->Draw("AL");
 
-    c->Write();
-    f->Close();
+  c->Write();
+  f->Close();
 
 	//----------------------------------------
 	//------ Create the output txt file ------
