@@ -325,15 +325,15 @@ auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
 	}
 
 	// In case of parameter constraints, add (Gaussian) pull terms here
-	// TODO
-	// for (auto i = 0U; i < fitCtnr.n_params; i++) {
-	// 	auto j = fitCtnr.idx_map[i];  // Convert to free param index space
-	// 	if (fitCtnr.config.param_fixed[j] != 2) continue;
-	//
-	// 	auto diff = par[i] - fitCtnr.config.param_initial_guess[j];
-	// 	auto sigma = fitCtnr.config.param_stepsize[j];
-	// 	f += 0.5*diff*diff/sigma/sigma;
-	// }
+    for (auto i = 0U; i < fitCtnr.paramVector.size(); i++) {
+        auto paramVec = fitCtnr.paramVector[i];
+        auto j = paramVec[0].idx_pdf;
+        if (fitCtnr.config.param_fixed[j] != 2) continue;
+
+        auto diff = par[i] - fitCtnr.config.param_initial_guess[j];
+        auto sigma = fitCtnr.config.param_stepsize[j];
+        f += 0.5*diff*diff/sigma/sigma;
+    }
 }
 
 // @brief Perform a binned likelihood fit of the pdfs on the data
