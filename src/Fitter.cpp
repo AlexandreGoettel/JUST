@@ -271,12 +271,12 @@ auto MinuitManager::getResults() -> NuFitResults {
 	// Get the covariance matrix
 	double mat[nparams][nparams];
 	gMinuit->mnemat(&mat[0][0], nparams);
-	std::vector<std::vector<double>> pcov_(nparams,
-	                                       std::vector<double>(nparams));
+	// std::vector<std::vector<double>> pcov_(nparams,
+	//                                        std::vector<double>(nparams));
 	// Convert to vector<vector>
 	for (auto i = 0U; i < nparams; i++) {
 		for (auto j = 0U; j < nparams; j++) {
-			pcov_[i][j] = mat[i][j];
+			pcov[i][j] = mat[i][j];
 		}
 	}
 

@@ -221,33 +221,29 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	// Convert counts to cpd/100t
 	// cpd = count / (lifetime) / mass_target / efficiency;
 	auto factor {1. / (config.lifetime*config.mass_target)};
-
 	std::vector<double> popt_cpd, popt_err_cpd;
 	auto popt_err = results.getUncertainties();
-	for (auto i = 0U; i < config.npdfs; i++) {
-		auto eff_exposure = factor / results.efficiencies[i];
-		popt_cpd.push_back(results.popt[i] * eff_exposure);
-		popt_err_cpd.push_back(popt_err[i] * eff_exposure);
-	}
-
-	// Counts = PDF * parameter * param_eff
-	// std::cout << "popt:" << std::endl;
-	// for (auto i = 0U; i < results.paramVector.size(); i++) {
-	// 	auto conv = results.popt[i]*config.param_eff[results.paramVector[i][0].idx_pdf]*factor/results.efficiencies[i];
-	// 	std::cout << results.popt[i] << ", " << conv << ", " << config.param_eff[results.paramVector[i][0].idx_pdf] << ", " << results.efficiencies[i] << "; " << factor << std::endl;
-	// }
+    // TODO: Same param on different hists can have different efficiencies!
+    for (auto i = 0U; i < results.paramVector.size(); i++) {
+        auto paramVec = results.paramVector[i];
+        auto j = paramVec[0].idx_pdf;
+        auto eff_exposure = factor / results.efficiencies[j];
+        popt_cpd.push_back(results.popt[i] * eff_exposure);
+        popt_err_cpd.push_back(popt_err[i] * eff_exposure);
+    }
 
 	// Write params with uncertainties in counts and cpd/kton
 	outf << "------------\n" << "Fit results:\n" << "------------\n"
 		 << "Species\tcounts\t\tsigma\t\trate(cpd/kton)\tsigma(cpd/kton)\n"
 	     << std::scientific;
 	outf.precision(4);
-	for (auto i = 0U; i < config.npdfs; i++) {
-		outf << config.param_names[i] << "\t";
-		outf << results.popt[i] << "\t" << popt_err[i] << "\t";
-		outf << popt_cpd[i] << "\t" << popt_err_cpd[i];
+    for (auto i = 0U; i < results.paramVector.size(); i++) {  // For each parameter
+        auto paramVec = results.paramVector[i];
+        outf << config.param_names[paramVec[0].idx_pdf] << "\t";
+        outf << results.popt[i] << "\t" << popt_err[i] << "\t";
+        outf << popt_cpd[i] << "\t" << popt_err_cpd[i];
 		outf << "\n";
-	}
+    }
 
 	// Write the covariance matrix
 	outf << "------------------" << std::endl
