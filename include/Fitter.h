@@ -49,12 +49,11 @@ public:  // Minuit functions
     template <typename L> double NLL(L, int, const double*);
 	std::vector<std::vector<double>> fitFunction(unsigned int, const double*);
 public:  // Member variables
-	double n_params, n_fixed;
+	unsigned int n_params, n_fixed;
 	std::vector<double> efficiencies;
-	std::vector<std::vector<paramData>> paramVector;
+	std::vector<std::vector<paramData>> paramVector, paramVector_fixed;
 private:  // Member variables
-	std::vector<std::vector<double>> pdf_vectors;
-	std::vector<std::vector<double>> data_vector;
+	std::vector<std::vector<double>> pdf_vectors, data_vector, fitValFixed;
 	template <class T> bool InFitRange(T, T);
 };
 

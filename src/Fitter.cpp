@@ -109,26 +109,62 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 
 	// 4. Fill the paramVector object which contains useful information
 	//    about the parameters to be used in the fit
-	std::vector<TString> used_names;
+	std::vector<TString> used_names, used_names_fixed;
 	for (auto i = 0U; i < fitCtnr.config.param_names.size(); i++) {
-		paramData current_paramData {i, fitCtnr.config.hist_id[i]};
+		auto isFixed = fitCtnr.config.param_fixed[i] == 1;
 
+		paramData current_paramData {i, fitCtnr.config.hist_id[i]};
 		auto name = fitCtnr.config.param_names[i];
-		if (std::find(used_names.begin(), used_names.end(), name) == used_names.end()) {
-			std::vector<paramData> tmp_paramVector;
-			tmp_paramVector.push_back(current_paramData);
-			paramVector.push_back(tmp_paramVector);
-			used_names.push_back(name);
+
+		if (isFixed) {
+			if (std::find(used_names_fixed.begin(), used_names_fixed.end(), name)
+			    == used_names_fixed.end()) {
+				std::vector<paramData> tmp_paramVector;
+				tmp_paramVector.push_back(current_paramData);
+				paramVector_fixed.push_back(tmp_paramVector);
+				used_names_fixed.push_back(name);
+			} else {
+				auto idx_name = getIndexOf(name, used_names_fixed);
+				assert(idx_name != -1);
+				paramVector_fixed[idx_name].push_back(current_paramData);
+			}
 		} else {
-			auto idx_name = getIndexOf(name, used_names);
-			assert(idx_name != -1);
-			paramVector[idx_name].push_back(current_paramData);
+			if (std::find(used_names.begin(), used_names.end(), name) == used_names.end()) {
+				std::vector<paramData> tmp_paramVector;
+				tmp_paramVector.push_back(current_paramData);
+				paramVector.push_back(tmp_paramVector);
+				used_names.push_back(name);
+			} else {
+				auto idx_name = getIndexOf(name, used_names);
+				assert(idx_name != -1);
+				paramVector[idx_name].push_back(current_paramData);
+			}
 		}
 	}
     n_params = paramVector.size();
+	n_fixed = paramVector_fixed.size();
 
-    // 6. Make sure params are fixed/constr properly in the new setup
-    // 7. If same var same pdf on same hist->raise error?
+	// 5. Make sure params are fixed/constr properly in the new setup
+	// First initialise zeros in the fitValFixed vector
+	for (auto el : data_vector) {
+		std::vector<double> tmp (el.size(), 0);
+		fitValFixed.push_back(tmp);
+	}
+
+	// Calculate fit contribution from fixed params
+	for (auto k = 0U; k < paramVector_fixed.size(); k++) {  // each parameter
+		auto parDataVec = paramVector_fixed[k];
+		auto parValue = config.param_initial_guess[parDataVec[0].idx_pdf];
+		for (auto h = 0U; h < parDataVec.size(); h++) {  // each hist in parData
+			auto parData = parDataVec[h];
+			for (auto j = 0U; j < data_vector[parData.idx_hist-1].size(); j++) {  // each bin
+                fitValFixed[parData.idx_hist-1][j] += pdf_vectors[parData.idx_pdf][j]
+                    * parValue * config.param_eff[parData.idx_pdf];
+			}
+		}
+	}
+
+    // 6. If same var same pdf on same hist->raise error? Smth for parser?
 
 }
 
@@ -146,15 +182,24 @@ auto NuFitContainer::fitFunction(unsigned int npar, const double *par)
 	// Fill the output vector with function values
 	for (auto k = 0U; k < paramVector.size(); k++) {  // each parameter
 		auto parDataVec = paramVector[k];
+        auto parValue = par[k];
 		for (auto h = 0U; h < parDataVec.size(); h++) {  // each hist in parData
 			auto parData = parDataVec[h];
 			for (auto j = 0U; j < data_vector[parData.idx_hist-1].size(); j++) {  // each bin
                 fitFuncVal[parData.idx_hist-1][j] += pdf_vectors[parData.idx_pdf][j]
-                    * par[k] * config.param_eff[parData.idx_pdf];
+                    * parValue * config.param_eff[parData.idx_pdf];
 			}
 		}
 	}
 
+    // If there are fixed parameters, add contribution here
+	if (paramVector_fixed.size() == 0) return fitFuncVal;
+
+	for (auto i = 0U; i < fitFuncVal.size(); i++) {
+		for (auto j = 0U; j < fitFuncVal[i].size(); j++) {
+			fitFuncVal[i][j] += fitValFixed[i][j];
+		}
+	}
 	return fitFuncVal;
 }
 
@@ -253,52 +298,90 @@ auto MinuitManager::callMinuit() -> void {
 
 // @brief Convert fit results to vectors, store in member variables popt/pcov
 auto MinuitManager::getResults() -> NuFitResults {
+	// Get the total number of (free+fixed(+constr)) parameters
+	auto n_params_tot = fitCtnr.paramVector.size() + fitCtnr.paramVector_fixed.size();
+
 	// Initialise variables
 	double x, _;
-    unsigned int nparams = fitCtnr.n_params;
-	std::vector<double> popt(nparams);
-	std::vector<std::vector<double>> pcov(nparams,
-	                                      std::vector<double>(nparams));
+	std::vector<double> popt(n_params_tot);
+	std::vector<std::vector<double>> pcov(n_params_tot,
+	                                      std::vector<double>(n_params_tot)),
+									 pcov_(fitCtnr.n_params,
+									       std::vector<double>(fitCtnr.n_params));
 
 	// Fill parameter vector
-    for (auto i = 0U; i < fitCtnr.n_params; i++) {
-		gMinuit->GetParameter(i, x, _);
-		popt[i] = x;
+	// Make sure fixed params are inserted properly
+	auto iFree {0U}, iFixed {0U}, iPopt {0U};
+	while (iPopt < n_params_tot) {
+		auto idx_pdf_free = config.npdfs;  // Initialise to a larger number
+		auto idx_pdf_fixed = config.npdfs;  // For the comparison below
+		if (iFree < fitCtnr.n_params) {
+			idx_pdf_free = fitCtnr.paramVector[iFree][0].idx_pdf;
+		}
+		if (iFixed < fitCtnr.paramVector_fixed.size()) {
+			idx_pdf_fixed = fitCtnr.paramVector_fixed[iFixed][0].idx_pdf;
+		}
+
+		// Fill popt in the order they are seen by parser
+		if (idx_pdf_free < idx_pdf_fixed) {
+			gMinuit->GetParameter(iFree, x, _);
+			popt[iPopt] = x;
+			iFree++;
+		} else {
+			popt[iPopt] = fitCtnr.config.param_initial_guess[idx_pdf_fixed];
+			iFixed++;
+		}
+		iPopt++;
 	}
-	// Fill fixed parameter value where estimate would be
-	// TODO
 
 	// Get the covariance matrix
-	double mat[nparams][nparams];
-	gMinuit->mnemat(&mat[0][0], nparams);
-	// std::vector<std::vector<double>> pcov_(nparams,
-	//                                        std::vector<double>(nparams));
+	double mat[fitCtnr.n_params][fitCtnr.n_params];
+	gMinuit->mnemat(&mat[0][0], fitCtnr.n_params);
 	// Convert to vector<vector>
-	for (auto i = 0U; i < nparams; i++) {
-		for (auto j = 0U; j < nparams; j++) {
-			pcov[i][j] = mat[i][j];
+	for (auto i = 0U; i < fitCtnr.n_params; i++) {
+		for (auto j = 0U; j < fitCtnr.n_params; j++) {
+			pcov_[i][j] = mat[i][j];
 		}
 	}
-
 	// Expand pcov to include fixed params as well
     // TODO
 	// For each row, this var gives the idx of free params (inverse of idx_map)
-	// auto idx_inverse {0U};
-	// for (auto iRow = 0U; iRow < config.npdfs; iRow++){
-	// 	// Construct row
-	// 	std::vector<double> this_row(config.npdfs);
-	// 	// If iRow is fixed, row[iRow]=1
-	// 	if (std::find(fitCtnr.idx_map_fixed.begin(), fitCtnr.idx_map_fixed.end(),
-	// 	              iRow) == fitCtnr.idx_map_fixed.end()) {
-	// 		// If not fixed, get data from pcov_
-	// 		for (auto i = 0U; i < fitCtnr.idx_map.size(); i++) {
-	// 			auto j = fitCtnr.idx_map[i];
-	// 			this_row[j] = pcov_[idx_inverse][i];
-	// 		}
-	// 		idx_inverse += 1;
-	// 	}
-	// 	pcov[iRow] = this_row;
-	// }
+	auto iRowFree {0U};
+	for (auto iRow = 0U; iRow < n_params_tot; iRow++){
+		// Construct row
+		std::vector<double> this_row(n_params_tot);
+		iFree = iFixed = iPopt = 0;
+		while (iPopt < n_params_tot) {
+			auto idx_pdf_free = config.npdfs;  // Initialise to a larger number
+			auto idx_pdf_fixed = config.npdfs;  // For the comparison below
+			if (iFree < fitCtnr.n_params) {
+				idx_pdf_free = fitCtnr.paramVector[iFree][0].idx_pdf;
+			}
+			if (iFixed < fitCtnr.paramVector_fixed.size()) {
+				idx_pdf_fixed = fitCtnr.paramVector_fixed[iFixed][0].idx_pdf;
+			}
+
+			// Check if the entire row corresponds to a fixed parameter
+			if (iRow == idx_pdf_fixed) {
+				std::vector<double> tmp(n_params_tot);
+				tmp[iRow] = 1;
+				this_row = tmp;
+				iPopt++;
+				continue;
+			}
+
+			// Fill popt in the order they are seen by parser
+			if (idx_pdf_free < idx_pdf_fixed) {
+				this_row[iPopt] = pcov_[iRowFree][iFree];
+				iFree++;
+			} else {
+				iFixed++;
+			}
+			iPopt++;
+		}
+		pcov[iRow] = this_row;
+		if (this_row[iRow] != 1) iRowFree++;  // iRowFree maps to pcov_
+	}
 
     // Get the status of the covariance matrix calculation
     int tmp_;
