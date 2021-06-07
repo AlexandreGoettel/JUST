@@ -48,29 +48,21 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	TCanvas *c = new TCanvas("Results","Results",1500,700);
 	gPad->SetLogy();
 
-	//Histo_Sub
-	c->cd();
-	TPad* Pad_UpLeft = new TPad("Pad_UpLeft","Pad_UpLeft", 0., 0.3, 0.5, 1.0);
-	Pad_UpLeft->Draw();
-	Pad_UpLeft->cd();
-	gPad->SetLogy();
-	data->data_histograms[0]->SetLineColor(kBlack);
-	data->data_histograms[0]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
-	data->data_histograms[0]->GetYaxis()->SetTitle("Events");
-	data->data_histograms[0]->GetYaxis()->SetRangeUser(1,1e5);
-	data->data_histograms[0]->Draw();
+	TPad *pad[data->hist_ids.size()];
 
-	//Histo_Tag
-	c->cd();
-	TPad* Pad_UpRight = new TPad("Pad_UpRight","Pad_UpRight", 0.5, 0.3, 1.0, 1.0);
-	Pad_UpRight->Draw();
-	Pad_UpRight->cd();
-	gPad->SetLogy();
-	data->data_histograms[1]->SetLineColor(kBlack);
-	data->data_histograms[1]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
-	data->data_histograms[1]->GetYaxis()->SetTitle("Events");
-	data->data_histograms[1]->GetYaxis()->SetRangeUser(1,1e5);
-	data->data_histograms[1]->Draw();
+	for (int i = 0; i < data->hist_ids.size(); i++){
+		auto name = "Pad_" + std::to_string(i+1);
+		pad[i] = new TPad(name.c_str(), name.c_str(), 0.+ i/2., 0.3, 0.5 + i/2., 1.0);
+		c->cd();
+		pad[i]->Draw();
+		pad[i]->cd();
+		gPad->SetLogy();
+		data->data_histograms[i]->SetLineColor(kBlack);
+		data->data_histograms[i]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
+		data->data_histograms[i]->GetYaxis()->SetTitle("Events");
+		data->data_histograms[i]->GetYaxis()->SetRangeUser(1,1e5);
+		data->data_histograms[i]->Draw();
+	}
 
 	//Legends
 	TLegend *leg_UpLeft = new TLegend(0.34,0.55,0.54,0.85,NULL,"brNDC");
@@ -86,8 +78,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	leg_UpRight->SetFillStyle(0);
 
 	//Be7,pep,Bi210,Kr85,Po210,U238,Th232,K40,C11,C11_2,C10,He6
-	int *Colors = new int [12]{632,632,409,616,400,600,870,921,801,801,881,419};
-
+		int *Colors = new int [12]{632,632,409,616,400,600,870,921,801,801,881,419};
 		std::vector<int> colors;
 		std::vector<TString> used_names;
 		auto idx_col {0};
@@ -111,7 +102,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 						PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k));
 						}
 
-    				Pad_UpLeft->cd();
+    				pad[el.idx_hist-1]->cd();
 						current_hist->SetLineColor(colors[idx_col]);
             current_hist->SetMarkerColor(colors[idx_col]);
     				current_hist->Draw("SAME");
@@ -127,7 +118,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 							PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k));
 						}
 
-          	Pad_UpRight->cd();
+          	pad[el.idx_hist-1]->cd();
 						current_hist->SetLineColor(colors[idx_col]);
             current_hist->SetMarkerColor(colors[idx_col]);
           	current_hist->Draw("SAME");
@@ -145,7 +136,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
     }
 
 	// Residuals
-	std::vector<std::vector<double>> rec_energy;
+	/*std::vector<std::vector<double>> rec_energy;
 	std::vector<std::vector<double>> residuals;
 
 	for (auto i : data->hist_ids) {
@@ -193,7 +184,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
   ResRight->GetXaxis()->SetRangeUser(pdfs->bin_edges[1].front(),pdfs->bin_edges[1].back());
   ResRight->GetYaxis()->SetRangeUser(-4.,4.);
   ResRight->SetLineWidth(1);
-  ResRight->Draw("AL");
+  ResRight->Draw("AL");*/
 
   c->Write();
   f->Close();
