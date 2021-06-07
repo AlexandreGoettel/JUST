@@ -38,11 +38,11 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	//Create a std::vector<TH1D*> to fill with the fit results
 	std::vector<TH1D*> PDFsSum;
 
-	/*for (auto i : data->hist_ids){
+	for (auto i : data->hist_ids){
 		auto name = "PDFsSum_" + config.data_hist_names[i];
 		TH1D *PDFs_hists = new TH1D(name.c_str(), name.c_str(), config.nbins[i], pdfs->bin_edges[i].front(), pdfs->bin_edges[i].back());
 		PDFsSum.push_back(PDFs_hists);
-	}*/
+	}
 
 
 	TCanvas *c = new TCanvas("Results","Results",1500,700);
@@ -85,9 +85,6 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	leg_UpRight->SetBorderSize(0);
 	leg_UpRight->SetFillStyle(0);
 
-	TH1D *PDFs_hist1 = new TH1D("hist1", "hist1", config.nbins[0], pdfs->bin_edges[0].front(), pdfs->bin_edges[0].back());
-	TH1D *PDFs_hist2 = new TH1D("hist2", "hist2", config.nbins[1], pdfs->bin_edges[1].front(), pdfs->bin_edges[1].back());
-
 	//Be7,pep,Bi210,Kr85,Po210,U238,Th232,K40,C11,C11_2,C10,He6
 	int *Colors = new int [12]{632,632,409,616,400,600,870,921,801,801,881,419};
 
@@ -105,39 +102,38 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 								used_names.push_back(current_name);
 								colors.push_back(Colors[idx_col]);
 							}
-							
+
             auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
             current_hist->Scale(results.popt[i]/results.efficiencies[j]*config.param_eff[j]);
 
           if (el.idx_hist == 1) {
-
 						for(auto k = 1U; k <= config.nbins[el.idx_hist-1]; k++){
-							PDFs_hist1->SetBinContent(k,PDFs_hist1->GetBinContent(k)+current_hist->GetBinContent(k));
+						PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k));
 						}
 
     				Pad_UpLeft->cd();
 						current_hist->SetLineColor(colors[idx_col]);
             current_hist->SetMarkerColor(colors[idx_col]);
     				current_hist->Draw("SAME");
-						PDFs_hist1->SetLineColor(632);
-						PDFs_hist1->SetMarkerColor(632);
-						PDFs_hist1->Draw("SAME");
+						PDFsSum.at(el.idx_hist-1)->SetLineColor(632);
+						PDFsSum.at(el.idx_hist-1)->SetMarkerColor(632);
+						PDFsSum.at(el.idx_hist-1)->Draw("SAME");
     				leg_UpLeft->AddEntry(current_hist, config.param_names.at(j));
     				leg_UpLeft->Draw("SAME");
 
-    			} else {
-
+    			}
+					if (el.idx_hist == 2) {
 						for(auto k = 1U; k <= config.nbins[el.idx_hist-1]; k++){
-							PDFs_hist2->SetBinContent(k,PDFs_hist2->GetBinContent(k)+current_hist->GetBinContent(k));
+							PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k));
 						}
 
           	Pad_UpRight->cd();
 						current_hist->SetLineColor(colors[idx_col]);
             current_hist->SetMarkerColor(colors[idx_col]);
           	current_hist->Draw("SAME");
-						PDFs_hist2->SetLineColor(632);
-						PDFs_hist2->SetMarkerColor(632);
-						PDFs_hist2->Draw("SAME");
+						PDFsSum.at(el.idx_hist-1)->SetLineColor(632);
+						PDFsSum.at(el.idx_hist-1)->SetMarkerColor(632);
+						PDFsSum.at(el.idx_hist-1)->Draw("SAME");
 						if(j==17||j==18||j==19){
 
     				leg_UpRight->AddEntry(current_hist, config.param_names.at(j));
@@ -147,9 +143,6 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
       }
 			idx_col++;
     }
-
-		PDFsSum.push_back(PDFs_hist1);
-		PDFsSum.push_back(PDFs_hist2);
 
 	// Residuals
 	std::vector<std::vector<double>> rec_energy;
