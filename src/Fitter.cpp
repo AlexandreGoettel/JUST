@@ -315,8 +315,9 @@ auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
 	if (fitCtnr.config.likelihood.compare("poisson") == 0) {
 		f = fitCtnr.NLL([](double a, double b){return fitCtnr.NLL_poisson(a, b);},
                         npar, par);
-	// } else if (fitCtnr.config.likelihood.compare("must") == 0) {
-	// 	f = fitCtnr.NLL_MUST(npar, par);
+	} else if (fitCtnr.config.likelihood.compare("must") == 0) {
+        f = fitCtnr.NLL([](double a, double b){return fitCtnr.NLL_MUST(a, b);},
+                        npar, par);
 	} else {
 		throw std::invalid_argument("'" + fitCtnr.config.likelihood +
 			"' is not a valid likelihood.\nAllowed: ['poisson']" +
