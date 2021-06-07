@@ -157,31 +157,10 @@ auto NuFitContainer::fitFunction(unsigned int npar, const double *par)
 
 	return fitFuncVal;
 }
-//
-// @brief The fit function (parameters * pdfs)
-// auto NuFitContainer::fitFunction(unsigned int i, unsigned int npar,
-// 	                             const double *par, int nHist) -> double {
-// 	// Add contributions from the free parameters
-// 	auto yi {0.};
-// 	for (auto j = 0U; j < npar; j++) {
-// 		auto idx = fitCtnr.idx_map[j];  // Convert to param index space
-// 		if (config.hist_id[idx] != nHist) continue;  // Ignore other hists
-// 		yi += par[j] * pdf_vectors[idx][i];
-// 	}
-//
-// 	// Now contributions from the fixed parameters
-// 	// TODO: can speed-up with look-up since the result from below is constant
-// 	for (auto j = 0U; j < fitCtnr.n_fixed; j++) {
-// 		auto idx = fitCtnr.idx_map_fixed[j];  // Convert to param index space
-// 		if (config.hist_id[idx] != nHist) continue;  // Ignore other hists
-// 		yi += fitCtnr.config.param_initial_guess[idx] * pdf_vectors[idx][i];
-// 	}
-//
-// 	return yi;
-// }
 
 // @brief Define Minuit-Style binned poisson likelihood (extended)
-auto NuFitContainer::NLL_poisson(int npar, const double *par) -> double {
+template <typename L>
+auto NuFitContainer::NLL(L eval, int npar, const double *par) -> double {
 	// Following Baker&Cousins 1983 definition on page 439
 	auto chi_sqr_lambda_p { 0. };
 	auto fitFuncVal = fitFunction(npar, par);
@@ -196,37 +175,30 @@ auto NuFitContainer::NLL_poisson(int npar, const double *par) -> double {
 			auto yi = fitFuncVal[i][j];
 			auto ni = data_vector[i][j];
 
-			chi_sqr_lambda_p += yi - ni + ni*(ROOT::Math::Util::EvalLog(ni) -
-			                                  ROOT::Math::Util::EvalLog(yi));
+            chi_sqr_lambda_p += eval(ni, yi);
 		}
 	}
 
 	return chi_sqr_lambda_p;
 }
 
+// @brief Define Minuit-Style binned poisson likelihood (extended)
+template <class T>
+auto NuFitContainer::NLL_poisson(T ni, T yi) -> T {
+    return yi - ni + ni*(ROOT::Math::Util::EvalLog(ni) -
+                         ROOT::Math::Util::EvalLog(yi));
+}
+
 // @brief Define MUST Likelihood (for comparison purposes)
-// TODO: Re-introduce
-// auto NuFitContainer::NLL_MUST(int npar, const double *par) -> double {
-// 	auto logL { 0. };
-//
-// 	// Loop over possible histograms
-// 	for (auto n = 0U; n < data_vector.size(); n++) {
-// 		auto data_hist = data_vector[n];
-// 		auto nbins = data_hist.size();
-// 		for (auto i = 0U; i < nbins; i++) {
-// 			auto yi = fitFunction(i, npar, par, n);
-// 			auto ni = data_hist[i];
-//
-// 			if (ni < 0)
-// 				continue;
-// 			else if (ni == 0)
-// 				logL += -yi;
-// 			else
-// 				logL += ni*ROOT::Math::Util::EvalLog(yi)-yi-TMath::LnGamma(ni+1);
-// 		}
-// 	}
-// 	return -logL;
-// }
+template <class T>
+auto NuFitContainer::NLL_MUST(T ni, T yi) -> T {
+    if (ni < 0)
+		return 0;
+	else if (ni == 0)
+		return -yi;
+	else
+		return ni*ROOT::Math::Util::EvalLog(yi) - yi - TMath::LnGamma(ni+1);
+}
 
 // @brief MinuitManager constructor
 MinuitManager::MinuitManager(const NuFitConfig config_) {
@@ -339,9 +311,10 @@ auto MinuitManager::getResults() -> NuFitResults {
 
 // @brief Used by TMinuit to sample the likelihood
 auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
-	// Calculate the log-likelihood according to different methods
+    // Calculate the log-likelihood according to different methods
 	if (fitCtnr.config.likelihood.compare("poisson") == 0) {
-		f = fitCtnr.NLL_poisson(npar, par);
+		f = fitCtnr.NLL([](double a, double b){return fitCtnr.NLL_poisson(a, b);},
+                        npar, par);
 	// } else if (fitCtnr.config.likelihood.compare("must") == 0) {
 	// 	f = fitCtnr.NLL_MUST(npar, par);
 	} else {

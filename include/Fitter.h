@@ -43,8 +43,10 @@ public:
 	NuFitPDFs *pdfs;
 	NuFitConfig config;
 public:  // Minuit functions
-	double NLL_poisson(int, const double*);
-	double NLL_MUST(int, const double*);
+	// double NLL_poisson(int, const double*);
+    template <class T> T NLL_poisson(T, T);
+	template <class T> T NLL_MUST(T, T);
+    template <typename L> double NLL(L, int, const double*);
 	std::vector<std::vector<double>> fitFunction(unsigned int, const double*);
 public:  // Member variables
 	double n_params, n_fixed;
