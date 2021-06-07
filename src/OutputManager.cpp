@@ -49,10 +49,13 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	gPad->SetLogy();
 
 	TPad *pad[data->hist_ids.size()];
+	TLegend *leg[data->hist_ids.size()];
 
 	for (int i = 0; i < data->hist_ids.size(); i++){
-		auto name = "Pad_" + std::to_string(i+1);
-		pad[i] = new TPad(name.c_str(), name.c_str(), 0.+ i/2., 0.3, 0.5 + i/2., 1.0);
+		auto namePad = "Pad_" + std::to_string(i+1);
+		auto nameLeg = "Leg_" + std::to_string(i+1);
+		pad[i] = new TPad(namePad.c_str(), namePad.c_str(), 0.+ i/2., 0.3, 0.5 + i/2., 1.0);
+		leg[i] = new TLegend(0.34,0.55 + i/5. ,0.54,0.85,NULL,"brNDC");
 		c->cd();
 		pad[i]->Draw();
 		pad[i]->cd();
@@ -62,10 +65,16 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		data->data_histograms[i]->GetYaxis()->SetTitle("Events");
 		data->data_histograms[i]->GetYaxis()->SetRangeUser(1,1e5);
 		data->data_histograms[i]->Draw();
+		leg[i]->SetTextAlign(13);
+		leg[i]->SetTextSize(0.04);
+		leg[i]->SetBorderSize(0);
+		leg[i]->SetFillStyle(0);
+
+
 	}
 
 	//Legends
-	TLegend *leg_UpLeft = new TLegend(0.34,0.55,0.54,0.85,NULL,"brNDC");
+/*	TLegend *leg_UpLeft = new TLegend(0.34,0.55,0.54,0.85,NULL,"brNDC");
 	leg_UpLeft->SetTextAlign(13);
 	leg_UpLeft->SetTextSize(0.04);
 	leg_UpLeft->SetBorderSize(0);
@@ -75,7 +84,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	leg_UpRight->SetTextAlign(13);
 	leg_UpRight->SetTextSize(0.04);
 	leg_UpRight->SetBorderSize(0);
-	leg_UpRight->SetFillStyle(0);
+	leg_UpRight->SetFillStyle(0);*/
 
 	//Be7,pep,Bi210,Kr85,Po210,U238,Th232,K40,C11,C11_2,C10,He6
 		int *Colors = new int [12]{632,632,409,616,400,600,870,921,801,801,881,419};
@@ -109,8 +118,8 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 						PDFsSum.at(el.idx_hist-1)->SetLineColor(632);
 						PDFsSum.at(el.idx_hist-1)->SetMarkerColor(632);
 						PDFsSum.at(el.idx_hist-1)->Draw("SAME");
-    				leg_UpLeft->AddEntry(current_hist, config.param_names.at(j));
-    				leg_UpLeft->Draw("SAME");
+    				leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
+    				leg[el.idx_hist-1]->Draw("SAME");
 
     			}
 					if (el.idx_hist == 2) {
@@ -127,8 +136,8 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 						PDFsSum.at(el.idx_hist-1)->Draw("SAME");
 						if(j==17||j==18||j==19){
 
-    				leg_UpRight->AddEntry(current_hist, config.param_names.at(j));
-    				leg_UpRight->Draw("SAME");
+    				leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
+    				leg[el.idx_hist-1]->Draw("SAME");
 					}
         }
       }
