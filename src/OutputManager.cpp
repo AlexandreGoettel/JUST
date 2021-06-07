@@ -57,7 +57,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	data->data_histograms[0]->SetLineColor(kBlack);
 	data->data_histograms[0]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
 	data->data_histograms[0]->GetYaxis()->SetTitle("Events");
-	data->data_histograms[0]->GetYaxis()->SetRangeUser(1,1e4);
+	data->data_histograms[0]->GetYaxis()->SetRangeUser(1,1e5);
 	data->data_histograms[0]->Draw();
 
 	//Histo_Tag
@@ -69,7 +69,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	data->data_histograms[1]->SetLineColor(kBlack);
 	data->data_histograms[1]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
 	data->data_histograms[1]->GetYaxis()->SetTitle("Events");
-	data->data_histograms[1]->GetYaxis()->SetRangeUser(1,1e4);
+	data->data_histograms[1]->GetYaxis()->SetRangeUser(1,1e5);
 	data->data_histograms[1]->Draw();
 
 	//Legends
@@ -88,47 +88,25 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	TH1D *PDFs_hist1 = new TH1D("hist1", "hist1", config.nbins[0], pdfs->bin_edges[0].front(), pdfs->bin_edges[0].back());
 	TH1D *PDFs_hist2 = new TH1D("hist2", "hist2", config.nbins[1], pdfs->bin_edges[1].front(), pdfs->bin_edges[1].back());
 
-	//Be7,pep,Bi210,K40,Kr85,U238,Th232,Po210,C10,He6,C11)
-	//int *Colors = new int [12]{632,632,409,616,400,600,870,921,801,881,419,419};
-	std::vector<int> Colors;
-	std::vector<TString> names;
+	//Be7,pep,Bi210,Kr85,Po210,U238,Th232,K40,C11,C11_2,C10,He6
+	int *Colors = new int [12]{632,632,409,616,400,600,870,921,801,801,881,419};
 
-	for (auto i = 0U; i < results.paramVector.size(); i++){
-		auto parData = results.paramVector[i];
-		for (auto el : parData) {
-				auto j = el.idx_pdf;
-
-			if(j == 0)	{	Colors.push_back(632);	names.push_back("Be7");}
-			if(j == 9)	{	Colors.push_back(632);	names.push_back("pep");}
-			if(j == 1)	{	Colors.push_back(409);	names.push_back("Bi210");}
-			if(j == 10)	{	Colors.push_back(616);	names.push_back("Kr85");}
-			if(j == 2)	{	Colors.push_back(400);	names.push_back("Po210");}
-			if(j == 11)	{	Colors.push_back(600);	names.push_back("U238");}
-			if(j == 3)	{	Colors.push_back(870);	names.push_back("Th232");}
-			if(j == 12)	{	Colors.push_back(921);	names.push_back("K40");}
-			if(j == 4)	{	Colors.push_back(419);	names.push_back("C11");}
-			if(j == 13)	{	Colors.push_back(632);	names.push_back("Be7");}
-			if(j == 5)	{	Colors.push_back(632);	names.push_back("pep");}
-			if(j == 14)	{	Colors.push_back(409);	names.push_back("Bi210");}
-			if(j == 6)	{	Colors.push_back(616);	names.push_back("Kr85");}
-			if(j == 15)	{	Colors.push_back(400);	names.push_back("Po210");}
-			if(j == 7)	{	Colors.push_back(600);	names.push_back("U238");}
-			if(j == 16)	{	Colors.push_back(870);	names.push_back("Th232");}
-			if(j == 8)	{	Colors.push_back(921);	names.push_back("K40");}
-			if(j == 17)	{	Colors.push_back(419);	names.push_back("C11_2");}
-			if(j == 18)	{	Colors.push_back(801);	names.push_back("C10");}
-			if(j == 19)	{	Colors.push_back(881);	names.push_back("He6");}
-		}
-}
+		std::vector<int> colors;
+		std::vector<TString> used_names;
+		auto idx_col {0};
 
     for (auto i = 0U; i < results.paramVector.size(); i++) {
         auto parData = results.paramVector[i];
         for (auto el : parData) {
             auto j = el.idx_pdf;
-
+						auto current_name = config.param_names[el.idx_pdf];
+						if (std::find(used_names.begin(), used_names.end(), current_name)
+							== used_names.end()) {
+								used_names.push_back(current_name);
+								colors.push_back(Colors[idx_col]);
+							}
+							
             auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
-            current_hist->SetLineColor(Colors[j]);
-            current_hist->SetMarkerColor(Colors[j]);
             current_hist->Scale(results.popt[i]/results.efficiencies[j]*config.param_eff[j]);
 
           if (el.idx_hist == 1) {
@@ -138,6 +116,8 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 						}
 
     				Pad_UpLeft->cd();
+						current_hist->SetLineColor(colors[idx_col]);
+            current_hist->SetMarkerColor(colors[idx_col]);
     				current_hist->Draw("SAME");
 						PDFs_hist1->SetLineColor(632);
 						PDFs_hist1->SetMarkerColor(632);
@@ -152,6 +132,8 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 						}
 
           	Pad_UpRight->cd();
+						current_hist->SetLineColor(colors[idx_col]);
+            current_hist->SetMarkerColor(colors[idx_col]);
           	current_hist->Draw("SAME");
 						PDFs_hist2->SetLineColor(632);
 						PDFs_hist2->SetMarkerColor(632);
@@ -163,6 +145,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 					}
         }
       }
+			idx_col++;
     }
 
 		PDFsSum.push_back(PDFs_hist1);
