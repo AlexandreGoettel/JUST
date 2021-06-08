@@ -37,23 +37,25 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 
 	//Create a std::vector<TH1D*> to fill with the fit results
 	std::vector<TH1D*> PDFsSum;
-
 	for (auto i : data->hist_ids){
 		auto name = "PDFsSum_" + config.data_hist_names[i];
-		TH1D *PDFs_hists = new TH1D(name.c_str(), name.c_str(), config.nbins[i], pdfs->bin_edges[i].front(), pdfs->bin_edges[i].back());
+		TH1D *PDFs_hists = new TH1D(name.c_str(), name.c_str(), config.nbins[i],
+		    pdfs->bin_edges[i].front(), pdfs->bin_edges[i].back());
 		PDFsSum.push_back(PDFs_hists);
 	}
 
-	TCanvas *c = new TCanvas("Results","Results",1500,700);
+	// Create a canvas to plot the results in
+	auto nHists = data->hist_ids.size();
+	TCanvas *c = new TCanvas("Results", "Results", 1500, 700);
 	gPad->SetLogy();
 
-	TPad *padUp[data->hist_ids.size()];
-	TLegend *leg[data->hist_ids.size()];
-
-	for (auto i = 0U; i < data->hist_ids.size(); i++){
+	// Draw the data histograms
+	TPad *padUp[nHists];
+	TLegend *leg[nHists];
+	for (auto i = 0U; i < nHists; i++){
 		auto namePadUp = "PadUp_" + std::to_string(i+1);
 		auto nameLeg = "Leg_" + std::to_string(i+1);
-		padUp[i] = new TPad(namePadUp.c_str(), namePadUp.c_str(), 0. + i/2., 0.3, 0.5 + i/2., 1.0);
+		padUp[i] = new TPad(namePadUp.c_str(), namePadUp.c_str(), i/static_cast<float>(nHists), 0.3, (1.+i)/static_cast<float>(nHists), 1.0);
 		leg[i] = new TLegend(0.34,0.55 + i/5. ,0.54,0.85,NULL,"brNDC");
 		c->cd();
 		padUp[i]->Draw();
@@ -62,7 +64,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		data->data_histograms[i]->SetLineColor(kBlack);
 		data->data_histograms[i]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
 		data->data_histograms[i]->GetYaxis()->SetTitle("Events");
-		data->data_histograms[i]->GetYaxis()->SetRangeUser(1,1e5);
+		data->data_histograms[i]->GetYaxis()->SetRangeUser(1, 1e5);
 		data->data_histograms[i]->Draw();
 		leg[i]->SetTextAlign(13);
 		leg[i]->SetTextSize(0.04);
@@ -71,17 +73,20 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		c->cd();
 	}
 
-	//Be7,pep,Bi210,Kr85,Po210,U238,Th232,K40,C11,C11_2,C10,He6
+	// Define colors to be used in the plots
 	int *Colors = new int [12]{632,632,409,616,400,600,870,921,801,801,881,419};
 	std::vector<int> colors;
 	std::vector<TString> used_names;
 	auto idx_col {0};
 
+	// Plot the pdfs for each parameter
 	for (auto i = 0U; i < results.paramVector.size(); i++) {
 		auto parData = results.paramVector[i];
 		for (auto el : parData) {
 			auto j = el.idx_pdf;
-			auto current_name = config.param_names[el.idx_pdf];
+			auto current_name = config.param_names[j];
+
+			// Manage color used
 			if (std::find(used_names.begin(), used_names.end(), current_name)
 			    == used_names.end()) {
 				used_names.push_back(current_name);
@@ -91,11 +96,12 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 			auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
 			current_hist->Scale(results.popt[i]/results.efficiencies[j]*config.param_eff[j]);
 
-			//if (el.idx_hist == 1) {
+			// Update PDFSum
 			for(auto k = 1U; k <= config.nbins[el.idx_hist-1]; k++){
 				PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k));
 			}
 
+			// Draw PDF
 			padUp[el.idx_hist-1]->cd();
 			current_hist->SetLineColor(colors[idx_col]);
 			current_hist->SetMarkerColor(colors[idx_col]);
@@ -115,42 +121,43 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		idx_col++;
 	}
 
-	// Residuals
+	// Fill vectors used to plot residuals
 	std::vector<std::vector<double>> rec_energy;
 	std::vector<std::vector<double>> residuals;
-
 	for (auto i : data->hist_ids) {
-		std::vector<double> res,rec;
+		std::vector<double> res, rec;
 		for(auto j = 0U; j < config.nbins[i]; j++){
-				rec.push_back(j+pdfs->bin_edges[i].front());
-				res.push_back((data->data_histograms[i]->GetBinContent(j)-PDFsSum[i]->GetBinContent(j))/sqrt(data->data_histograms[i]->GetBinContent(j)));
+			rec.push_back(j+pdfs->bin_edges[i].front());
+			res.push_back((data->data_histograms[i]->GetBinContent(j) -
+			               PDFsSum[i]->GetBinContent(j)) /
+						  sqrt(data->data_histograms[i]->GetBinContent(j)));
 		}
 		rec_energy.push_back(rec);
 		residuals.push_back(res);
 	}
 
-	TPad *padDown[data->hist_ids.size()];
-	TGraph *Res[data->hist_ids.size()];
-
-	for (auto i = 0U; i < data->hist_ids.size(); i++){
+	// Plot residuals
+	TPad *padDown[nHists];
+	TGraph *Res[nHists];
+	for (auto i = 0U; i < nHists; i++){
 		auto namePadDown = "PadDown_" + std::to_string(i+1);
-		padDown[i] = new TPad(namePadDown.c_str(),namePadDown.c_str(), 0. + i/2., 0., 0.5 + i/2., 0.3);
+		padDown[i] = new TPad(namePadDown.c_str(), namePadDown.c_str(), i/static_cast<float>(nHists), 0, (1.+i)/static_cast<float>(nHists), 0.3);
 		c->cd();
 		padDown[i]->Draw();
 		padDown[i]->cd();
 		Res[i] = new TGraph(config.nbins[i], vec2Array(rec_energy[i]),
-	                                 vec2Array(residuals[i]));
+	                        vec2Array(residuals[i]));
 		Res[i]->SetTitle("Residuals");
 		Res[i]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
 		Res[i]->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
 		Res[i]->GetYaxis()->CenterTitle(true);
 		Res[i]->GetYaxis()->SetTitleSize(.05);
 		Res[i]->GetXaxis()->SetTitleSize(.05);
-		Res[i]->GetXaxis()->SetRangeUser(pdfs->bin_edges[i].front(),pdfs->bin_edges[i].back());
+		Res[i]->GetXaxis()->SetRangeUser(pdfs->bin_edges[i].front(),
+		                                 pdfs->bin_edges[i].back());
 		Res[i]->GetYaxis()->SetRangeUser(-4.,4.);
 		Res[i]->SetLineWidth(1);
 		Res[i]->Draw("AL");
-
 	}
 	c->Write();
 	f->Close();
