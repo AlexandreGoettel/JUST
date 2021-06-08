@@ -44,21 +44,20 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		PDFsSum.push_back(PDFs_hists);
 	}
 
-
 	TCanvas *c = new TCanvas("Results","Results",1500,700);
 	gPad->SetLogy();
 
-	TPad *pad[data->hist_ids.size()];
+	TPad *padUp[data->hist_ids.size()];
 	TLegend *leg[data->hist_ids.size()];
 
 	for (int i = 0; i < data->hist_ids.size(); i++){
-		auto namePad = "Pad_" + std::to_string(i+1);
+		auto namePadUp = "PadUp_" + std::to_string(i+1);
 		auto nameLeg = "Leg_" + std::to_string(i+1);
-		pad[i] = new TPad(namePad.c_str(), namePad.c_str(), 0.+ i/2., 0.3, 0.5 + i/2., 1.0);
+		padUp[i] = new TPad(namePadUp.c_str(), namePadUp.c_str(), 0. + i/2., 0.3, 0.5 + i/2., 1.0);
 		leg[i] = new TLegend(0.34,0.55 + i/5. ,0.54,0.85,NULL,"brNDC");
 		c->cd();
-		pad[i]->Draw();
-		pad[i]->cd();
+		padUp[i]->Draw();
+		padUp[i]->cd();
 		gPad->SetLogy();
 		data->data_histograms[i]->SetLineColor(kBlack);
 		data->data_histograms[i]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
@@ -69,24 +68,10 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		leg[i]->SetTextSize(0.04);
 		leg[i]->SetBorderSize(0);
 		leg[i]->SetFillStyle(0);
-
-
+		c->cd();
 	}
 
-	//Legends
-/*	TLegend *leg_UpLeft = new TLegend(0.34,0.55,0.54,0.85,NULL,"brNDC");
-	leg_UpLeft->SetTextAlign(13);
-	leg_UpLeft->SetTextSize(0.04);
-	leg_UpLeft->SetBorderSize(0);
-	leg_UpLeft->SetFillStyle(0);
-
-	TLegend *leg_UpRight = new TLegend(0.34,0.75,0.54,0.85,NULL,"brNDC");
-	leg_UpRight->SetTextAlign(13);
-	leg_UpRight->SetTextSize(0.04);
-	leg_UpRight->SetBorderSize(0);
-	leg_UpRight->SetFillStyle(0);*/
-
-	//Be7,pep,Bi210,Kr85,Po210,U238,Th232,K40,C11,C11_2,C10,He6
+		//Be7,pep,Bi210,Kr85,Po210,U238,Th232,K40,C11,C11_2,C10,He6
 		int *Colors = new int [12]{632,632,409,616,400,600,870,921,801,801,881,419};
 		std::vector<int> colors;
 		std::vector<TString> used_names;
@@ -111,7 +96,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 						PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k));
 						}
 
-    				pad[el.idx_hist-1]->cd();
+    				padUp[el.idx_hist-1]->cd();
 						current_hist->SetLineColor(colors[idx_col]);
             current_hist->SetMarkerColor(colors[idx_col]);
     				current_hist->Draw("SAME");
@@ -127,7 +112,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 							PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k));
 						}
 
-          	pad[el.idx_hist-1]->cd();
+          	padUp[el.idx_hist-1]->cd();
 						current_hist->SetLineColor(colors[idx_col]);
             current_hist->SetMarkerColor(colors[idx_col]);
           	current_hist->Draw("SAME");
@@ -145,7 +130,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
     }
 
 	// Residuals
-	/*std::vector<std::vector<double>> rec_energy;
+	std::vector<std::vector<double>> rec_energy;
 	std::vector<std::vector<double>> residuals;
 
 	for (auto i : data->hist_ids) {
@@ -158,42 +143,29 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		residuals.push_back(res);
 	}
 
-  c->cd();
-  TPad* Pad_DownLeft = new TPad("Pad_DownLeft", "Pad_DownLeft", 0.0, 0.0, 0.5, 0.3);
-  Pad_DownLeft->Draw();
-  Pad_DownLeft->cd();
+	TPad *padDown[data->hist_ids.size()];
+	TGraph *Res[data->hist_ids.size()];
 
-  // auto resArray = vec2Array(residuals[0]);
-  TGraph *ResLeft = new TGraph(config.nbins[0], vec2Array(rec_energy[0]),
-                                 vec2Array(residuals[0]));
-  ResLeft->SetTitle("Residuals");
-  ResLeft->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
-  ResLeft->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
-  ResLeft->GetYaxis()->CenterTitle(true);
-  ResLeft->GetYaxis()->SetTitleSize(.05);
-  ResLeft->GetXaxis()->SetTitleSize(.05);
-  ResLeft->GetXaxis()->SetRangeUser(pdfs->bin_edges[0].front(),pdfs->bin_edges[0].back());
-  ResLeft->GetYaxis()->SetRangeUser(-4.,4.);
-  ResLeft->SetLineWidth(1);
-  ResLeft->Draw("AL");
+	for (int i = 0; i < data->hist_ids.size(); i++){
+		auto namePadDown = "PadDown_" + std::to_string(i+1);
+		padDown[i] = new TPad(namePadDown.c_str(),namePadDown.c_str(), 0. + i/2., 0., 0.5 + i/2., 0.3);
+		c->cd();
+		padDown[i]->Draw();
+		padDown[i]->cd();
+		Res[i] = new TGraph(config.nbins[i], vec2Array(rec_energy[i]),
+	                                 vec2Array(residuals[i]));
+		Res[i]->SetTitle("Residuals");
+		Res[i]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
+		Res[i]->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
+		Res[i]->GetYaxis()->CenterTitle(true);
+		Res[i]->GetYaxis()->SetTitleSize(.05);
+		Res[i]->GetXaxis()->SetTitleSize(.05);
+		Res[i]->GetXaxis()->SetRangeUser(pdfs->bin_edges[i].front(),pdfs->bin_edges[i].back());
+		Res[i]->GetYaxis()->SetRangeUser(-4.,4.);
+		Res[i]->SetLineWidth(1);
+		Res[i]->Draw("AL");
 
-	c->cd();
-  TPad* Pad_DownRight = new TPad("Pad_DownRight", "Pad_DownRight", 0.5, 0.0, 1.0, 0.3);
-  Pad_DownRight->Draw();
-  Pad_DownRight->cd();
-
-  TGraph *ResRight = new TGraph(config.nbins[1], vec2Array(rec_energy[1]),
-                                  vec2Array(residuals[1]));
-  ResRight->SetTitle("Residuals");
-  ResRight->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
-  ResRight->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
-  ResRight->GetYaxis()->CenterTitle(true);
-  ResRight->GetYaxis()->SetTitleSize(.05);
-  ResRight->GetXaxis()->SetTitleSize(.05);
-  ResRight->GetXaxis()->SetRangeUser(pdfs->bin_edges[1].front(),pdfs->bin_edges[1].back());
-  ResRight->GetYaxis()->SetRangeUser(-4.,4.);
-  ResRight->SetLineWidth(1);
-  ResRight->Draw("AL");*/
+	}
 
   c->Write();
   f->Close();
