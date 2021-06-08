@@ -91,7 +91,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
             auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
             current_hist->Scale(results.popt[i]/results.efficiencies[j]*config.param_eff[j]);
 
-          if (el.idx_hist == 1) {
+          //if (el.idx_hist == 1) {
 						for(auto k = 1U; k <= config.nbins[el.idx_hist-1]; k++){
 						PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k));
 						}
@@ -103,28 +103,14 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 						PDFsSum.at(el.idx_hist-1)->SetLineColor(632);
 						PDFsSum.at(el.idx_hist-1)->SetMarkerColor(632);
 						PDFsSum.at(el.idx_hist-1)->Draw("SAME");
-    				leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
-    				leg[el.idx_hist-1]->Draw("SAME");
-
-    			}
-					if (el.idx_hist == 2) {
-						for(auto k = 1U; k <= config.nbins[el.idx_hist-1]; k++){
-							PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k));
+						if(el.idx_hist == 2 && (current_name == "C11_2" || current_name == "C10" || current_name == "He6")){
+    					leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
+    					leg[el.idx_hist-1]->Draw("SAME");
 						}
-
-          	padUp[el.idx_hist-1]->cd();
-						current_hist->SetLineColor(colors[idx_col]);
-            current_hist->SetMarkerColor(colors[idx_col]);
-          	current_hist->Draw("SAME");
-						PDFsSum.at(el.idx_hist-1)->SetLineColor(632);
-						PDFsSum.at(el.idx_hist-1)->SetMarkerColor(632);
-						PDFsSum.at(el.idx_hist-1)->Draw("SAME");
-						if(j==17||j==18||j==19){
-
-    				leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
-    				leg[el.idx_hist-1]->Draw("SAME");
-					}
-        }
+						if(el.idx_hist == 1){
+							leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
+    					leg[el.idx_hist-1]->Draw("SAME");
+						}
       }
 			idx_col++;
     }
