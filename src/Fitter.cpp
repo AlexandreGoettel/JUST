@@ -303,28 +303,9 @@ auto MinuitManager::getResults() -> NuFitResults {
 									       std::vector<double>(fitCtnr.n_params));
 
 	// Fill parameter vector
-	// Make sure fixed params are inserted properly
-	auto iFree {0U}, iFixed {0U}, iPopt {0U};
-	while (iPopt < n_params_tot) {
-		auto idx_pdf_free = config.npdfs;  // Initialise to a larger number
-		auto idx_pdf_fixed = config.npdfs;  // For the comparison below
-		if (iFree < fitCtnr.n_params) {
-			idx_pdf_free = fitCtnr.paramVector[iFree][0].idx_pdf;
-		}
-		if (iFixed < fitCtnr.paramVector_fixed.size()) {
-			idx_pdf_fixed = fitCtnr.paramVector_fixed[iFixed][0].idx_pdf;
-		}
-
-		// Fill popt in the order they are seen by parser
-		if (idx_pdf_free < idx_pdf_fixed) {
-			gMinuit->GetParameter(iFree, x, _);
-			popt[iPopt] = x;
-			iFree++;
-		} else {
-			popt[iPopt] = fitCtnr.config.param_initial_guess[idx_pdf_fixed];
-			iFixed++;
-		}
-		iPopt++;
+	for (auto i = 0U; i < fitCtnr.n_params; i++) {
+		gMinuit->GetParameter(i, x, _);
+		popt[i] = x;
 	}
 
 	// Get the covariance matrix
@@ -337,13 +318,12 @@ auto MinuitManager::getResults() -> NuFitResults {
 		}
 	}
 	// Expand pcov to include fixed params as well
-    // TODO
-	// For each row, this var gives the idx of free params (inverse of idx_map)
+    // TODO: move this to fitresults.cpp
 	auto iRowFree {0U};
 	for (auto iRow = 0U; iRow < n_params_tot; iRow++){
 		// Construct row
 		std::vector<double> this_row(n_params_tot);
-		iFree = iFixed = iPopt = 0;
+		auto iFree {0U}, iFixed {0U}, iPopt {0U};
 		while (iPopt < n_params_tot) {
 			auto idx_pdf_free = config.npdfs;  // Initialise to a larger number
 			auto idx_pdf_fixed = config.npdfs;  // For the comparison below
@@ -380,8 +360,9 @@ auto MinuitManager::getResults() -> NuFitResults {
     int tmp_;
     gMinuit->mnstat(_, _, _, tmp_, tmp_, errorflag_cov);
 
-	auto results = NuFitResults(popt, pcov, fitCtnr.efficiencies,
-                                errorflag, errorflag_cov, fitCtnr.paramVector);
+	auto results = NuFitResults(config, popt, pcov, fitCtnr.efficiencies,
+	                            errorflag, errorflag_cov,
+	                            fitCtnr.paramVector, fitCtnr.paramVector_fixed);
 	return results;
 }
 

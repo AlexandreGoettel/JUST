@@ -9,6 +9,8 @@
 //============================================================================
 // Includes
 #include <vector>
+#include "TString.h"
+#include "Parser.h"
 
 //============================================================================
 // Class definition
@@ -22,8 +24,9 @@ struct paramData {
 
 class NuFitResults {
 public: // Constructors and operator assignments
-	NuFitResults(std::vector<double>, std::vector<std::vector<double>>,
-		         std::vector<double>, int, int,
+	NuFitResults(const NuFitConfig, std::vector<double>, std::vector<std::vector<double>>,
+	             std::vector<double>, int, int,
+	             std::vector<std::vector<paramData>>,
 	             std::vector<std::vector<paramData>>);  // constructor
 	~NuFitResults() = default;  // destructor
 	NuFitResults(const NuFitResults&) = default;  // copy constructor
@@ -32,6 +35,7 @@ public: // Constructors and operator assignments
 	NuFitResults &operator=(NuFitResults&&) = default;  // move assignment
 
 public: // Member variables
+	NuFitConfig config;
 	std::vector<double> popt, efficiencies;
 	std::vector<std::vector<double>> pcov;
 	unsigned int errorflag, errorflag_cov;
@@ -41,6 +45,10 @@ public: // Functions
 	void addResults(NuFitResults);
 	std::vector<double> getUncertainties();
 	std::vector<std::vector<double>> getCorrMatrix();
+
+private:
+	void combineParamVectors(std::vector<std::vector<paramData>>,
+		                     std::vector<std::vector<paramData>>);
 };
 
 }  // namespace NuFitter

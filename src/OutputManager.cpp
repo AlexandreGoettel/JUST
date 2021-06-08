@@ -214,7 +214,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 
 	// Write params with uncertainties in counts and cpd/kton
 	outf << "------------\n" << "Fit results:\n" << "------------\n"
-		 << "Species\tcounts\t\tsigma\t\trate(cpd/kton)\tsigma(cpd/kton)\n"
+		 << "Species\tcounts\t\tsigma\t\trate(cpd/kton)\tsigma(cpd/kton)\tStatus\n"
 	     << std::scientific;
 	outf.precision(4);
     for (auto i = 0U; i < results.paramVector.size(); i++) {  // For each parameter
@@ -222,6 +222,8 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
         outf << config.param_names[paramVec[0].idx_pdf] << "\t";
         outf << results.popt[i] << "\t" << popt_err[i] << "\t";
         outf << popt_cpd[i] << "\t" << popt_err_cpd[i];
+		std::vector<std::string> status {"FREE", "FIXED", "CONSTR"};
+		outf << "\t" << status[config.param_fixed[paramVec[0].idx_pdf]];
 		outf << "\n";
     }
 
