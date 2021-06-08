@@ -248,9 +248,12 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	ParseSpeciesList(config, args.spec);
 
 	// -------------------------------------------------------------------------
+	// TODO: make sure pdfs are compatible
 	// Get nbins from the data hists
-	// TODO: make sure pdfs are compatible?
 	for (auto i = 0U; i < config->data_hist_names.size(); i++) {
+		// Only load the histogram if it is used!
+		if (std::find(config->hist_id.begin(), config->hist_id.end(), i+1)
+		    == config->hist_id.end()) continue;
 		TFile *fdata = new TFile(config->data_name.c_str());
 		TH1D* hdata = (TH1D*)fdata->Get(config->data_hist_names[i].c_str());
 		config->nbins.push_back(hdata->GetNbinsX());

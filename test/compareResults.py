@@ -44,8 +44,8 @@ def writeConfigFile(filename):
     prefix = ["PDFsRootfile", "DataRootfile", "HistOne", "HistTwo",
               "Lifetime", "MassTarget", "emax", "emin", "ToyData", "Hesse",
               "Minos", "Likelihood"]
-    args = [pdfs_file, data_file, "PseudoDataset", "tmp", 180, 10.2987, 3000,
-            650, 0, 0, 0, "poisson"]
+    args = [pdfs_file, data_file, "PseudoDataset", "tmp", 180, 10.2987, 2999,
+            649, 0, 0, 0, "poisson"]
 
     # Write to file
     with open(filename, "w") as _file:
@@ -58,13 +58,14 @@ def writeConfigFile(filename):
 
 def closeEnough(arr1, arr2, margin=1):
     """Check within the values in arr1 and arr2 differ > margin %."""
+    bDiff = True
     for i, (val1, val2) in enumerate(zip(arr1, arr2)):
         diff = abs(val1 - val2) / (val1 + val2) * 2
         if diff*100 > margin:
             print("Detected difference of {:.2f}%! in param {:d}"
                   .format(diff*100, i+1))
-            return False
-    return True
+            bDiff = False
+    return bDiff
 
 
 def main():
@@ -90,11 +91,13 @@ def main():
         print("Comparison successful!")
         exit(0)
     else:
-        print("Comparison failed!\npopt:")
+        print("Comparison failed!")
         if not closeEnough(popt_fit, popt_ref):
+            print("popt:")
             print(popt_ref)
             print(popt_fit)
-        else:
+        if not closeEnough(pcov_fit, pcov_ref):
+            print("pcov:")
             print(pcov_ref)
             print(pcov_fit)
         exit(-1)

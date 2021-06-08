@@ -12,7 +12,6 @@
 // ROOT includes
 #include "Math/Util.h"
 #include "TMath.h"
-#include "TMatrixDSym.h"
 // Project includes
 #include "Fitter.h"
 
@@ -47,7 +46,7 @@ auto getIndexOf(T el, std::vector<T> v) -> int {
 // inside of the bin range
 template <class T>
 auto NuFitContainer::InFitRange(T lower_edge, T upper_edge) -> bool {
-    return upper_edge > config.emin && lower_edge < config.emax;
+	return upper_edge > config.emin && lower_edge < config.emax;
 }
 
 // @brief Constructor for NuFitContainer
@@ -152,11 +151,9 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 	}
 
 	// Calculate fit contribution from fixed params
-	for (auto k = 0U; k < paramVector_fixed.size(); k++) {  // each parameter
-		auto parDataVec = paramVector_fixed[k];
+	for (auto parDataVec : paramVector_fixed) {  // each parameter
 		auto parValue = config.param_initial_guess[parDataVec[0].idx_pdf];
-		for (auto h = 0U; h < parDataVec.size(); h++) {  // each hist in parData
-			auto parData = parDataVec[h];
+		for (auto parData : parDataVec) { // each hist in parData
 			for (auto j = 0U; j < data_vector[parData.idx_hist-1].size(); j++) {  // each bin
                 fitValFixed[parData.idx_hist-1][j] += pdf_vectors[parData.idx_pdf][j]
                     * parValue * config.param_eff[parData.idx_pdf];
@@ -165,7 +162,6 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 	}
 
     // 6. If same var same pdf on same hist->raise error? Smth for parser?
-
 }
 
 // Maybe return answer as a vector?
@@ -183,8 +179,7 @@ auto NuFitContainer::fitFunction(unsigned int npar, const double *par)
 	for (auto k = 0U; k < paramVector.size(); k++) {  // each parameter
 		auto parDataVec = paramVector[k];
         auto parValue = par[k];
-		for (auto h = 0U; h < parDataVec.size(); h++) {  // each hist in parData
-			auto parData = parDataVec[h];
+		for (auto parData : parDataVec) { // each hist in parData
 			for (auto j = 0U; j < data_vector[parData.idx_hist-1].size(); j++) {  // each bin
                 fitFuncVal[parData.idx_hist-1][j] += pdf_vectors[parData.idx_pdf][j]
                     * parValue * config.param_eff[parData.idx_pdf];
@@ -194,7 +189,6 @@ auto NuFitContainer::fitFunction(unsigned int npar, const double *par)
 
     // If there are fixed parameters, add contribution here
 	if (paramVector_fixed.size() == 0) return fitFuncVal;
-
 	for (auto i = 0U; i < fitFuncVal.size(); i++) {
 		for (auto j = 0U; j < fitFuncVal[i].size(); j++) {
 			fitFuncVal[i][j] += fitValFixed[i][j];
@@ -223,7 +217,6 @@ auto NuFitContainer::NLL(L eval, int npar, const double *par) -> double {
             chi_sqr_lambda_p += eval(ni, yi);
 		}
 	}
-
 	return chi_sqr_lambda_p;
 }
 

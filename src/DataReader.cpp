@@ -97,9 +97,9 @@ auto Read(const NuFitConfig config) -> NuFitPDFs* {
 	std::cout << "INFO: Reading PDFs from " << config.pdf_name << std::endl;
 	TFile *file_pdf = new TFile(config.pdf_name.c_str());
 	std::vector<TH1D*> hPDFs;
-    for (auto i = 0U; i < config.npdfs; i++) {
+	for (auto i = 0U; i < config.npdfs; i++) {
 		hPDFs.push_back((TH1D*)file_pdf->Get(config.pdf_names[i]));
-    }
+	}
 
 	// Convert histograms to vectors
 	std::vector<std::vector<double>> pdfs;
@@ -112,16 +112,18 @@ auto Read(const NuFitConfig config) -> NuFitPDFs* {
 	}
 
 	// Create bin_edges vector for each used data histogram
+	// Only if the histogram was found in specieslist
 	std::vector<std::vector<double>> bin_edges;
 	for (auto i = 1U; i <= config.data_hist_names.size(); i++) {
 		if (std::find(config.hist_id.begin(), config.hist_id.end(), i) != config.hist_id.end()) {
+			// TODO: different histograms can have different binning!
 			auto bin_edges_tmp = getBinEdges(hPDFs[0], config.nbins[i-1]);
 			bin_edges.push_back(bin_edges_tmp);
 		}
 	}
 
-    std::cout << "[PDF READER]" << "nPDF: " << pdfs.size() << std::endl
-              << "[PDF READER]" << "nHists: " << bin_edges.size() << std::endl;
+	std::cout << "[PDF READER]" << "nPDF: " << pdfs.size() << std::endl
+	          << "[PDF READER]" << "nHists: " << bin_edges.size() << std::endl;
 
 	// Create and return NuFitPDFs object with the variables
 	auto *output = new NuFitPDFs(pdfs, bin_edges, hPDFs);
