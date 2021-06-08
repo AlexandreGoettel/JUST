@@ -84,6 +84,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		auto parData = results.paramVector[i];
 		for (auto el : parData) {
 			auto j = el.idx_pdf;
+			auto n = el.idx_hist-1;
 			auto current_name = config.param_names[j];
 
 			// Manage color used
@@ -97,25 +98,25 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 			current_hist->Scale(results.popt[i]/results.efficiencies[j]*config.param_eff[j]);
 
 			// Update PDFSum
-			for(auto k = 1U; k <= config.nbins[el.idx_hist-1]; k++){
-				PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k));
+			for(auto k = 1U; k <= config.nbins[n]; k++){
+				PDFsSum.at(n)->SetBinContent(k,PDFsSum.at(n)->GetBinContent(k)+current_hist->GetBinContent(k));
 			}
 
 			// Draw PDF
-			padUp[el.idx_hist-1]->cd();
+			padUp[n]->cd();
 			current_hist->SetLineColor(colors[idx_col]);
 			current_hist->SetMarkerColor(colors[idx_col]);
 			current_hist->Draw("SAME");
-			PDFsSum.at(el.idx_hist-1)->SetLineColor(632);
-			PDFsSum.at(el.idx_hist-1)->SetMarkerColor(632);
-			PDFsSum.at(el.idx_hist-1)->Draw("SAME");
+			PDFsSum.at(n)->SetLineColor(632);
+			PDFsSum.at(n)->SetMarkerColor(632);
+			PDFsSum.at(n)->Draw("SAME");
 			if(el.idx_hist == 2 && (current_name == "C11_2" || current_name == "C10" || current_name == "He6")){
-				leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
-				leg[el.idx_hist-1]->Draw("SAME");
+				leg[n]->AddEntry(current_hist, config.param_names.at(j));
+				leg[n]->Draw("SAME");
 			}
 			if(el.idx_hist == 1){
-				leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
-				leg[el.idx_hist-1]->Draw("SAME");
+				leg[n]->AddEntry(current_hist, config.param_names.at(j));
+				leg[n]->Draw("SAME");
 			}
 		}
 		idx_col++;
