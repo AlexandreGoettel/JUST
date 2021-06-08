@@ -50,7 +50,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	TPad *padUp[data->hist_ids.size()];
 	TLegend *leg[data->hist_ids.size()];
 
-	for (int i = 0; i < data->hist_ids.size(); i++){
+	for (auto i = 0U; i < data->hist_ids.size(); i++){
 		auto namePadUp = "PadUp_" + std::to_string(i+1);
 		auto nameLeg = "Leg_" + std::to_string(i+1);
 		padUp[i] = new TPad(namePadUp.c_str(), namePadUp.c_str(), 0. + i/2., 0.3, 0.5 + i/2., 1.0);
@@ -71,49 +71,49 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		c->cd();
 	}
 
-		//Be7,pep,Bi210,Kr85,Po210,U238,Th232,K40,C11,C11_2,C10,He6
-		int *Colors = new int [12]{632,632,409,616,400,600,870,921,801,801,881,419};
-		std::vector<int> colors;
-		std::vector<TString> used_names;
-		auto idx_col {0};
+	//Be7,pep,Bi210,Kr85,Po210,U238,Th232,K40,C11,C11_2,C10,He6
+	int *Colors = new int [12]{632,632,409,616,400,600,870,921,801,801,881,419};
+	std::vector<int> colors;
+	std::vector<TString> used_names;
+	auto idx_col {0};
 
-    for (auto i = 0U; i < results.paramVector.size(); i++) {
-        auto parData = results.paramVector[i];
-        for (auto el : parData) {
-            auto j = el.idx_pdf;
-						auto current_name = config.param_names[el.idx_pdf];
-						if (std::find(used_names.begin(), used_names.end(), current_name)
-							== used_names.end()) {
-								used_names.push_back(current_name);
-								colors.push_back(Colors[idx_col]);
-							}
+	for (auto i = 0U; i < results.paramVector.size(); i++) {
+		auto parData = results.paramVector[i];
+		for (auto el : parData) {
+			auto j = el.idx_pdf;
+			auto current_name = config.param_names[el.idx_pdf];
+			if (std::find(used_names.begin(), used_names.end(), current_name)
+			    == used_names.end()) {
+				used_names.push_back(current_name);
+				colors.push_back(Colors[idx_col]);
+			}
 
-            auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
-            current_hist->Scale(results.popt[i]/results.efficiencies[j]*config.param_eff[j]);
+			auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
+			current_hist->Scale(results.popt[i]/results.efficiencies[j]*config.param_eff[j]);
 
-          //if (el.idx_hist == 1) {
-						for(auto k = 1U; k <= config.nbins[el.idx_hist-1]; k++){
-						PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k));
-						}
+			//if (el.idx_hist == 1) {
+			for(auto k = 1U; k <= config.nbins[el.idx_hist-1]; k++){
+				PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k));
+			}
 
-    				padUp[el.idx_hist-1]->cd();
-						current_hist->SetLineColor(colors[idx_col]);
-            current_hist->SetMarkerColor(colors[idx_col]);
-    				current_hist->Draw("SAME");
-						PDFsSum.at(el.idx_hist-1)->SetLineColor(632);
-						PDFsSum.at(el.idx_hist-1)->SetMarkerColor(632);
-						PDFsSum.at(el.idx_hist-1)->Draw("SAME");
-						if(el.idx_hist == 2 && (current_name == "C11_2" || current_name == "C10" || current_name == "He6")){
-    					leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
-    					leg[el.idx_hist-1]->Draw("SAME");
-						}
-						if(el.idx_hist == 1){
-							leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
-    					leg[el.idx_hist-1]->Draw("SAME");
-						}
-      }
-			idx_col++;
-    }
+			padUp[el.idx_hist-1]->cd();
+			current_hist->SetLineColor(colors[idx_col]);
+			current_hist->SetMarkerColor(colors[idx_col]);
+			current_hist->Draw("SAME");
+			PDFsSum.at(el.idx_hist-1)->SetLineColor(632);
+			PDFsSum.at(el.idx_hist-1)->SetMarkerColor(632);
+			PDFsSum.at(el.idx_hist-1)->Draw("SAME");
+			if(el.idx_hist == 2 && (current_name == "C11_2" || current_name == "C10" || current_name == "He6")){
+				leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
+				leg[el.idx_hist-1]->Draw("SAME");
+			}
+			if(el.idx_hist == 1){
+				leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
+				leg[el.idx_hist-1]->Draw("SAME");
+			}
+		}
+		idx_col++;
+	}
 
 	// Residuals
 	std::vector<std::vector<double>> rec_energy;
@@ -132,7 +132,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	TPad *padDown[data->hist_ids.size()];
 	TGraph *Res[data->hist_ids.size()];
 
-	for (int i = 0; i < data->hist_ids.size(); i++){
+	for (auto i = 0U; i < data->hist_ids.size(); i++){
 		auto namePadDown = "PadDown_" + std::to_string(i+1);
 		padDown[i] = new TPad(namePadDown.c_str(),namePadDown.c_str(), 0. + i/2., 0., 0.5 + i/2., 0.3);
 		c->cd();
@@ -152,9 +152,8 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		Res[i]->Draw("AL");
 
 	}
-
-  c->Write();
-  f->Close();
+	c->Write();
+	f->Close();
 
 	//----------------------------------------
 	//------ Create the output txt file ------
