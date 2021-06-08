@@ -119,6 +119,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 			}
 		}
 		idx_col++;
+		if (idx_col > 12) idx_col = 0;
 	}
 
 	// Fill vectors used to plot residuals
