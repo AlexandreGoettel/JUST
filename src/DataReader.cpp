@@ -79,7 +79,8 @@ auto Read(const NuFitConfig config) -> NuFitData* {
 			hist_ids.push_back(i-1);
 	    }
 	}
-
+	std::cout << "[DATAREADER]: vec_data[0].size() = " << vec_data[0].size() << std::endl;
+	std::cout << "[DATAREADER]: vec_data[1].size() = " << vec_data[1].size() << std::endl;
 	std::cout << "[DATA READER]" << "nHists: " << vec_data.size()
 	          << ", nBins: " << config.nbins[0] << std::endl;
 

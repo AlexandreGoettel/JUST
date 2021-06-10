@@ -233,6 +233,7 @@ auto ParseSpeciesList(std::unique_ptr<NuFitConfig>& config,
 	// Bookkeeping
 	config->npdfs = nPDFs;
 	config->nparams = nParams;
+
 }
 
 auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
@@ -249,16 +250,26 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 
 	// -------------------------------------------------------------------------
 	// TODO: make sure pdfs are compatible
-	// Get nbins from the data hists
-	for (auto i = 0U; i < config->data_hist_names.size(); i++) {
-		// Only load the histogram if it is used!
-		if (std::find(config->hist_id.begin(), config->hist_id.end(), i+1)
+	// Get nbins from the data hists or from the PDFs if we want to use ToyData
+	if(config->doToyData_ == false){
+		for (auto i = 0U; i < config->data_hist_names.size(); i++) {
+			// Only load the histogram if it is used!
+			if (std::find(config->hist_id.begin(), config->hist_id.end(), i+1)
 		    == config->hist_id.end()) continue;
-		TFile *fdata = new TFile(config->data_name.c_str());
-		TH1D* hdata = (TH1D*)fdata->Get(config->data_hist_names[i].c_str());
-		config->nbins.push_back(hdata->GetNbinsX());
-		fdata->Close();
+				TFile *fdata = new TFile(config->data_name.c_str());
+				TH1D* hdata = (TH1D*)fdata->Get(config->data_hist_names[i].c_str());
+				config->nbins.push_back(hdata->GetNbinsX());
+				fdata->Close();
 	}
+} else {
+	for (auto i = 0U; i < config->data_hist_names.size(); i++) {
+		TFile *fpdf = new TFile(config->pdf_name.c_str());
+		TH1D* hpdf = (TH1D*)fpdf->Get(config->pdf_names[0]);
+		config->nbins.push_back(hpdf->GetNbinsX());
+		fpdf->Close();
+	}
+}
+
 
 	return *config;
 }

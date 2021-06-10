@@ -19,9 +19,10 @@ namespace NuFitter {
 // Forward declaration
 class NuFitConfig;
 class NuFitData;
+class NuFitPDFs;
 
 // NuFitToyData *generateToyData(const NuFitConfig *config);
-std::vector<NuFitData*> generateToyData(const NuFitConfig config);
+NuFitData* generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs);
 
 }  // namespace NuFitter
 

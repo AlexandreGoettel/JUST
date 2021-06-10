@@ -38,7 +38,7 @@ auto main(int argc, char* argv[]) -> int {
 	if (config.doToyData_) {
 
 		// Generate toy data for the fit
-		auto data = generateToyData(config);
+		auto data = generateToyData(config, pdfs);
 		auto results = MCFit::Fit(data, pdfs, config);
 		ProcessResults(data, pdfs, config, results);
 	} else {

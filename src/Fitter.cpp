@@ -233,9 +233,9 @@ auto NuFitContainer::NLL_MUST(T ni, T yi) -> T {
     if (ni < 0)
 		return 0;
 	else if (ni == 0)
-		return -yi;
+		return yi;
 	else
-		return ni*ROOT::Math::Util::EvalLog(yi) - yi - TMath::LnGamma(ni+1);
+		return -(ni*ROOT::Math::Util::EvalLog(yi) - yi - TMath::LnGamma(ni+1));
 }
 
 // @brief MinuitManager constructor
