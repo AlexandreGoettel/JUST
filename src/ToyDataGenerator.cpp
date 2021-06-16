@@ -41,7 +41,7 @@ auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> std::ve
 	std::vector<unsigned int> hist_ids;
 
 	for (auto i = 1U; i <= config.data_hist_names.size(); i++) {
-		if (std::find(config.hist_id.begin(), config.hist_id.end(), i) != config.hist_id.end()) {
+		if (std::find(config.hist_id_toy.begin(), config.hist_id_toy.end(), i) != config.hist_id_toy.end()) {
 				TH1D *hdata = new TH1D(config.data_hist_names[i-1].c_str(), config.data_hist_names[i-1].c_str(), config.nbins[i-1],
 				    pdfs->bin_edges[i-1].front() + 1, pdfs->bin_edges[i-1].back());
 				hists.push_back(hdata);
@@ -51,11 +51,11 @@ auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> std::ve
 		gRandom = new TRandom3(0);
 		gRandom->SetSeed(0);
 
-		for (auto i = 0U; i < config.nSp_histos.size(); i++){
-			for (auto k = 0U; k < config.nSp_histos[i]; k++) {
-				auto idx = k + i * config.nSp_histos[0];
+		for (auto i = 0U; i < config.nSp_histos_toy.size(); i++){
+			for (auto k = 0U; k < config.nSp_histos_toy[i]; k++) {
+				auto idx = k + i * config.nSp_histos_toy[0];
 				auto current_hist = (TH1D*)pdfs->pdf_histograms[idx]->Clone();
-				hists.at(i)->FillRandom(current_hist, config.param_initial_guess[idx]*config.param_eff[idx]);
+				hists.at(i)->FillRandom(current_hist, config.param_initial_guess_toy[idx]*config.param_eff_toy[idx]);
 			}
 		}
 		// Convert histogram to vector

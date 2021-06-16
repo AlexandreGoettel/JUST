@@ -57,6 +57,13 @@ public:  // Initialise variables to be filled by parser
 	std::vector<double> param_initial_guess, param_stepsize,
 	                    param_lowerlim, param_upperlim, param_eff;
 	std::vector<unsigned int> param_fixed, hist_id, nSp_histos;
+
+	// Toy_rates config file
+	unsigned int npdfs_toy;
+	std::vector<TString> pdf_names_toy;
+	std::vector<double> param_initial_guess_toy, param_eff_toy;
+	std::vector<unsigned int> hist_id_toy, nSp_histos_toy;
+
 };
 
 void ErrorReading(std::string&);
@@ -71,6 +78,7 @@ namespace CMDLParser {
 namespace ConfigParser {
 	void ParseGenOpts(std::unique_ptr<NuFitConfig>&, std::string);
 	void ParseSpeciesList(std::unique_ptr<NuFitConfig>&, std::string);
+	void ParseToyRates(std::unique_ptr<NuFitConfig>&, std::string);
 	NuFitConfig Parse(NuFitCmdlArgs);
 }  // namespace ConfigParser
 

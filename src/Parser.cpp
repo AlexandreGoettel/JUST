@@ -236,6 +236,76 @@ auto ParseSpeciesList(std::unique_ptr<NuFitConfig>& config,
 
 }
 
+auto ParseToyRates(std::unique_ptr<NuFitConfig> &config, std::string filename) -> void {
+
+	// Make sure the file is valid
+	NuFitter::ErrorReading(filename);
+
+	// Initialise variables
+	std::string line, word;
+	auto nPDFs{0}, nParams{0};
+
+	// Open the file
+	std::ifstream ReadToy;
+	ReadToy.open(filename);
+
+	// For each line in the file
+	while (std::getline(ReadToy, line)) {
+		std::stringstream line_stream(line);
+		auto nElements {0U};
+
+		while (line_stream >> word) {
+			// Ignore commented lines
+			if (nElements == 0 && std::strncmp(word.c_str(), "#", 1) == 0) {
+				break;
+			}
+
+			// Read the (expected) variables
+			switch (nElements) {
+				case 0:
+					nPDFs += 1;
+					config->pdf_names_toy.push_back(word);
+					break;
+				case 1:
+					config->param_initial_guess_toy.push_back(std::stod(word)*config->exposure);
+					break;
+				case 2:
+					config->hist_id_toy.push_back(std::stoi(word));
+					break;
+				case 3:
+					config->param_eff_toy.push_back(std::stod(word));
+					break;
+				default:
+					std::cout << "[Warning] In file: " + filename +
+						": Too many arguments in a line." << std::endl;
+			}
+			nElements++;
+		}
+		// Make sure line was correctly parsed
+		if (nElements == 0) continue;
+		if (nElements < 3) {
+			throw std::invalid_argument("A line in file: '" + filename +
+				"' does not have enough arguments to be valid.."
+				+ std::to_string(nElements));
+		}
+	}
+	ReadToy.close();
+    // TODO: additional error handling
+
+	// Count how many species exist in each histogram
+	auto max = *std::max_element(std::begin(config->hist_id_toy),
+	                             std::end(config->hist_id_toy));
+	std::vector<unsigned int> tmp_nSp(max);
+	for (auto el : config->hist_id_toy) {
+		tmp_nSp[el-1]++;
+	}
+	config->nSp_histos_toy = tmp_nSp;
+
+	// Bookkeeping
+	config->npdfs_toy = nPDFs;
+
+}
+
 auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	auto config = std::make_unique<NuFitConfig>();
 	config->output_name = args.output_name;
@@ -247,6 +317,10 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	// -------------------------------------------------------------------------
 	// Read the species-list
 	ParseSpeciesList(config, args.spec);
+
+	// -------------------------------------------------------------------------
+	// Read the toy-rates
+	ParseToyRates(config, args.toy);
 
 	// -------------------------------------------------------------------------
 	// TODO: make sure pdfs are compatible
