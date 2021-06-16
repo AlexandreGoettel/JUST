@@ -320,7 +320,9 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 
 	// -------------------------------------------------------------------------
 	// Read the toy-rates
-	ParseToyRates(config, args.toy);
+	if(config->ToyData != 0){
+		ParseToyRates(config, args.toy);
+	}
 
 	// -------------------------------------------------------------------------
 	// TODO: make sure pdfs are compatible
