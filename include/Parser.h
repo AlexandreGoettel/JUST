@@ -40,7 +40,8 @@ public:
 	NuFitConfig &operator=(NuFitConfig&&) = default;  // move assignment
 
 public:  // Initialise variables to be filled by parser
-	bool doToyData_ = false, doHesse = false, doMinos = false;
+	bool doHesse = false, doMinos = false;
+	unsigned int ToyData = 0; //0 by default means no toyfit
 	double emin = 0., emax = 5000.;  // Close to numeric limit
 	std::string likelihood = "poisson";
 

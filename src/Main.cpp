@@ -35,7 +35,7 @@ auto main(int argc, char* argv[]) -> int {
 	NuFitPDFs *pdfs = PDFs::Read(config);
 
 	// Perform the fit with real or toy data
-	if (config.doToyData_) {
+	if (config.ToyData != 0) {
 
 		// Generate toy data for the fit
 		auto data = generateToyData(config, pdfs);

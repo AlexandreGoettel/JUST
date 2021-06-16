@@ -50,11 +50,7 @@ auto NuFitResults::getCorrMatrix() -> std::vector<std::vector<double>> {
 }
 
 // @brief Add results to existing NuFitResults. Used for ToyData fits.
-auto NuFitResults::addResults(NuFitResults results) -> NuFitResults {
-
-	NuFitResults r(results.popt,results.pcov,results.efficiencies,results.errorflag,results.errorflag_cov,results.paramVector);
-
-	return r;
+auto NuFitResults::addResults(NuFitResults results) -> void {
 
 }
 

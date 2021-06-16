@@ -127,7 +127,7 @@ auto ParseGenOpts(std::unique_ptr<NuFitConfig> &config, std::string filename) ->
 		else if (key == "MassTarget") config->mass_target = std::stod(value);
 		else if (key == "emax") config->emax = std::stod(value);
 		else if (key == "emin") config->emin = std::stod(value);
-		else if (key == "ToyData") config->doToyData_ = std::stoi(value);
+		else if (key == "ToyData") config->ToyData = std::stoi(value);
 		else if (key == "Hesse") config->doHesse = std::stoi(value);
 		else if (key == "Minos") config->doMinos = std::stoi(value);
 		else if (key == "Likelihood") config->likelihood = value;
@@ -251,7 +251,7 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	// -------------------------------------------------------------------------
 	// TODO: make sure pdfs are compatible
 	// Get nbins from the data hists or from the PDFs if we want to use ToyData
-	if(config->doToyData_ == false){
+	if(config->ToyData == 0){
 		for (auto i = 0U; i < config->data_hist_names.size(); i++) {
 			// Only load the histogram if it is used!
 			if (std::find(config->hist_id.begin(), config->hist_id.end(), i+1)

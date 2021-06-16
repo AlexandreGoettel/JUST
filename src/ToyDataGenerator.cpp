@@ -34,7 +34,7 @@ auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> std::ve
 
 	std::vector<NuFitData*> data;
 
-	for(auto t = 0U; t < 3; t++){
+	for(auto t = 0U; t < config.ToyData; t++){
 
 	std::vector<TH1D*> hists;
 	std::vector<std::vector<double>> vec_data, bin_edges;
