@@ -30,7 +30,11 @@ namespace NuFitter{
 		return bin_edges;
 	}
 // template <class Config>
-auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> NuFitData* {
+auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> std::vector<NuFitData*> {
+
+	std::vector<NuFitData*> data;
+
+	for(auto t = 0U; t < 100; t++){
 
 	std::vector<TH1D*> hists;
 	std::vector<std::vector<double>> vec_data, bin_edges;
@@ -69,14 +73,11 @@ auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> NuFitDa
 
 			}
 
-			//Temporary: Just to check how the ToyData produced look like
-			TFile *output = new TFile ("/home/anitameraviglia/Desktop/FITTER/nu-solar-fitter/build/toydata_prova.root", "RECREATE");
-      output->cd();
-      hists.at(0)->Write("PseudoDataset_Sub");
-      hists.at(1)->Write("PseudoDataset_Tag");
-      output->Close();
 
-	auto *data = new NuFitData(vec_data, bin_edges, hists, hist_ids);
+	auto *data_tofill = new NuFitData(vec_data, bin_edges, hists, hist_ids);
+	data.push_back(data_tofill);
+
+}
 	return data;
 }
 }  // namespace NuFitter

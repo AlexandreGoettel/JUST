@@ -264,7 +264,49 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 
 // @brief Same as the other ProcessResults() but for toy data fit(s)
 auto ProcessResults(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
-	                const NuFitConfig config, NuFitResults results) -> void {
+	                const NuFitConfig config, std::vector<NuFitResults> results) -> void {
+
+auto root_filename = "Dist.root";
+TFile *f = new TFile(root_filename, "RECREATE");
+f->cd();
+
+//Create the reconstructed rates distributions
+std::vector<TH1D*> rates;
+
+std::cout << "[OUTPUTMANAGER]: DEBUG 1 " << std::endl;
+
+for (auto i = 0U; i < results[0].paramVector.size(); i++){
+	auto paramVec = results[0].paramVector[i];
+	auto name = config.param_names[paramVec[0].idx_pdf] + "_distribution";
+	TH1D *rates_hists = new TH1D(name, name, 50,	//temporary
+			config.param_initial_guess[i]/config.exposure-15., config.param_initial_guess[i]/config.exposure+15.);
+	rates.push_back(rates_hists);
+}
+
+auto factor {1. / (config.lifetime*config.mass_target)};
+
+
+std::cout << "[OUTPUTMANAGER]: DEBUG 2 " << std::endl;
+
+for (auto t = 0; t < 100; t++){
+	for (auto i = 0U; i < results[t].paramVector.size(); i++){
+		auto paramVec = results[t].paramVector[i];
+		auto j = paramVec[0].idx_pdf;
+		auto eff_exposure = factor / results[t].efficiencies[j];
+
+		std::cout << "results[" << t << "].popt.at(" << i << ") = " << results[t].popt.at(i) * eff_exposure << std::endl;
+
+		rates.at(i)->Fill(results[t].popt.at(i)*eff_exposure);
+	}
+}
+std::cout << "[OUTPUTMANAGER]: DEBUG 3 " << std::endl;
+
+for(auto i = 0U; i < results[0].paramVector.size(); i++){
+	auto paramVec = results[0].paramVector[i];
+	auto name = config.param_names[paramVec[0].idx_pdf];
+	rates.at(i)->Write(name);
+}
+std::cout << "[OUTPUTMANAGER]: DEBUG 4 " << std::endl;
 
 }
 

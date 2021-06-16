@@ -20,7 +20,7 @@
 namespace NuFitter {
 
 void ProcessResults(NuFitData*, NuFitPDFs*, const NuFitConfig, NuFitResults);
-void ProcessResults(std::vector<NuFitData*>, NuFitPDFs*, const NuFitConfig, NuFitResults);
+void ProcessResults(std::vector<NuFitData*>, NuFitPDFs*, const NuFitConfig, std::vector<NuFitResults>);
 
 }  // namespace NuFitter
 

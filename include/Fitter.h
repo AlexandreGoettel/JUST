@@ -78,7 +78,7 @@ public:  // Functions
 };
 
 NuFitResults Fit(NuFitData*, NuFitPDFs*, const NuFitConfig);
-NuFitResults Fit(std::vector<NuFitData*>, NuFitPDFs*,
+std::vector<NuFitResults> Fit(std::vector<NuFitData*>, NuFitPDFs*,
 				  const NuFitConfig);
 void fcn(int&, double*, double&, double*, int);
 

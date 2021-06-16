@@ -382,6 +382,10 @@ auto MinuitManager::getResults() -> NuFitResults {
 
 	auto results = NuFitResults(popt, pcov, fitCtnr.efficiencies,
                                 errorflag, errorflag_cov, fitCtnr.paramVector);
+
+	std::cout << "results.paramVector.size() = " << results.paramVector.size() << std::endl;
+	std::cout << "results.popt.size() = " << results.popt.size() << std::endl;
+	std::cout << "results.pcov.size() = " << results.pcov.size() << std::endl;
 	return results;
 }
 
@@ -441,13 +445,16 @@ auto Fit(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config)
 // @param config pointer to the fit config variables
 // @return vector of NuFitResults*, one for each NuFitData* in data
 auto Fit(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
-	     const NuFitConfig config) -> NuFitResults {
-	auto results = Fit(data[0], pdfs, config);
-	for (auto i = 1u; i < data.size(); i++) {
-		results.addResults(Fit(data[i], pdfs, config));
+	     const NuFitConfig config) -> std::vector<NuFitResults> {
+
+	std::vector<NuFitResults> results;
+
+	for (auto i = 0U; i < data.size(); i++) {
+		results.push_back(Fit(data[i], pdfs, config));
 	}
 	return results;
 }
+
 
 }  // namespace MCFit
 }  // namespace NuFitter

@@ -38,7 +38,7 @@ public: // Member variables
 	std::vector<std::vector<paramData>> paramVector;
 
 public: // Functions
-	void addResults(NuFitResults);
+	NuFitResults addResults(NuFitResults);
 	std::vector<double> getUncertainties();
 	std::vector<std::vector<double>> getCorrMatrix();
 };

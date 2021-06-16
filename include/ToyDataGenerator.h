@@ -22,7 +22,7 @@ class NuFitData;
 class NuFitPDFs;
 
 // NuFitToyData *generateToyData(const NuFitConfig *config);
-NuFitData* generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs);
+std::vector<NuFitData*> generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs);
 
 }  // namespace NuFitter
 
