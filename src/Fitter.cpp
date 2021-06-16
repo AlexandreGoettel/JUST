@@ -383,9 +383,6 @@ auto MinuitManager::getResults() -> NuFitResults {
 	auto results = NuFitResults(popt, pcov, fitCtnr.efficiencies,
                                 errorflag, errorflag_cov, fitCtnr.paramVector);
 
-	std::cout << "results.paramVector.size() = " << results.paramVector.size() << std::endl;
-	std::cout << "results.popt.size() = " << results.popt.size() << std::endl;
-	std::cout << "results.pcov.size() = " << results.pcov.size() << std::endl;
 	return results;
 }
 

@@ -266,14 +266,17 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 auto ProcessResults(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
 	                const NuFitConfig config, std::vector<NuFitResults> results) -> void {
 
-auto root_filename = "Dist.root";
-TFile *f = new TFile(root_filename, "RECREATE");
+auto factor {1. / (config.lifetime*config.mass_target)};
+
+//----------------------------------------------------------------
+//---------- Create the output rootfile --------------------------
+//----------------------------------------------------------------
+auto root_filename = config.output_name + ".root";
+TFile *f = new TFile(root_filename.c_str(), "RECREATE");
 f->cd();
 
 //Create the reconstructed rates distributions
 std::vector<TH1D*> rates;
-
-std::cout << "[OUTPUTMANAGER]: DEBUG 1 " << std::endl;
 
 for (auto i = 0U; i < results[0].paramVector.size(); i++){
 	auto paramVec = results[0].paramVector[i];
@@ -283,32 +286,125 @@ for (auto i = 0U; i < results[0].paramVector.size(); i++){
 	rates.push_back(rates_hists);
 }
 
-auto factor {1. / (config.lifetime*config.mass_target)};
-
-
-std::cout << "[OUTPUTMANAGER]: DEBUG 2 " << std::endl;
-
 for (auto t = 0; t < data.size(); t++){
 	for (auto i = 0U; i < results[t].paramVector.size(); i++){
 		auto paramVec = results[t].paramVector[i];
 		auto j = paramVec[0].idx_pdf;
 		auto eff_exposure = factor / results[t].efficiencies[j];
 
-		std::cout << "results[" << t << "].popt.at(" << i << ") = " << results[t].popt.at(i) * eff_exposure << std::endl;
-
 		rates.at(i)->Fill(results[t].popt.at(i)*eff_exposure);
 	}
 }
-std::cout << "[OUTPUTMANAGER]: DEBUG 3 " << std::endl;
 
 for(auto i = 0U; i < results[0].paramVector.size(); i++){
 	auto paramVec = results[0].paramVector[i];
 	auto name = config.param_names[paramVec[0].idx_pdf];
 	rates.at(i)->Write(name);
 }
-std::cout << "[OUTPUTMANAGER]: DEBUG 4 " << std::endl;
+
 f->Close();
 
+
+//----------------------------------------------------------------
+//---------- Create the output txt file --------------------------
+//----------------------------------------------------------------
+std::ofstream outf;
+auto out_filename = config.output_name + ".txt";
+outf.open(out_filename.c_str());
+
+for (auto t = 0; t < data.size(); t++){
+
+outf << "------------------------------------------" << std::endl;
+outf << "Simulation number:\t" << t + 1 << std::endl;
+outf << "------------------------------------------" << std::endl;
+
+// Write the fit status
+outf << "[STATUS] Migrad status: ";
+if (results[t].errorflag != 0) {
+	outf << "FAILED - ierflg =" << results[t].errorflag;
+} else {
+	outf << "SUCCESS";
+}
+
+// Write the covariance matrix calculation status
+outf << std::endl << "[STATUS] Covariance matrix status: ";
+switch (results[t].errorflag_cov) {
+	case 0:
+		outf << "FAILED - not calculated";
+		break;
+	case 1:
+		outf << "FAILED - not accurate";
+		break;
+	case 2:
+		outf << "FAILED - forced pos-def";
+		break;
+	case 3:
+		outf << "SUCCESS";
+		break;
+	default:
+		outf << "FAILED - istat=" << results[t].errorflag_cov;
+}
+outf << std::endl;
+
+// Convert counts to cpd/100t
+// cpd = count / (lifetime) / mass_target / efficiency;
+std::vector<double> popt_cpd, popt_err_cpd;
+auto popt_err = results[t].getUncertainties();
+	// TODO: Same param on different hists can have different efficiencies!
+	for (auto i = 0U; i < results[t].paramVector.size(); i++) {
+			auto paramVec = results[t].paramVector[i];
+			auto j = paramVec[0].idx_pdf;
+			auto eff_exposure = factor / results[t].efficiencies[j];
+			popt_cpd.push_back(results[t].popt[i] * eff_exposure);
+			popt_err_cpd.push_back(popt_err[i] * eff_exposure);
+	}
+
+// Write params with uncertainties in counts and cpd/kton
+outf << "------------\n" << "Fit results:\n" << "------------\n"
+	 << "Species\tcounts\t\tsigma\t\trate(cpd/kton)\tsigma(cpd/kton)\n"
+		 << std::scientific;
+outf.precision(4);
+	for (auto i = 0U; i < results[t].paramVector.size(); i++) {  // For each parameter
+			auto paramVec = results[t].paramVector[i];
+			outf << config.param_names[paramVec[0].idx_pdf] << "\t";
+			outf << results[t].popt[i] << "\t" << popt_err[i] << "\t";
+			outf << popt_cpd[i] << "\t" << popt_err_cpd[i];
+	outf << "\n";
+	}
+
+// Write the covariance matrix
+outf << "------------------" << std::endl
+		 << "Covariance matrix:" << std::endl
+		 << "------------------" << std::endl;
+outf.precision(2);
+for (auto el : results[t].pcov) {
+	for (auto sub : el) {
+		outf << sub << "\t";
+	}
+	outf << std::endl;
+}
+// Write the correlation matrix
+auto test = results[t].getCorrMatrix();
+outf << "-------------------" << std::endl
+		 << "Correlation matrix:" << std::endl
+		 << "-------------------" << std::endl;
+for (auto el : test) {
+	for (auto sub : el) {
+		outf << sub << "\t";
+	}
+	outf << std::endl;
+}
+}
+// Write some information about the fit inputs
+outf << std::fixed
+		 << "----------------------------------------------------------------------------------" << std::endl
+		 << "Relevant fit inputs for the calculation:" << std::endl
+		 << "----------------------------------------------------------------------------------" << std::endl
+		 << "Exposure: " << config.lifetime << " days * "
+	 << config.mass_target << " kton" << std::endl
+	 << "Fit range: " << config.emin << "-" << config.emax << std::endl
+	 << "Likelihood: '" << config.likelihood << "'" << std::endl;
+outf.close();
 }
 
 }  // namespace NuFitter
