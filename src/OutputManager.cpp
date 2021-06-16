@@ -288,7 +288,7 @@ auto factor {1. / (config.lifetime*config.mass_target)};
 
 std::cout << "[OUTPUTMANAGER]: DEBUG 2 " << std::endl;
 
-for (auto t = 0; t < 100; t++){
+for (auto t = 0; t < data.size(); t++){
 	for (auto i = 0U; i < results[t].paramVector.size(); i++){
 		auto paramVec = results[t].paramVector[i];
 		auto j = paramVec[0].idx_pdf;
@@ -307,6 +307,7 @@ for(auto i = 0U; i < results[0].paramVector.size(); i++){
 	rates.at(i)->Write(name);
 }
 std::cout << "[OUTPUTMANAGER]: DEBUG 4 " << std::endl;
+f->Close();
 
 }
 
