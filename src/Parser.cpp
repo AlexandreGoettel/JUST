@@ -130,6 +130,7 @@ auto ParseGenOpts(std::unique_ptr<NuFitConfig> &config, std::string filename) ->
 		else if (key == "LSDensity_g/mL") config->densityLS = std::stod(value);
 		else if (key == "Radius_m") config->radius = std::stod(value);
 		else if (key == "DAQTime") config->daq_time = std::stod(value);
+		else if (key == "Efficiency") config->efficiency = std::stod(value);
 		else if (key == "emax") config->emax = std::stod(value);
 		else if (key == "emin") config->emin = std::stod(value);
 		else if (key == "ToyData") config->ToyData = std::stoi(value);
@@ -139,7 +140,7 @@ auto ParseGenOpts(std::unique_ptr<NuFitConfig> &config, std::string filename) ->
 		// Todo error handling in case some values are missing
 	}
 	config->mass_target = 4 * PI * pow(config->radius,3) * config->densityLS / 3000.;
-	config->exposure = config->lifetime * config->mass_target * config->daq_time;
+	config->exposure = config->lifetime * config->mass_target * config->daq_time * config->efficiency;
 
     std::cout << "Found " << config->data_hist_names.size()
               << " histograms:" << std::endl;

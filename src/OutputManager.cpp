@@ -40,6 +40,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	TFile *f = new TFile(root_filename.c_str(), "RECREATE");
 	f->cd();
 
+
 	//Create a std::vector<TH1D*> to fill with the fit results
 	std::vector<TH1D*> PDFsSum;
 	for (auto i : data->hist_ids){
@@ -276,16 +277,20 @@ auto factor {1. / (config.lifetime*config.mass_target)};
 //----------------------------------------------------------------
 //---------- Create the output rootfile --------------------------
 //----------------------------------------------------------------
+//----------------------------------------
+//----------- Plot the distributions -----
+//----------------------------------------
 auto root_filename = config.output_name + ".root";
 TFile *f = new TFile(root_filename.c_str(), "RECREATE");
 f->cd();
 
-TTree *tree = new TTree("Results","Results");
+TTree *tree = new TTree("Distributions","Distributions");
 
-/*std::vector<TString> names;
+std::vector<TString> names;
 int npar = results[0].paramVector.size();
 Values val[npar];
 
+//Loop to create all the branches of the TTree
 for (auto i = 0U; i < results[0].paramVector.size(); i++){
 	auto paramVec = results[0].paramVector[i];
 	auto name = config.param_names[paramVec[0].idx_pdf];
@@ -293,39 +298,24 @@ for (auto i = 0U; i < results[0].paramVector.size(); i++){
 	TBranch* b = tree->Branch(name, &val[i], "RecRates/D:StdDev/D");
 }
 
+//Loop to fill the TTree
 for (auto t = 0; t < data.size(); t++){
-	for (auto i = 0U; i < results[0].paramVector.size(); i++){
-		val[i].mean = results[t].popt.at(i)*eff_exposure;
-	}
-
-}*/
-
-
-/*for (auto t = 0; t < data.size(); t++){
-	auto idx = k + i * results[0].paramVector.size();
-}*/
-
-
-//Create the proper structure of the TTree
-/*for (auto t = 0; t < data.size(); t++){
+	auto popt_err = results[t].getUncertainties();
 	for (auto i = 0U; i < results[t].paramVector.size(); i++){
 		auto paramVec = results[t].paramVector[i];
-		auto name = config.param_names[paramVec[0].idx_pdf];
-		names.push_back(name);
-		Values val;
-			//val.mean = results[t].popt.at(i)*eff_exposure;
-			//val.std_dev = popt_err[i] * eff_exposure;
-		TBranch* b = tree->Branch(name, &val, "RecRates/D:StdDev/D");
-
+		auto j = paramVec[0].idx_pdf;
+		auto eff_exposure = factor / results[t].efficiencies[j];
+		val[i].mean = results[t].popt.at(i)*eff_exposure;
+		val[i].std_dev = popt_err[i] * eff_exposure;
+		std::cout << "val[i].mean = results[t].popt.at(i)*eff_exposure" << results[t].popt.at(i)*eff_exposure << std::endl;
 	}
-}*/
+	tree->Fill();
+}
 
 tree->Write();
 
 
-
-
-//Create the reconstructed rates distributions
+//Create the reconstructed rates distributions (TH1D histograms, not TTree)
 /*std::vector<TH1D*> rates;
 
 for (auto i = 0U; i < results[0].paramVector.size(); i++){
@@ -352,6 +342,136 @@ for(auto i = 0U; i < results[0].paramVector.size(); i++){
 	rates.at(i)->Write(name);
 }*/
 
+//----------------------------------------------------
+//----------- Plot the results (only the last one)----
+//----------------------------------------------------
+int lasttoy = data.size()-1;
+
+std::vector<TH1D*> PDFsSum;
+for (auto i : data[lasttoy]->hist_ids){
+	auto name = "PDFsSum_" + config.data_hist_names[i];
+	TH1D *PDFs_hists = new TH1D(name.c_str(), name.c_str(), config.nbins[i],
+			pdfs->bin_edges[i].front(), pdfs->bin_edges[i].back());
+	PDFsSum.push_back(PDFs_hists);
+}
+
+// Create a canvas to plot the results in
+auto nHists = data[lasttoy]->hist_ids.size();
+TCanvas *c = new TCanvas("Plot", "Plot", 1500, 700);
+gPad->SetLogy();
+
+// Draw the data histograms
+TPad *padUp[nHists];
+TLegend *leg[nHists];
+for (auto i = 0U; i < nHists; i++){
+	auto namePadUp = "PadUp_" + std::to_string(i+1);
+	auto nameLeg = "Leg_" + std::to_string(i+1);
+	padUp[i] = new TPad(namePadUp.c_str(), namePadUp.c_str(), i/static_cast<float>(nHists), 0.3, (1.+i)/static_cast<float>(nHists), 1.0);
+	leg[i] = new TLegend(0.34,0.55 + i/5. ,0.54,0.85,NULL,"brNDC");
+	c->cd();
+	padUp[i]->Draw();
+	padUp[i]->cd();
+	gPad->SetLogy();
+	data[lasttoy]->data_histograms[i]->SetLineColor(kBlack);
+	data[lasttoy]->data_histograms[i]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
+	data[lasttoy]->data_histograms[i]->GetYaxis()->SetTitle("Events");
+	data[lasttoy]->data_histograms[i]->GetYaxis()->SetRangeUser(1, 1e5);
+	data[lasttoy]->data_histograms[i]->Draw();
+	leg[i]->SetTextAlign(13);
+	leg[i]->SetTextSize(0.04);
+	leg[i]->SetBorderSize(0);
+	leg[i]->SetFillStyle(0);
+	c->cd();
+}
+
+// Define colors to be used in the plots
+int *Colors = new int [12]{632,632,409,616,400,600,870,921,801,801,881,419};
+std::vector<int> colors;
+std::vector<TString> used_names;
+auto idx_col {0};
+
+// Plot the pdfs for each parameter
+for (auto i = 0U; i < results[lasttoy].paramVector.size(); i++) {
+	auto parData = results[lasttoy].paramVector[i];
+	for (auto el : parData) {
+		auto j = el.idx_pdf;
+		auto current_name = config.param_names[j];
+
+		// Manage color used
+		if (std::find(used_names.begin(), used_names.end(), current_name)
+				== used_names.end()) {
+			used_names.push_back(current_name);
+			colors.push_back(Colors[idx_col]);
+		}
+
+		auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
+		current_hist->Scale(results[lasttoy].popt[i]/results[lasttoy].efficiencies[j]*config.param_eff[j]);
+
+		// Update PDFSum
+		for(auto k = 1U; k <= config.nbins[el.idx_hist-1]; k++){
+			PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k));
+		}
+
+		// Draw PDF
+		padUp[el.idx_hist-1]->cd();
+		current_hist->SetLineColor(colors[idx_col]);
+		current_hist->SetMarkerColor(colors[idx_col]);
+		current_hist->Draw("SAME");
+		PDFsSum.at(el.idx_hist-1)->SetLineColor(632);
+		PDFsSum.at(el.idx_hist-1)->SetMarkerColor(632);
+		PDFsSum.at(el.idx_hist-1)->Draw("SAME");
+		if(el.idx_hist == 2 && (current_name == "C11_2" || current_name == "C10" || current_name == "He6")){
+			leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
+			leg[el.idx_hist-1]->Draw("SAME");
+		}
+		if(el.idx_hist == 1){
+			leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
+			leg[el.idx_hist-1]->Draw("SAME");
+		}
+	}
+	idx_col++;
+	if (idx_col > 12) idx_col = 0;
+}
+
+// Fill vectors used to plot residuals
+std::vector<std::vector<double>> rec_energy;
+std::vector<std::vector<double>> residuals;
+for (auto i : data[lasttoy]->hist_ids) {
+	std::vector<double> res, rec;
+	for(auto j = 0U; j < config.nbins[i]; j++){
+		rec.push_back(j+pdfs->bin_edges[i].front());
+		res.push_back((data[lasttoy]->data_histograms[i]->GetBinContent(j) -
+									 PDFsSum[i]->GetBinContent(j)) /
+						sqrt(data[lasttoy]->data_histograms[i]->GetBinContent(j)));
+	}
+	rec_energy.push_back(rec);
+	residuals.push_back(res);
+}
+
+// Plot residuals
+TPad *padDown[nHists];
+TGraph *Res[nHists];
+for (auto i = 0U; i < nHists; i++){
+	auto namePadDown = "PadDown_" + std::to_string(i+1);
+	padDown[i] = new TPad(namePadDown.c_str(), namePadDown.c_str(), i/static_cast<float>(nHists), 0, (1.+i)/static_cast<float>(nHists), 0.3);
+	c->cd();
+	padDown[i]->Draw();
+	padDown[i]->cd();
+	Res[i] = new TGraph(config.nbins[i], vec2Array(rec_energy[i]),
+												vec2Array(residuals[i]));
+	Res[i]->SetTitle("Residuals");
+	Res[i]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
+	Res[i]->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
+	Res[i]->GetYaxis()->CenterTitle(true);
+	Res[i]->GetYaxis()->SetTitleSize(.05);
+	Res[i]->GetXaxis()->SetTitleSize(.05);
+	Res[i]->GetXaxis()->SetRangeUser(pdfs->bin_edges[i].front(),
+																	 pdfs->bin_edges[i].back());
+	Res[i]->GetYaxis()->SetRangeUser(-4.,4.);
+	Res[i]->SetLineWidth(1);
+	Res[i]->Draw("AL");
+}
+c->Write();
 f->Close();
 
 

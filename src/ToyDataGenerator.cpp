@@ -34,17 +34,21 @@ auto getBinEdges_Toy(TH1D *hist, unsigned int nbins) -> std::vector<double> {
 auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> std::vector<NuFitData*> {
 
 	std::vector<NuFitData*> data;
-	std::vector<TH1D*> hists;
+	std::vector<TH1D*> histogr;
 
 	for (auto i = 1U; i <= config.data_hist_names.size(); i++) {
 		if (std::find(config.hist_id_toy.begin(), config.hist_id_toy.end(), i) != config.hist_id_toy.end()) {
 			TH1D *hdata = new TH1D(config.data_hist_names[i-1].c_str(), config.data_hist_names[i-1].c_str(), config.nbins[i-1],
 			pdfs->bin_edges[i-1].front() + 1, pdfs->bin_edges[i-1].back());
-			hists.push_back(hdata);
+			histogr.push_back(hdata);
 		}
 	}
 
 	for(auto t = 0U; t < config.ToyData; t++){
+
+		for (auto i = 0U; i < config.data_hist_names.size(); i++){
+			histogr.at(i)->Reset();
+		}
 
 		std::vector<std::vector<double>> vec_data, bin_edges;
 		std::vector<unsigned int> hist_ids;
@@ -58,7 +62,7 @@ auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> std::ve
 				auto idx = k + i * config.nSp_histos_toy[0];
 				auto current_hist = (TH1D*)pdfs->pdf_histograms[idx]->Clone();
 				auto n_expected = config.param_initial_guess_toy[idx]*config.param_eff_toy[idx];
-				hists.at(i)->FillRandom(current_hist, gRandom->Poisson(n_expected));
+				histogr.at(i)->FillRandom(current_hist, gRandom->Poisson(n_expected));
 			}
 		}
 
@@ -66,23 +70,18 @@ auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> std::ve
 		for (auto i = 1U; i <= config.data_hist_names.size(); i++) {
 			std::vector<double> vec_data_hist;
 			for (auto j = 0U; j <= config.nbins[i-1]; j++) {
-				vec_data_hist.push_back(hists.at(i-1)->GetBinContent(j));
+				vec_data_hist.push_back(histogr.at(i-1)->GetBinContent(j));
 			}
 			// Create bin_edges vector
-			auto bin_edges_hist = getBinEdges_Toy(hists.at(i-1), config.nbins[i-1]);
+			auto bin_edges_hist = getBinEdges_Toy(histogr.at(i-1), config.nbins[i-1]);
 
 			bin_edges.push_back(bin_edges_hist);
 			vec_data.push_back(vec_data_hist);
 			hist_ids.push_back(i-1);
-
 		}
 
-		auto *data_tofill = new NuFitData(vec_data, bin_edges, hists, hist_ids);
+		auto *data_tofill = new NuFitData(vec_data, bin_edges, histogr, hist_ids);
 		data.push_back(data_tofill);
-
-		for (auto i = 0U; i < config.data_hist_names.size(); i++){
-			hists.at(i)->Reset();
-		}
 
 	}
 	return data;
