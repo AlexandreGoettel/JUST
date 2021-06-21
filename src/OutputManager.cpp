@@ -307,7 +307,6 @@ for (auto t = 0; t < data.size(); t++){
 		auto eff_exposure = factor / results[t].efficiencies[j];
 		val[i].mean = results[t].popt.at(i)*eff_exposure;
 		val[i].std_dev = popt_err[i] * eff_exposure;
-		std::cout << "val[i].mean = results[t].popt.at(i)*eff_exposure" << results[t].popt.at(i)*eff_exposure << std::endl;
 	}
 	tree->Fill();
 }

@@ -79,7 +79,7 @@ auto Read(const NuFitConfig config) -> NuFitData* {
 			hist_ids.push_back(i-1);
 	    }
 	}
-	
+
 	std::cout << "[DATA READER]" << "nHists: " << vec_data.size()
 	          << ", nBins: " << config.nbins[0] << std::endl;
 
@@ -92,13 +92,21 @@ auto Read(const NuFitConfig config) -> NuFitData* {
 
 namespace PDFs {
 
-auto Read(const NuFitConfig config) -> NuFitPDFs* {
+auto Read(NuFitConfig config) -> NuFitPDFs* {
 	// Read the PDFs and convert them to vectors
 	std::cout << "INFO: Reading PDFs from " << config.pdf_name << std::endl;
 	TFile *file_pdf = new TFile(config.pdf_name.c_str());
 	std::vector<TH1D*> hPDFs;
 	for (auto i = 0U; i < config.npdfs; i++) {
 		hPDFs.push_back((TH1D*)file_pdf->Get(config.pdf_names[i]));
+	}
+
+// PDFs could be not normalised to 1
+	for (auto i = 0U; i < config.npdfs; i++){
+		config.param_initial_guess.at(i) = config.param_initial_guess.at(i) * hPDFs.at(i)->Integral();
+		config.param_lowerlim.at(i) = config.param_lowerlim.at(i) * hPDFs.at(i)->Integral();
+		config.param_upperlim.at(i) = config.param_upperlim.at(i) * hPDFs.at(i)->Integral();
+		std::cout << "hPDFs.at(i)->Integral() = " << hPDFs.at(i)->Integral() << std::endl;
 	}
 
 	// Convert histograms to vectors
