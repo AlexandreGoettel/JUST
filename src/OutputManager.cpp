@@ -13,8 +13,13 @@
 #include "TLegend.h"
 #include "TGraph.h"
 #include "TCanvas.h"
+#include "TTree.h"
 // Project includes
 #include "OutputManager.h"
+
+struct Values {
+	double mean, std_dev;
+};
 
 namespace NuFitter {
 
@@ -275,8 +280,53 @@ auto root_filename = config.output_name + ".root";
 TFile *f = new TFile(root_filename.c_str(), "RECREATE");
 f->cd();
 
+TTree *tree = new TTree("Results","Results");
+
+/*std::vector<TString> names;
+int npar = results[0].paramVector.size();
+Values val[npar];
+
+for (auto i = 0U; i < results[0].paramVector.size(); i++){
+	auto paramVec = results[0].paramVector[i];
+	auto name = config.param_names[paramVec[0].idx_pdf];
+	names.push_back(name);
+	TBranch* b = tree->Branch(name, &val[i], "RecRates/D:StdDev/D");
+}
+
+for (auto t = 0; t < data.size(); t++){
+	for (auto i = 0U; i < results[0].paramVector.size(); i++){
+		val[i].mean = results[t].popt.at(i)*eff_exposure;
+	}
+
+}*/
+
+
+/*for (auto t = 0; t < data.size(); t++){
+	auto idx = k + i * results[0].paramVector.size();
+}*/
+
+
+//Create the proper structure of the TTree
+/*for (auto t = 0; t < data.size(); t++){
+	for (auto i = 0U; i < results[t].paramVector.size(); i++){
+		auto paramVec = results[t].paramVector[i];
+		auto name = config.param_names[paramVec[0].idx_pdf];
+		names.push_back(name);
+		Values val;
+			//val.mean = results[t].popt.at(i)*eff_exposure;
+			//val.std_dev = popt_err[i] * eff_exposure;
+		TBranch* b = tree->Branch(name, &val, "RecRates/D:StdDev/D");
+
+	}
+}*/
+
+tree->Write();
+
+
+
+
 //Create the reconstructed rates distributions
-std::vector<TH1D*> rates;
+/*std::vector<TH1D*> rates;
 
 for (auto i = 0U; i < results[0].paramVector.size(); i++){
 	auto paramVec = results[0].paramVector[i];
@@ -300,7 +350,7 @@ for(auto i = 0U; i < results[0].paramVector.size(); i++){
 	auto paramVec = results[0].paramVector[i];
 	auto name = config.param_names[paramVec[0].idx_pdf];
 	rates.at(i)->Write(name);
-}
+}*/
 
 f->Close();
 
