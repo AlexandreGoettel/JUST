@@ -368,12 +368,13 @@ for(auto i = 0U; i < results[0].paramVector.size(); i++){
 //----------- Plot the results (only the last one)----
 //----------------------------------------------------
 int lasttoy = data.size()-1;
+auto range = config.emax - config.emin;
 
 std::vector<TH1D*> PDFsSum;
 for (auto i : data[lasttoy]->hist_ids){
 	auto name = "PDFsSum_" + config.data_hist_names[i];
-	TH1D *PDFs_hists = new TH1D(name.c_str(), name.c_str(), config.nbins[i],
-			pdfs->bin_edges[i].front(), pdfs->bin_edges[i].back());
+	TH1D *PDFs_hists = new TH1D(name.c_str(), name.c_str(), range,
+			config.emin, config.emax);
 	PDFsSum.push_back(PDFs_hists);
 }
 
@@ -398,6 +399,7 @@ for (auto i = 0U; i < nHists; i++){
 	data[lasttoy]->data_histograms[i]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
 	data[lasttoy]->data_histograms[i]->GetYaxis()->SetTitle("Events");
 	data[lasttoy]->data_histograms[i]->GetYaxis()->SetRangeUser(1, 1e5);
+	data[lasttoy]->data_histograms[i]->GetXaxis()->SetRangeUser(config.emin, config.emax);
 	data[lasttoy]->data_histograms[i]->Draw();
 	leg[i]->SetTextAlign(13);
 	leg[i]->SetTextSize(0.04);
@@ -430,8 +432,8 @@ for (auto i = 0U; i < results[lasttoy].paramVector.size(); i++) {
 		current_hist->Scale(results[lasttoy].popt[i]/results[lasttoy].efficiencies[j]*config.param_eff[j]);
 
 		// Update PDFSum
-		for(auto k = 1U; k <= config.nbins[el.idx_hist-1]; k++){
-			PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k));
+		for(auto k = 1U; k <= range; k++){
+			PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k-1+config.emin));
 		}
 
 		// Draw PDF
@@ -455,18 +457,17 @@ for (auto i = 0U; i < results[lasttoy].paramVector.size(); i++) {
 	if (idx_col > 12) idx_col = 0;
 }
 
-std::cout << "used_names.size() = " << used_names.size() << std::endl;
 
 // Fill vectors used to plot residuals
 std::vector<std::vector<double>> rec_energy;
 std::vector<std::vector<double>> residuals;
 for (auto i : data[lasttoy]->hist_ids) {
 	std::vector<double> res, rec;
-	for(auto j = 0U; j < config.nbins[i]; j++){
-		rec.push_back(j+pdfs->bin_edges[i].front());
-		res.push_back((data[lasttoy]->data_histograms[i]->GetBinContent(j) -
-									 PDFsSum[i]->GetBinContent(j)) /
-						sqrt(data[lasttoy]->data_histograms[i]->GetBinContent(j)));
+	for(auto j = 0U; j < config.emax; j++){
+		rec.push_back(j+config.emin);
+		res.push_back((data[lasttoy]->data_histograms[i]->GetBinContent(j+config.emin) -
+									 PDFsSum[i]->GetBinContent(j+1)) /
+						sqrt(data[lasttoy]->data_histograms[i]->GetBinContent(j+config.emin)));
 	}
 	rec_energy.push_back(rec);
 	residuals.push_back(res);
@@ -475,13 +476,14 @@ for (auto i : data[lasttoy]->hist_ids) {
 // Plot residuals
 TPad *padDown[nHists];
 TGraph *Res[nHists];
+
 for (auto i = 0U; i < nHists; i++){
 	auto namePadDown = "PadDown_" + std::to_string(i+1);
 	padDown[i] = new TPad(namePadDown.c_str(), namePadDown.c_str(), i/static_cast<float>(nHists), 0, (1.+i)/static_cast<float>(nHists), 0.3);
 	c->cd();
 	padDown[i]->Draw();
 	padDown[i]->cd();
-	Res[i] = new TGraph(config.nbins[i], vec2Array(rec_energy[i]),
+	Res[i] = new TGraph(range, vec2Array(rec_energy[i]),
 												vec2Array(residuals[i]));
 	Res[i]->SetTitle("Residuals");
 	Res[i]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
@@ -489,8 +491,7 @@ for (auto i = 0U; i < nHists; i++){
 	Res[i]->GetYaxis()->CenterTitle(true);
 	Res[i]->GetYaxis()->SetTitleSize(.05);
 	Res[i]->GetXaxis()->SetTitleSize(.05);
-	Res[i]->GetXaxis()->SetRangeUser(pdfs->bin_edges[i].front(),
-																	 pdfs->bin_edges[i].back());
+	Res[i]->GetXaxis()->SetRangeUser(config.emin,config.emax);
 	Res[i]->GetYaxis()->SetRangeUser(-4.,4.);
 	Res[i]->SetLineWidth(1);
 	Res[i]->Draw("AL");
