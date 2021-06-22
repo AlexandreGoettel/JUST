@@ -106,7 +106,7 @@ auto Read(NuFitConfig config) -> NuFitPDFs* {
 		config.param_initial_guess.at(i) = config.param_initial_guess.at(i) * hPDFs.at(i)->Integral();
 		config.param_lowerlim.at(i) = config.param_lowerlim.at(i) * hPDFs.at(i)->Integral();
 		config.param_upperlim.at(i) = config.param_upperlim.at(i) * hPDFs.at(i)->Integral();
-		std::cout << "hPDFs.at(i)->Integral() = " << hPDFs.at(i)->Integral() << std::endl;
+		config.param_initial_guess_toy.at(i) = config.param_initial_guess_toy.at(i) * hPDFs.at(i)->Integral();
 	}
 
 	// Convert histograms to vectors

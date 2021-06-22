@@ -274,6 +274,29 @@ auto ProcessResults(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
 
 auto factor {1. / (config.lifetime*config.mass_target)};
 
+//Threshold
+std::vector<double> threshold;
+std::vector<TString> used_n;
+
+for (auto i = 0U; i < results[0].paramVector.size(); i++) {
+	auto parData = results[0].paramVector[i];
+	for (auto el : parData) {
+		auto j = el.idx_pdf;
+		auto current_name = config.param_names[j];
+		auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
+
+		if (std::find(used_n.begin(), used_n.end(), current_name)
+				== used_n.end()) {
+			used_n.push_back(current_name);
+			threshold.push_back(current_hist->Integral());
+		}
+	}
+}
+std::cout << "threshold.size() = " << threshold.size() << std::endl;
+for (auto i = 0U; i < results[0].paramVector.size(); i++){
+	std::cout << "threshold.at(" << i << ") = " << threshold.at(i) << std::endl;
+}
+
 //----------------------------------------------------------------
 //---------- Create the output rootfile --------------------------
 //----------------------------------------------------------------
@@ -305,8 +328,8 @@ for (auto t = 0; t < data.size(); t++){
 		auto paramVec = results[t].paramVector[i];
 		auto j = paramVec[0].idx_pdf;
 		auto eff_exposure = factor / results[t].efficiencies[j];
-		val[i].mean = results[t].popt.at(i)*eff_exposure;
-		val[i].std_dev = popt_err[i] * eff_exposure;
+		val[i].mean = results[t].popt.at(i) * eff_exposure * threshold.at(i);
+		val[i].std_dev = popt_err[i] * eff_exposure * threshold.at(i);
 	}
 	tree->Fill();
 }
@@ -404,7 +427,7 @@ for (auto i = 0U; i < results[lasttoy].paramVector.size(); i++) {
 		}
 
 		auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
-		current_hist->Scale(results[lasttoy].popt[i]/results[lasttoy].efficiencies[j]*config.param_eff[j]);
+		current_hist->Scale(results[lasttoy].popt[i]*threshold.at(i)/results[lasttoy].efficiencies[j]*config.param_eff[j]);
 
 		// Update PDFSum
 		for(auto k = 1U; k <= config.nbins[el.idx_hist-1]; k++){
@@ -431,6 +454,8 @@ for (auto i = 0U; i < results[lasttoy].paramVector.size(); i++) {
 	idx_col++;
 	if (idx_col > 12) idx_col = 0;
 }
+
+std::cout << "used_names.size() = " << used_names.size() << std::endl;
 
 // Fill vectors used to plot residuals
 std::vector<std::vector<double>> rec_energy;
@@ -536,8 +561,8 @@ outf.precision(4);
 	for (auto i = 0U; i < results[t].paramVector.size(); i++) {  // For each parameter
 			auto paramVec = results[t].paramVector[i];
 			outf << config.param_names[paramVec[0].idx_pdf] << "\t";
-			outf << results[t].popt[i] << "\t" << popt_err[i] << "\t";
-			outf << popt_cpd[i] << "\t" << popt_err_cpd[i];
+			outf << results[t].popt[i] * threshold.at(i) << "\t" << popt_err[i] * threshold.at(i) << "\t";
+			outf << popt_cpd[i] * threshold.at(i) << "\t" << popt_err_cpd[i] * threshold.at(i);
 	outf << "\n";
 	}
 

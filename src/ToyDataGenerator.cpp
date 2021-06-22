@@ -45,7 +45,6 @@ auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> std::ve
 	}
 
 	for(auto t = 0U; t < config.ToyData; t++){
-
 		for (auto i = 0U; i < config.data_hist_names.size(); i++){
 			histogr.at(i)->Reset();
 		}
@@ -62,7 +61,8 @@ auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> std::ve
 				auto idx = k + i * config.nSp_histos_toy[0];
 				auto current_hist = (TH1D*)pdfs->pdf_histograms[idx]->Clone();
 				auto n_expected = config.param_initial_guess_toy[idx]*config.param_eff_toy[idx];
-				histogr.at(i)->FillRandom(current_hist, gRandom->Poisson(n_expected));
+				auto pois = gRandom->Poisson(n_expected);
+				histogr.at(i)->FillRandom(current_hist, pois);
 			}
 		}
 
