@@ -80,7 +80,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	}
 
 	// Define colors to be used in the plots
-	int *Colors = new int [12]{632,632,409,616,400,600,870,921,801,801,881,419};
+	int *Colors = new int [13]{632,632,632,409,616,400,600,870,921,801,801,881,419};
 	std::vector<int> colors;
 	std::vector<TString> used_names;
 	auto idx_col {0};
@@ -125,7 +125,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 			}
 		}
 		idx_col++;
-		if (idx_col > 12) idx_col = 0;
+		if (idx_col > 13) idx_col = 0;
 	}
 
 	// Fill vectors used to plot residuals
@@ -409,7 +409,7 @@ for (auto i = 0U; i < nHists; i++){
 }
 
 // Define colors to be used in the plots
-int *Colors = new int [12]{632,632,409,616,400,600,870,921,801,801,881,419};
+int *Colors = new int [13]{632,632,632,409,616,400,600,870,921,801,801,881,419};
 std::vector<int> colors;
 std::vector<TString> used_names;
 auto idx_col {0};
@@ -454,7 +454,7 @@ for (auto i = 0U; i < results[lasttoy].paramVector.size(); i++) {
 		}
 	}
 	idx_col++;
-	if (idx_col > 12) idx_col = 0;
+	if (idx_col > 13) idx_col = 0;
 }
 
 
