@@ -427,7 +427,7 @@ for (auto i = 0U; i < results[lasttoy].paramVector.size(); i++) {
 		}
 
 		auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
-		current_hist->Scale(results[lasttoy].popt[i]*threshold.at(i)/results[lasttoy].efficiencies[j]*config.param_eff[j]);
+		current_hist->Scale(results[lasttoy].popt[i]/results[lasttoy].efficiencies[j]*config.param_eff[j]);
 
 		// Update PDFSum
 		for(auto k = 1U; k <= config.nbins[el.idx_hist-1]; k++){
