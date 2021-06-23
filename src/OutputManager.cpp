@@ -42,11 +42,13 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 
 
 	//Create a std::vector<TH1D*> to fill with the fit results
+	auto range = config.emax - config.emin;
+
 	std::vector<TH1D*> PDFsSum;
 	for (auto i : data->hist_ids){
 		auto name = "PDFsSum_" + config.data_hist_names[i];
-		TH1D *PDFs_hists = new TH1D(name.c_str(), name.c_str(), config.nbins[i],
-		    pdfs->bin_edges[i].front(), pdfs->bin_edges[i].back());
+		TH1D *PDFs_hists = new TH1D(name.c_str(), name.c_str(), range,
+		    config.emin, config.emax);
 		PDFsSum.push_back(PDFs_hists);
 	}
 
@@ -71,6 +73,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		data->data_histograms[i]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
 		data->data_histograms[i]->GetYaxis()->SetTitle("Events");
 		data->data_histograms[i]->GetYaxis()->SetRangeUser(1, 1e5);
+		data->data_histograms[i]->GetXaxis()->SetRangeUser(config.emin, config.emax);
 		data->data_histograms[i]->Draw();
 		leg[i]->SetTextAlign(13);
 		leg[i]->SetTextSize(0.04);
@@ -103,8 +106,8 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 			current_hist->Scale(results.popt[i]/results.efficiencies[j]*config.param_eff[j]);
 
 			// Update PDFSum
-			for(auto k = 1U; k <= config.nbins[el.idx_hist-1]; k++){
-				PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k));
+			for(auto k = 1U; k <= range; k++){
+				PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k-1+config.emin));
 			}
 
 			// Draw PDF
@@ -133,11 +136,11 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	std::vector<std::vector<double>> residuals;
 	for (auto i : data->hist_ids) {
 		std::vector<double> res, rec;
-		for(auto j = 0U; j < config.nbins[i]; j++){
-			rec.push_back(j+pdfs->bin_edges[i].front());
-			res.push_back((data->data_histograms[i]->GetBinContent(j) -
-			               PDFsSum[i]->GetBinContent(j)) /
-						  sqrt(data->data_histograms[i]->GetBinContent(j)));
+		for(auto j = 0U; j < config.emax; j++){
+			rec.push_back(j+config.emin);
+			res.push_back((data->data_histograms[i]->GetBinContent(j+config.emin) -
+			               PDFsSum[i]->GetBinContent(j+1)) /
+						  sqrt(data->data_histograms[i]->GetBinContent(j+config.emin)));
 		}
 		rec_energy.push_back(rec);
 		residuals.push_back(res);
@@ -152,7 +155,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		c->cd();
 		padDown[i]->Draw();
 		padDown[i]->cd();
-		Res[i] = new TGraph(config.nbins[i], vec2Array(rec_energy[i]),
+		Res[i] = new TGraph(range, vec2Array(rec_energy[i]),
 	                        vec2Array(residuals[i]));
 		Res[i]->SetTitle("Residuals");
 		Res[i]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
@@ -160,8 +163,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		Res[i]->GetYaxis()->CenterTitle(true);
 		Res[i]->GetYaxis()->SetTitleSize(.05);
 		Res[i]->GetXaxis()->SetTitleSize(.05);
-		Res[i]->GetXaxis()->SetRangeUser(pdfs->bin_edges[i].front(),
-		                                 pdfs->bin_edges[i].back());
+		Res[i]->GetXaxis()->SetRangeUser(config.emin,config.emax);
 		Res[i]->GetYaxis()->SetRangeUser(-4.,4.);
 		Res[i]->SetLineWidth(1);
 		Res[i]->Draw("AL");
