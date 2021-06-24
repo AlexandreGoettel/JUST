@@ -9,6 +9,7 @@
 //============================================================================
 // Includes
 #include <vector>
+#include "Parser.h"
 
 //============================================================================
 // Class definition
@@ -23,8 +24,9 @@ struct paramData {
 class NuFitResults {
 public: // Constructors and operator assignments
 	NuFitResults(std::vector<double>, std::vector<std::vector<double>>,
-		         std::vector<double>, int, int,
-	             std::vector<std::vector<paramData>>);  // constructor
+		         std::vector<double>, int, int, const NuFitConfig,
+	             std::vector<std::vector<paramData>>,
+			 	 std::vector<std::vector<paramData>>);  // constructor
 	~NuFitResults() = default;  // destructor
 	NuFitResults(const NuFitResults&) = default;  // copy constructor
 	NuFitResults(NuFitResults&&) = default;  // move constructor
@@ -41,6 +43,11 @@ public: // Functions
 	void addResults(NuFitResults);
 	std::vector<double> getUncertainties();
 	std::vector<std::vector<double>> getCorrMatrix();
+
+private:
+	std::vector<std::vector<paramData>> combineParamVectors(
+		std::vector<std::vector<paramData>>,
+		std::vector<std::vector<paramData>>, const NuFitConfig);
 };
 
 }  // namespace NuFitter

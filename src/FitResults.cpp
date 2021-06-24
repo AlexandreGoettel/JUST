@@ -12,14 +12,52 @@ namespace NuFitter {
 // @brief Constructor
 NuFitResults::NuFitResults(std::vector<double> popt_,
 	std::vector<std::vector<double>> pcov_, std::vector<double> eff_,
-	int errflg, int errflg_cov, std::vector<std::vector<paramData>> vec) {
+	int errflg, int errflg_cov, const NuFitConfig config_, std::vector<std::vector<paramData>> vec,
+	std::vector<std::vector<paramData>> vec_fixed) {
 
 	popt = popt_;
 	pcov = pcov_;
 	efficiencies = eff_;
 	errorflag = errflg;
 	errorflag_cov = errflg_cov;
-	paramVector = vec;
+	paramVector = combineParamVectors(vec, vec_fixed, config_);
+}
+
+// @brief combine paramVectors to include free/constrained and fixed parameters
+auto NuFitResults::combineParamVectors(std::vector<std::vector<paramData>> vec,
+	std::vector<std::vector<paramData>> vec_fixed,
+	const NuFitConfig config) -> std::vector<std::vector<paramData>> {
+	// Insert the fixed params where they first appear in specieslist
+	std::vector<std::vector<paramData>> output;
+	auto iFree {0U}, iFixed {0U};
+	while (true) {
+		// Initialise to a high value to avoid infinite loops
+		auto idx_pdf_free = config.npdfs;
+		auto idx_pdf_fixed = config.npdfs;
+		if (iFree < vec.size()) {
+			idx_pdf_free = vec[iFree][0].idx_pdf;
+		}
+		if (iFixed < vec_fixed.size()) {
+			idx_pdf_fixed = vec_fixed[iFixed][0].idx_pdf;
+		}
+
+		// Exit condition
+		if (idx_pdf_free == config.npdfs && idx_pdf_fixed == config.npdfs)
+			break;
+
+		// Add the next pdf to the parameter list
+		if (idx_pdf_free < idx_pdf_fixed) {
+			output.push_back(vec[iFree]);
+			iFree++;
+		} else if (idx_pdf_free > idx_pdf_fixed){
+			output.push_back(vec_fixed[iFixed]);
+			iFixed++;
+		} else {
+			throw std::invalid_argument("A parameter should not be free and fixed simultaneously");
+		}
+	}
+
+	return output;
 }
 
 // @brief Extract the uncertainties from the correlation matrix

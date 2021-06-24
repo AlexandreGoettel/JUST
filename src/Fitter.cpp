@@ -153,7 +153,7 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 	// Calculate fit contribution from fixed params
 	for (auto parDataVec : paramVector_fixed) {  // each parameter
 		auto parValue = config.param_initial_guess[parDataVec[0].idx_pdf];
-		for (auto parData : parDataVec) { // each hist in parData
+		for (auto parData : parDataVec) {  // each hist in parData
 			for (auto j = 0U; j < data_vector[parData.idx_hist-1].size(); j++) {  // each bin
                 fitValFixed[parData.idx_hist-1][j] += pdf_vectors[parData.idx_pdf][j]
                     * parValue * config.param_eff[parData.idx_pdf];
@@ -186,7 +186,6 @@ auto NuFitContainer::fitFunction(unsigned int npar, const double *par)
 			}
 		}
 	}
-
     // If there are fixed parameters, add contribution here
 	if (paramVector_fixed.size() == 0) return fitFuncVal;
 	for (auto i = 0U; i < fitFuncVal.size(); i++) {
@@ -194,6 +193,7 @@ auto NuFitContainer::fitFunction(unsigned int npar, const double *par)
 			fitFuncVal[i][j] += fitValFixed[i][j];
 		}
 	}
+
 	return fitFuncVal;
 }
 
@@ -381,7 +381,8 @@ auto MinuitManager::getResults() -> NuFitResults {
     gMinuit->mnstat(_, _, _, tmp_, tmp_, errorflag_cov);
 
 	auto results = NuFitResults(popt, pcov, fitCtnr.efficiencies,
-                                errorflag, errorflag_cov, fitCtnr.paramVector);
+                                errorflag, errorflag_cov, config,
+								fitCtnr.paramVector, fitCtnr.paramVector_fixed);
 
 	return results;
 }
