@@ -40,8 +40,8 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	TFile *f = new TFile(root_filename.c_str(), "RECREATE");
 	f->cd();
 
-
-	//Create a std::vector<TH1D*> to fill with the fit results
+	// Create a std::vector<TH1D*> to fill with the fit results
+    // TODO: bin width isn't always integer nor 1 !!
 	auto range = config.emax - config.emin;
 
 	std::vector<TH1D*> PDFsSum;
@@ -63,7 +63,9 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	for (auto i = 0U; i < nHists; i++){
 		auto namePadUp = "PadUp_" + std::to_string(i+1);
 		auto nameLeg = "Leg_" + std::to_string(i+1);
-		padUp[i] = new TPad(namePadUp.c_str(), namePadUp.c_str(), i/static_cast<float>(nHists), 0.3, (1.+i)/static_cast<float>(nHists), 1.0);
+		padUp[i] = new TPad(namePadUp.c_str(), namePadUp.c_str(),
+							i/static_cast<float>(nHists), 0.3,
+							(1.+i)/static_cast<float>(nHists), 1.0);
 		leg[i] = new TLegend(0.34,0.55 + i/5. ,0.54,0.85,NULL,"brNDC");
 		c->cd();
 		padUp[i]->Draw();
