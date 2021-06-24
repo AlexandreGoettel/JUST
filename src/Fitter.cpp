@@ -197,7 +197,7 @@ auto NuFitContainer::fitFunction(unsigned int npar, const double *par)
 	return fitFuncVal;
 }
 
-// @brief Define Minuit-Style binned poisson likelihood (extended)
+// @brief Container for the likelihood calculation
 template <typename L>
 auto NuFitContainer::NLL(L eval, int npar, const double *par) -> double {
 	// Following Baker&Cousins 1983 definition on page 439

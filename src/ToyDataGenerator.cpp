@@ -32,7 +32,6 @@ auto getBinEdges_Toy(TH1D *hist, unsigned int nbins) -> std::vector<double> {
 
 // template <class Config>
 auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> std::vector<NuFitData*> {
-
 	std::vector<NuFitData*> data;
 	std::vector<TH1D*> histogr;
 
@@ -45,8 +44,8 @@ auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> std::ve
 	}
 
 	for(auto t = 0U; t < config.ToyData; t++){
-		for (auto i = 0U; i < config.data_hist_names.size(); i++){
-			histogr.at(i)->Reset();
+		for (auto el : histogr) {
+			el->Reset();
 		}
 
 		std::vector<std::vector<double>> vec_data, bin_edges;

@@ -100,6 +100,7 @@ auto Read(NuFitConfig config) -> NuFitPDFs* {
 	for (auto i = 0U; i < config.npdfs; i++) {
 		auto pdf = (TH1D*)file_pdf->Get(config.pdf_names[i]);
 		// Make sure PDFs are normalised to 1
+		pdf->Scale(1./pdf->Integral());  // TODO: include bin width?
 		hPDFs.push_back(pdf);
 	}
 
@@ -112,7 +113,6 @@ auto Read(NuFitConfig config) -> NuFitPDFs* {
 			current_pdf.push_back(hPDFs[n]->GetBinContent(i));
 		}
 		pdfs.push_back(current_pdf);
-		std::cout << hPDFs[n]->Integral() << std::endl;
 	}
 
 	// Create bin_edges vector for each used data histogram
