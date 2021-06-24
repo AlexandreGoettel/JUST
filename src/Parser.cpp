@@ -143,6 +143,7 @@ auto ParseGenOpts(std::unique_ptr<NuFitConfig> &config, std::string filename) ->
 
 	// Give the option to define the target mass directly, or by geometry
 	if (config->mass_target <= 0.) {
+		std::cout << "calculating target mass from geometry..." << std::endl;
 		config->mass_target = 4 * PI * pow(config->radius,3) * config->densityLS / 3000.;
 	}
 	config->exposure = config->lifetime * config->mass_target * config->daq_time * config->efficiency;
@@ -235,6 +236,8 @@ auto ParseSpeciesList(std::unique_ptr<NuFitConfig>& config,
     // TODO: additional error handling
 
 	// Count how many species exist in each histogram
+	// TODO: count the number of different hists instead. Could be that
+	// people use hist 1 and 3 but not 2
 	auto max = *std::max_element(std::begin(config->hist_id),
 	                             std::end(config->hist_id));
 	std::vector<unsigned int> tmp_nSp(max);
