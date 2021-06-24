@@ -126,7 +126,7 @@ auto ParseGenOpts(std::unique_ptr<NuFitConfig> &config, std::string filename) ->
 		}
 		else if (key == "PDFsRootfile") config->pdf_name = value;
 		else if (key == "DataRootfile") config->data_name = value;
-		else if (key == "Lifetime_days") config->lifetime = std::stod(value);
+		else if (key == "Lifetime") config->lifetime = std::stod(value);
 		else if (key == "LSDensity_g/mL") config->densityLS = std::stod(value);
 		else if (key == "Radius_m") config->radius = std::stod(value);
 		else if (key == "DAQTime") config->daq_time = std::stod(value);
@@ -137,10 +137,16 @@ auto ParseGenOpts(std::unique_ptr<NuFitConfig> &config, std::string filename) ->
 		else if (key == "Hesse") config->doHesse = std::stoi(value);
 		else if (key == "Minos") config->doMinos = std::stoi(value);
 		else if (key == "Likelihood") config->likelihood = value;
+		else if (key == "TargetMass") config->mass_target = std::stod(value);
 		// Todo error handling in case some values are missing
 	}
-	config->mass_target = 4 * PI * pow(config->radius,3) * config->densityLS / 3000.;
+
+	// Give the option to define the target mass directly, or by geometry
+	if (config->mass_target <= 0.) {
+		config->mass_target = 4 * PI * pow(config->radius,3) * config->densityLS / 3000.;
+	}
 	config->exposure = config->lifetime * config->mass_target * config->daq_time * config->efficiency;
+	assert(config->exposure > 0);
 
     std::cout << "Found " << config->data_hist_names.size()
               << " histograms:" << std::endl;
@@ -250,7 +256,7 @@ auto ParseToyRates(std::unique_ptr<NuFitConfig> &config, std::string filename) -
 
 	// Initialise variables
 	std::string line, word;
-	auto nPDFs{0}, nParams{0};
+	auto nPDFs{0};
 
 	// Open the file
 	std::ifstream ReadToy;
@@ -338,21 +344,20 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 		for (auto i = 0U; i < config->data_hist_names.size(); i++) {
 			// Only load the histogram if it is used!
 			if (std::find(config->hist_id.begin(), config->hist_id.end(), i+1)
-		    == config->hist_id.end()) continue;
-				TFile *fdata = new TFile(config->data_name.c_str());
-				TH1D* hdata = (TH1D*)fdata->Get(config->data_hist_names[i].c_str());
-				config->nbins.push_back(hdata->GetNbinsX());
-				fdata->Close();
+			== config->hist_id.end()) continue;
+			TFile *fdata = new TFile(config->data_name.c_str());
+			TH1D* hdata = (TH1D*)fdata->Get(config->data_hist_names[i].c_str());
+			config->nbins.push_back(hdata->GetNbinsX());
+			fdata->Close();
+		}
+	} else {
+		for (auto i = 0U; i < config->data_hist_names.size(); i++) {
+			TFile *fpdf = new TFile(config->pdf_name.c_str());
+			TH1D* hpdf = (TH1D*)fpdf->Get(config->pdf_names[0]);
+			config->nbins.push_back(hpdf->GetNbinsX());
+			fpdf->Close();
+		}
 	}
-} else {
-	for (auto i = 0U; i < config->data_hist_names.size(); i++) {
-		TFile *fpdf = new TFile(config->pdf_name.c_str());
-		TH1D* hpdf = (TH1D*)fpdf->Get(config->pdf_names[0]);
-		config->nbins.push_back(hpdf->GetNbinsX());
-		fpdf->Close();
-	}
-}
-
 
 	return *config;
 }

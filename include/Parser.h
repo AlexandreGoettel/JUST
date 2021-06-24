@@ -46,9 +46,9 @@ public:  // Initialise variables to be filled by parser
 	std::string likelihood = "poisson";
 
 	// Parameters with no standard value must be given in the config file
-	double lifetime, densityLS, radius, mass_target, exposure;  // mass_target in kt
-	double daq_time = 1;
-	double efficiency = 1;
+	double lifetime, densityLS, radius, exposure;  // days, g/cm3, m, days*kton
+	double mass_target = -1;  // kton
+	double daq_time = 1, efficiency = 1;  // days, unitless
 	std::string pdf_name, data_name, output_name;
 
 	std::vector<std::string> data_hist_names;
