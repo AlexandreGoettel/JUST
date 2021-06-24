@@ -55,7 +55,7 @@ namespace Data {
 }  // namespace CMDLParser
 
 namespace PDFs {
-	NuFitPDFs* Read(NuFitConfig config);
+	NuFitPDFs* Read(const NuFitConfig config);
 }  // namespace ConfigParser
 
 }  // namespace NuFitter

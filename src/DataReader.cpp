@@ -92,7 +92,7 @@ auto Read(const NuFitConfig config) -> NuFitData* {
 
 namespace PDFs {
 
-auto Read(NuFitConfig config) -> NuFitPDFs* {
+auto Read(const NuFitConfig config) -> NuFitPDFs* {
 	// Read the PDFs and convert them to vectors
 	std::cout << "INFO: Reading PDFs from " << config.pdf_name << std::endl;
 	TFile *file_pdf = new TFile(config.pdf_name.c_str());
