@@ -156,7 +156,8 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 		for (auto parData : parDataVec) {  // each hist in parData
 			for (auto j = 0U; j < data_vector[parData.idx_hist-1].size(); j++) {  // each bin
                 fitValFixed[parData.idx_hist-1][j] += pdf_vectors[parData.idx_pdf][j]
-                    * parValue * config.param_eff[parData.idx_pdf];
+                    * parValue * config.param_eff[parData.idx_pdf]
+					* efficiencies[parData.idx_pdf];
 			}
 		}
 	}
@@ -337,7 +338,6 @@ auto MinuitManager::getResults() -> NuFitResults {
 		}
 	}
 	// Expand pcov to include fixed params as well
-    // TODO
 	// For each row, this var gives the idx of free params (inverse of idx_map)
 	auto iRowFree {0U};
 	for (auto iRow = 0U; iRow < n_params_tot; iRow++){

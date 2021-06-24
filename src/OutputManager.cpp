@@ -95,6 +95,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		auto parData = results.paramVector[i];
 		for (auto el : parData) {
 			auto j = el.idx_pdf;
+			auto n = el.idx_hist-1;
 			auto current_name = config.param_names[j];
 
 			// Manage color used
@@ -105,28 +106,33 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 			}
 
 			auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
-			current_hist->Scale(results.popt[i]/results.efficiencies[j]*config.param_eff[j]);
+			if (config.param_fixed[j] == 1) {
+				current_hist->Scale(results.popt[i] * config.param_eff[j]);
+			} else {
+				current_hist->Scale(results.popt[i] * config.param_eff[j]
+				                    / results.efficiencies[j]);
+			}
 
 			// Update PDFSum
 			for(auto k = 1U; k <= range; k++){
-				PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k-1+config.emin));
+				PDFsSum.at(n)->SetBinContent(k,PDFsSum.at(n)->GetBinContent(k)+current_hist->GetBinContent(k-1+config.emin));
 			}
 
 			// Draw PDF
-			padUp[el.idx_hist-1]->cd();
+			padUp[n]->cd();
 			current_hist->SetLineColor(colors[idx_col]);
 			current_hist->SetMarkerColor(colors[idx_col]);
 			current_hist->Draw("SAME");
-			PDFsSum.at(el.idx_hist-1)->SetLineColor(632);
-			PDFsSum.at(el.idx_hist-1)->SetMarkerColor(632);
-			PDFsSum.at(el.idx_hist-1)->Draw("SAME");
-			if(el.idx_hist == 2 && (current_name == "C11_2" || current_name == "C10" || current_name == "He6")){
-				leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
-				leg[el.idx_hist-1]->Draw("SAME");
+			PDFsSum.at(n)->SetLineColor(632);
+			PDFsSum.at(n)->SetMarkerColor(632);
+			PDFsSum.at(n)->Draw("SAME");
+			if(n == 1 && (current_name == "C11_2" || current_name == "C10" || current_name == "He6")){
+				leg[n]->AddEntry(current_hist, config.param_names.at(j));
+				leg[n]->Draw("SAME");
 			}
-			if(el.idx_hist == 1){
-				leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
-				leg[el.idx_hist-1]->Draw("SAME");
+			if(n == 0){
+				leg[n]->AddEntry(current_hist, config.param_names.at(j));
+				leg[n]->Draw("SAME");
 			}
 		}
 		idx_col++;
@@ -210,14 +216,18 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 
 	// Convert counts to cpd/100t
 	// cpd = count / (lifetime) / mass_target / efficiency;
-	auto factor {1. / (config.lifetime*config.mass_target)};
+	auto factor {1. / config.exposure};
 	std::vector<double> popt_cpd, popt_err_cpd;
 	auto popt_err = results.getUncertainties();
     // TODO: Same param on different hists can have different efficiencies!
     for (auto i = 0U; i < results.paramVector.size(); i++) {
         auto paramVec = results.paramVector[i];
         auto j = paramVec[0].idx_pdf;
-        auto eff_exposure = factor / results.efficiencies[j];
+		auto eff_exposure = factor;
+		if (config.param_fixed[j] != 1) {
+			// Fixed parameters are already scaled to the full spectrum
+			eff_exposure /= results.efficiencies[j];
+		}
         popt_cpd.push_back(results.popt[i] * eff_exposure);
         popt_err_cpd.push_back(popt_err[i] * eff_exposure);
     }
