@@ -3,6 +3,7 @@ import os
 import csv
 import subprocess
 import shlex
+import math
 
 
 def getPath(*names):
@@ -61,6 +62,9 @@ def closeEnough(arr1, arr2, margin=1):
     bDiff = True
     for i, (val1, val2) in enumerate(zip(arr1, arr2)):
         diff = abs(val1 - val2) / (val1 + val2) * 2
+        if math.isnan(diff):
+            print("NaN values or division by zero!")
+            return False
         if diff*100 > margin:
             print("Detected difference of {:.2f}%! in param {:d}"
                   .format(diff*100, i+1))

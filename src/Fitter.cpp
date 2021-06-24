@@ -82,7 +82,7 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
         auto current_efficiency {0.};
         auto bin_edges = pdfs->bin_edges[config.hist_id[n]-1];
 
-        // Assuming bin_edges is orderd, fill pdfs between emin and emax
+        // Assuming bin_edges is ordered, fill pdfs between emin and emax
         for (auto i = 0U; i < bin_edges.size()-1; i++) {
 			if (InFitRange(bin_edges[i], bin_edges[i+1])) {
 				current_pdf.push_back(raw_pdf[i]);

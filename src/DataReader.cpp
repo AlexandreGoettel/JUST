@@ -98,15 +98,9 @@ auto Read(NuFitConfig config) -> NuFitPDFs* {
 	TFile *file_pdf = new TFile(config.pdf_name.c_str());
 	std::vector<TH1D*> hPDFs;
 	for (auto i = 0U; i < config.npdfs; i++) {
-		hPDFs.push_back((TH1D*)file_pdf->Get(config.pdf_names[i]));
-	}
-
-// PDFs could be not normalised to 1
-	for (auto i = 0U; i < config.npdfs; i++){
-		config.param_initial_guess.at(i) = config.param_initial_guess.at(i) * hPDFs.at(i)->Integral();
-		config.param_lowerlim.at(i) = config.param_lowerlim.at(i) * hPDFs.at(i)->Integral();
-		config.param_upperlim.at(i) = config.param_upperlim.at(i) * hPDFs.at(i)->Integral();
-		config.param_initial_guess_toy.at(i) = config.param_initial_guess_toy.at(i) * hPDFs.at(i)->Integral();
+		auto pdf = (TH1D*)file_pdf->Get(config.pdf_names[i]);
+		// Make sure PDFs are normalised to 1
+		hPDFs.push_back(pdf);
 	}
 
 	// Convert histograms to vectors
@@ -114,9 +108,11 @@ auto Read(NuFitConfig config) -> NuFitPDFs* {
 	for (auto n = 0U; n < config.npdfs; n++) {
 		std::vector<double> current_pdf;
 		for (auto i = 0U; i <= config.nbins[config.hist_id[n]-1]; i++) {
+			// TODO: move list access out of loop
 			current_pdf.push_back(hPDFs[n]->GetBinContent(i));
 		}
 		pdfs.push_back(current_pdf);
+		std::cout << hPDFs[n]->Integral() << std::endl;
 	}
 
 	// Create bin_edges vector for each used data histogram
@@ -131,7 +127,7 @@ auto Read(NuFitConfig config) -> NuFitPDFs* {
 	}
 
 	std::cout << "[PDF READER]" << "nPDF: " << pdfs.size() << std::endl
-	          << "[PDF READER]" << "nHists: " << bin_edges.size() << std::endl;
+	<< "[PDF READER]" << "nHists: " << bin_edges.size() << std::endl;
 
 	// Create and return NuFitPDFs object with the variables
 	auto *output = new NuFitPDFs(pdfs, bin_edges, hPDFs);
