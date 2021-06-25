@@ -205,7 +205,7 @@ auto ParseSpeciesList(std::unique_ptr<NuFitConfig>& config,
 					config->param_upperlim.push_back(std::stod(word)*config->exposure);
 					break;
 				case 5:
-					config->param_stepsize.push_back(std::stod(word));
+					config->param_stepsize.push_back(std::stod(word)*config->exposure);
 					break;
 				case 6:
 					config->param_fixed.push_back(std::stoi(word));

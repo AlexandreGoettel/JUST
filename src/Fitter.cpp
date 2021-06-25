@@ -408,8 +408,8 @@ auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
         auto j = paramVec[0].idx_pdf;
         if (fitCtnr.config.param_fixed[j] != 2) continue;
 
-        auto diff = par[i] - fitCtnr.config.param_initial_guess[j];
-        auto sigma = fitCtnr.config.param_stepsize[j];
+        auto diff = par[i] - fitCtnr.config.param_initial_guess[j]*fitCtnr.efficiencies[j];
+        auto sigma = fitCtnr.config.param_stepsize[j]*fitCtnr.efficiencies[j];
         f += 0.5*diff*diff/sigma/sigma;
     }
 }
