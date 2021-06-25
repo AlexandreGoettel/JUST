@@ -8,7 +8,6 @@
 #include <iostream>
 // ROOT includes
 #include "TH1D.h"
-#include "TRandom3.h"
 // Project includes
 #include "ToyDataGenerator.h"
 #include "DataReader.h"
@@ -18,7 +17,7 @@ namespace NuFitter{
 
 //Temporary. It's the same function as in DataReader. Maybe there is an easier way to useit without
 //re-write it here
-auto getBinEdges_Toy(TH1D *hist, unsigned int nbins) -> std::vector<double> {
+auto getBinEdges_(TH1D *hist, unsigned int nbins) -> std::vector<double> {
 	// Create bin_edges vector
 	std::vector<double> bin_edges;
 	for (auto i = 0U; i <= nbins; i++){
@@ -52,17 +51,14 @@ auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> std::ve
 		}
 		std::vector<std::vector<double>> vec_data, bin_edges;
 		std::vector<unsigned int> hist_ids;
-		gRandom = new TRandom3(0);
-		gRandom->SetSeed(0);
 
 		// Fill histogram from PDFs
-		for (auto i = 0U; i < nHists; i++) {  // For each toy hist
-			for (auto k = 0U; k < config.nSp_histos_toy[i]; k++) {  // For each pdf in hist
-				auto idx = k + i * config.nSp_histos_toy[0];
-				auto current_hist = (TH1D*)pdfs->pdf_histograms[idx]->Clone();
-				auto n_expected = config.param_initial_guess_toy[idx]*config.param_eff_toy[idx];
-				auto pois = gRandom->Poisson(n_expected);
-				histogr.at(i)->FillRandom(current_hist, pois);
+		auto samples = config.param_sampled[t];
+		for (auto parData : config.paramVector_toy) {
+			for (auto el : parData) {
+				auto j = el.idx_pdf;
+				auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
+				histogr[el.idx_hist-1]->FillRandom(current_hist, samples[j]);
 			}
 		}
 
@@ -73,7 +69,7 @@ auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> std::ve
 				vec_data_hist.push_back(histogr.at(i-1)->GetBinContent(j));
 			}
 			// Create bin_edges vector
-			auto bin_edges_hist = getBinEdges_Toy(histogr.at(i-1), config.nbins[i-1]);
+			auto bin_edges_hist = getBinEdges_(histogr.at(i-1), config.nbins[i-1]);
 
 			bin_edges.push_back(bin_edges_hist);
 			vec_data.push_back(vec_data_hist);

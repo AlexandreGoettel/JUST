@@ -36,9 +36,10 @@ auto main(int argc, char* argv[]) -> int {
 
 	// Perform the fit with real or toy data
 	if (config.ToyData != 0) {
-
+		// Read the pdfs used to generate the toy data
+		NuFitPDFs *pdfs_toy = Toy::Read(config);
 		// Generate toy data for the fit
-		auto data = generateToyData(config, pdfs);
+		auto data = generateToyData(config, pdfs_toy);
 		auto results = MCFit::Fit(data, pdfs, config);
 		ProcessResults(data, pdfs, config, results);
 	} else {

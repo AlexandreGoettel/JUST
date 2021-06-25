@@ -52,12 +52,15 @@ public:  // Variables
 
 namespace Data {
 	NuFitData *Read(const NuFitConfig config);
-}  // namespace CMDLParser
+}  // namespace Data
 
 namespace PDFs {
 	NuFitPDFs* Read(const NuFitConfig config);
-}  // namespace ConfigParser
+}  // namespace PDFs
 
+namespace Toy {
+	NuFitPDFs* Read(const NuFitConfig config);
+}  // namespace Toy
 }  // namespace NuFitter
 
 

@@ -93,7 +93,7 @@ auto Read(const NuFitConfig config) -> NuFitData* {
 namespace PDFs {
 
 auto Read(const NuFitConfig config) -> NuFitPDFs* {
-	// Read the PDFs and convert them to vectors
+	// Read the PDFs
 	std::cout << "INFO: Reading PDFs from " << config.pdf_name << std::endl;
 	TFile *file_pdf = new TFile(config.pdf_name.c_str());
 	std::vector<TH1D*> hPDFs;
@@ -108,9 +108,9 @@ auto Read(const NuFitConfig config) -> NuFitPDFs* {
 	std::vector<std::vector<double>> pdfs;
 	for (auto n = 0U; n < config.npdfs; n++) {
 		std::vector<double> current_pdf;
+		auto ref_pdf = hPDFs[n];
 		for (auto i = 0U; i <= config.nbins[config.hist_id[n]-1]; i++) {
-			// TODO: move list access out of loop
-			current_pdf.push_back(hPDFs[n]->GetBinContent(i));
+			current_pdf.push_back(ref_pdf->GetBinContent(i));
 		}
 		pdfs.push_back(current_pdf);
 	}
@@ -135,4 +135,45 @@ auto Read(const NuFitConfig config) -> NuFitPDFs* {
 }
 
 }  // namespace PDFs
+
+namespace Toy {
+
+auto Read(const NuFitConfig config) -> NuFitPDFs* {
+	// Read the PDFs
+	TFile *file_pdf = new TFile(config.pdf_name.c_str());
+	std::vector<TH1D*> hPDFs;
+	for (auto pdf_name : config.pdf_names_toy) {
+		auto pdf = (TH1D*)file_pdf->Get(pdf_name);
+		// Make sure PDFs are normalised to 1
+		pdf->Scale(1./pdf->Integral());  // TODO: include bin width
+		hPDFs.push_back(pdf);
+	}
+
+	// Convert histograms to vectors
+	std::vector<std::vector<double>> pdfs;
+	for (auto n = 0U; n < config.npdfs_toy; n++) {
+		std::vector<double> current_pdf;
+		auto ref_pdf = hPDFs[n];
+		for (auto i = 0U; i <= config.nbins[config.hist_id_toy[n]-1]; i++) {
+			current_pdf.push_back(ref_pdf->GetBinContent(i));
+		}
+		pdfs.push_back(current_pdf);
+	}
+
+	// Create bin_edges vector for each used data histogram
+	// Only if the histogram was found in specieslist
+	std::vector<std::vector<double>> bin_edges;
+	for (auto i = 1U; i <= config.data_hist_names.size(); i++) {
+		if (std::find(config.hist_id_toy.begin(), config.hist_id_toy.end(), i) != config.hist_id_toy.end()) {
+			// TODO: different histograms can have different binning!
+			auto bin_edges_tmp = getBinEdges(hPDFs[0], config.nbins[i-1]);
+			bin_edges.push_back(bin_edges_tmp);
+		}
+	}
+
+	auto *output = new NuFitPDFs(pdfs, bin_edges, hPDFs);
+	return output;
+}
+
+}  // namespace Toy
 }  // namespace NuFitter

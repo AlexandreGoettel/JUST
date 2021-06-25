@@ -17,6 +17,12 @@
 // Class definition
 
 namespace NuFitter {
+
+struct paramData {
+	unsigned int idx_pdf;
+	unsigned int idx_hist;
+};
+
 class NuFitCmdlArgs {
 public:
 	NuFitCmdlArgs() = default;  // constructor
@@ -65,7 +71,8 @@ public:  // Initialise variables to be filled by parser
 	std::vector<TString> pdf_names_toy;
 	std::vector<double> param_initial_guess_toy, param_eff_toy;
 	std::vector<unsigned int> hist_id_toy, nSp_histos_toy;
-
+	std::vector<std::vector<unsigned int>> param_sampled;
+	std::vector<std::vector<paramData>> paramVector_toy;
 };
 
 void ErrorReading(std::string&);

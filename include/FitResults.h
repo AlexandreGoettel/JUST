@@ -16,11 +16,6 @@
 
 namespace NuFitter {
 
-struct paramData {
-	unsigned int idx_pdf;
-	unsigned int idx_hist;
-};
-
 class NuFitResults {
 public: // Constructors and operator assignments
 	NuFitResults(std::vector<double>, std::vector<std::vector<double>>,

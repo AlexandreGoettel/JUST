@@ -17,6 +17,7 @@
 #include "TFile.h"
 #include "TH1D.h"
 #include "TMath.h"
+#include "TRandom3.h"
 // Project includes
 #include "Parser.h"
 
@@ -26,6 +27,21 @@
 // Implementations
 
 namespace NuFitter{
+
+// @brief Get the index of element el in vector v (first occurence)
+// TODO: move to more sensible place to share with fitter?
+template <class T>
+auto getIndexOf_(T el, std::vector<T> v) -> int {
+	auto it = std::find(v.begin(), v.end(), el);
+
+	// If element was found, calculate the index
+	if (it != v.end()) {
+		return it - v.begin();
+	}
+	else {
+		return -1;
+	}
+}
 
 // @brief problems in opening or reading input files
 auto ErrorReading(std::string& filename) -> void {
@@ -338,6 +354,39 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	// Read the toy-rates
 	if(config->ToyData != 0){
 		ParseToyRates(config, args.toy);
+
+		std::cout << "Running random number generator for toy-data..." << std::endl;
+		// Sample species counts here to pass to toyDataGenerator
+		gRandom = new TRandom3(0);
+		for (auto t = 0U; t < config->ToyData; t++) {  // For each toy data fit
+			// gRandom->SetSeed(0);
+			std::vector<unsigned int> current_sampled_counts;
+			for (auto i = 0U; i < config->npdfs_toy; i++) {  // For each pdf
+				auto n_expected = config->param_initial_guess_toy[i]*config->param_eff_toy[i];
+				current_sampled_counts.push_back(gRandom->Poisson(n_expected));
+			}
+			config->param_sampled.push_back(current_sampled_counts);
+		}
+
+		// Create a paramVector object for the toy data parameters
+		std::vector<TString> used_names, used_names_fixed;
+		for (auto i = 0U; i < config->npdfs_toy; i++) {
+			paramData current_paramData {i, config->hist_id_toy[i]};
+			auto name = config->pdf_names_toy[i];
+
+			if (std::find(used_names.begin(), used_names.end(), name) == used_names.end()) {
+				std::vector<paramData> tmp_paramVector;
+				tmp_paramVector.push_back(current_paramData);
+				config->paramVector_toy.push_back(tmp_paramVector);
+				used_names.push_back(name);
+			} else {
+				auto idx_name = getIndexOf_(name, used_names);
+				assert(idx_name != -1);
+				config->paramVector_toy[idx_name].push_back(current_paramData);
+			}
+		}
+
+		std::cout << "[PARSER] " << config->paramVector_toy.size() << ", " << config->npdfs_toy << std::endl;
 	}
 
 	// -------------------------------------------------------------------------
@@ -347,7 +396,7 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 		for (auto i = 0U; i < config->data_hist_names.size(); i++) {
 			// Only load the histogram if it is used!
 			if (std::find(config->hist_id.begin(), config->hist_id.end(), i+1)
-			== config->hist_id.end()) continue;
+			    == config->hist_id.end()) continue;
 			TFile *fdata = new TFile(config->data_name.c_str());
 			TH1D* hdata = (TH1D*)fdata->Get(config->data_hist_names[i].c_str());
 			config->nbins.push_back(hdata->GetNbinsX());
@@ -355,6 +404,9 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 		}
 	} else {
 		for (auto i = 0U; i < config->data_hist_names.size(); i++) {
+			// Only load the histogram if it is used!
+			if (std::find(config->hist_id_toy.begin(), config->hist_id_toy.end(), i+1)
+			    == config->hist_id_toy.end()) continue;
 			TFile *fpdf = new TFile(config->pdf_name.c_str());
 			TH1D* hpdf = (TH1D*)fpdf->Get(config->pdf_names[0]);
 			config->nbins.push_back(hpdf->GetNbinsX());

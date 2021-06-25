@@ -15,12 +15,16 @@
 // Project includes
 #include "OutputManager.h"
 
-// @brief output values to be inserted in a ROOT tree branch
-struct Values {
-	double mean, std_dev;
-};
 
 namespace NuFitter {
+
+// @brief output values to be inserted in a ROOT tree branch
+struct Values {
+	double fit_rate, fit_rate_err, fit_counts_tot, fit_counts_range;
+};
+struct ValuesToy {
+	unsigned int gen_counts;
+};
 
 template <class T>
 auto vec2Array(std::vector<T> v) -> T* {
@@ -302,33 +306,58 @@ auto ProcessResults(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
 	TFile *f = new TFile(root_filename.c_str(), "RECREATE");
 	f->cd();
 
-	// Initialise TTree
-	TTree *tree = new TTree("Distributions","Distributions");
-	std::vector<TString> names;
+	// Initialise TTrees
+	TTree *fitTree = new TTree("Distributions", "Distributions");
+	TTree *toyTree = new TTree("ToyGeneration", "ToyGeneration");
 	auto npar = results[0].paramVector.size();
 	Values val[npar];
 
-	// Create all the branches of the TTree
+	// Create all the branches of the TTrees
+	// fit_rate, fit_rate_err, fit_counts_tot, fit_counts_range, gen_counts
 	for (auto i = 0U; i < results[0].paramVector.size(); i++){
 		auto paramVec = results[0].paramVector[i];
 		auto name = config.param_names[paramVec[0].idx_pdf];
-		names.push_back(name);
-		tree->Branch(name, &val[i], "RecRates/D:StdDev/D");
+		fitTree->Branch(name, &val[i], "fit_rate/D:fit_rate_err/D:fit_counts_tot/D:fit_counts_range/D");
 	}
 
-	// Fill the TTree
+	// Create branches for the toy data tree
+	auto nparToy = config.paramVector_toy.size();
+	ValuesToy valToy[nparToy];
+	for (auto i = 0U; i < nparToy; i++) {
+		auto j = config.paramVector_toy[i][0].idx_pdf;
+		auto name = config.pdf_names_toy[j];
+		toyTree->Branch(name, &valToy[i], "gen_counts/i");
+	}
+
+	// Fill the TTrees
 	for (auto t = 0U; t < data.size(); t++){
 		auto results_ = results[t];
 		auto popt_cpd = toCpdPerkton(results_.popt, config, results_);
 		auto popt_err_cpd = toCpdPerkton(results_.getUncertainties(), config, results_);
 
+		// Get the fit result information
 		for (auto i = 0U; i < npar; i++){
-			val[i].mean = popt_cpd[i];
-			val[i].std_dev = popt_err_cpd[i];
+			val[i].fit_rate = popt_cpd[i];
+			val[i].fit_rate_err = popt_err_cpd[i];
+			val[i].fit_counts_range = results_.popt[i];
+			val[i].fit_counts_tot = popt_cpd[i]*config.exposure;
 		}
-		tree->Fill();
+
+		// Get the toy data information
+		auto samples = config.param_sampled[t];
+		for (auto i = 0U; i < config.paramVector_toy.size(); i++) {
+			auto gen_counts {0U};
+			auto parData = config.paramVector_toy[i];
+			for (auto el : parData) {
+				gen_counts += samples[el.idx_pdf];
+			}
+			valToy[i].gen_counts = gen_counts;
+		}
+		fitTree->Fill();
+		toyTree->Fill();
 	}
-	tree->Write();
+	fitTree->Write();
+	toyTree->Write();
 
 	//----------------------------------------
 	//---------- Save example plot -----------
