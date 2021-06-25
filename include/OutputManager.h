@@ -7,9 +7,11 @@
 #define OUTPUTMANAGER_H_
 
 //============================================================================
-// Includes
+// Standard includes
 #include <memory>
 #include <vector>
+#include <fstream>
+// Project includes
 #include "FitResults.h"
 #include "DataReader.h"
 #include "Parser.h"
@@ -21,6 +23,7 @@ namespace NuFitter {
 
 void ProcessResults(NuFitData*, NuFitPDFs*, const NuFitConfig, NuFitResults);
 void ProcessResults(std::vector<NuFitData*>, NuFitPDFs*, const NuFitConfig, std::vector<NuFitResults>);
+void fitToFile(std::ofstream&, NuFitResults, const NuFitConfig);
 
 }  // namespace NuFitter
 
