@@ -11,6 +11,8 @@
 #include <memory>
 #include <vector>
 #include <fstream>
+// ROOT includes
+#include "TFile.h"
 // Project includes
 #include "FitResults.h"
 #include "DataReader.h"
@@ -21,9 +23,12 @@
 
 namespace NuFitter {
 
+// TODO: maybe a class here would be useful after all?
 void ProcessResults(NuFitData*, NuFitPDFs*, const NuFitConfig, NuFitResults);
 void ProcessResults(std::vector<NuFitData*>, NuFitPDFs*, const NuFitConfig, std::vector<NuFitResults>);
 void fitToFile(std::ofstream&, NuFitResults, const NuFitConfig);
+void plotToFile(TFile*, NuFitData*, NuFitPDFs*, const NuFitConfig, NuFitResults);
+std::vector<double> toCpdPerkton(std::vector<double>, const NuFitConfig, NuFitResults);
 
 }  // namespace NuFitter
 

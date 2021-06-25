@@ -7,7 +7,6 @@
 #include <iostream>
 // ROOT includes
 #include "TH1D.h"
-#include "TFile.h"
 #include "TStyle.h"
 #include "TLegend.h"
 #include "TGraph.h"
@@ -27,6 +26,27 @@ template <class T>
 auto vec2Array(std::vector<T> v) -> T* {
     T *array = &v[0];
     return array;
+}
+
+// @brief Convert a results parameter vector of counts into cpd/kton
+auto toCpdPerkton(std::vector<double> ref, const NuFitConfig config,
+	NuFitResults results) -> std::vector<double> {
+	assert(ref.size() == results.paramVector.size());
+	auto factor {1. / config.exposure};
+	std::vector<double> output;
+
+	// TODO: Same param on different hists can have different efficiencies!
+	for (auto i = 0U; i < results.paramVector.size(); i++) {
+		auto paramVec = results.paramVector[i];
+		auto j = paramVec[0].idx_pdf;
+		auto eff_exposure = factor;
+		if (config.param_fixed[j] != 1) {
+			// Fixed parameters are already scaled to the full spectrum
+			eff_exposure /= results.efficiencies[j];
+		}
+		output.push_back(ref[i] * eff_exposure);
+	}
+	return output;
 }
 
 // @brief Write the output of one fit to file
@@ -62,21 +82,9 @@ auto fitToFile(std::ofstream &outf, NuFitResults results,
 
 	// Convert counts to cpd/100t
 	// cpd = count / (lifetime) / mass_target / efficiency;
-	auto factor {1. / config.exposure};
-	std::vector<double> popt_cpd, popt_err_cpd;
 	auto popt_err = results.getUncertainties();
-    // TODO: Same param on different hists can have different efficiencies!
-    for (auto i = 0U; i < results.paramVector.size(); i++) {
-        auto paramVec = results.paramVector[i];
-        auto j = paramVec[0].idx_pdf;
-		auto eff_exposure = factor;
-		if (config.param_fixed[j] != 1) {
-			// Fixed parameters are already scaled to the full spectrum
-			eff_exposure /= results.efficiencies[j];
-		}
-        popt_cpd.push_back(results.popt[i] * eff_exposure);
-        popt_err_cpd.push_back(popt_err[i] * eff_exposure);
-    }
+	auto popt_cpd = toCpdPerkton(results.popt, config, results);
+	auto popt_err_cpd = toCpdPerkton(popt_err, config, results);
 
 	// Write params with uncertainties in counts and cpd/kton
 	outf << "------------\n" << "Fit results:\n" << "------------\n"
@@ -125,17 +133,9 @@ auto fitToFile(std::ofstream &outf, NuFitResults results,
 		 << "Likelihood: '" << config.likelihood << "'" << std::endl;
 }
 
-// @brief For now, simply plot the results (simple fit example)
-auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
-                    NuFitResults results) -> void {
-	//----------------------------------------
-	//----------- Plot the results -----------
-	//----------------------------------------
-	// Open file to save the plots in
-	auto root_filename = config.output_name + ".root";
-	TFile *f = new TFile(root_filename.c_str(), "RECREATE");
+auto plotToFile(TFile *f,  NuFitData *data, NuFitPDFs *pdfs,
+	            const NuFitConfig config, NuFitResults results) -> void {
 	f->cd();
-
 	// Create a std::vector<TH1D*> to fill with the fit results
     // TODO: bin width isn't always integer nor 1 !!
 	auto range = config.emax - config.emin;
@@ -150,7 +150,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 
 	// Create a canvas to plot the results in
 	auto nHists = data->hist_ids.size();
-	TCanvas *c = new TCanvas("Results", "Results", 1500, 700);
+	TCanvas *c = new TCanvas("Plot", "Plot", 1500, 700);
 	gPad->SetLogy();
 
 	// Draw the data histograms
@@ -170,6 +170,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		data->data_histograms[i]->SetLineColor(kBlack);
 		data->data_histograms[i]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
 		data->data_histograms[i]->GetYaxis()->SetTitle("Events");
+		// TODO: can't use hard-coded values
 		data->data_histograms[i]->GetYaxis()->SetRangeUser(1, 1e5);
 		data->data_histograms[i]->GetXaxis()->SetRangeUser(config.emin, config.emax);
 		data->data_histograms[i]->Draw();
@@ -182,8 +183,6 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 
 	// Define colors to be used in the plots
 	int *Colors = new int [13]{632,632,632,409,616,400,600,870,921,801,801,881,419};
-	std::vector<int> colors;
-	std::vector<TString> used_names;
 	auto idx_col {0};
 
 	// Plot the pdfs for each parameter
@@ -193,13 +192,6 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 			auto j = el.idx_pdf;
 			auto n = el.idx_hist-1;
 			auto current_name = config.param_names[j];
-
-			// Manage color used
-			if (std::find(used_names.begin(), used_names.end(), current_name)
-			    == used_names.end()) {
-				used_names.push_back(current_name);
-				colors.push_back(Colors[idx_col]);
-			}
 
 			auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
 			if (config.param_fixed[j] == 1) {
@@ -216,8 +208,8 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 
 			// Draw PDF
 			padUp[n]->cd();
-			current_hist->SetLineColor(colors[idx_col]);
-			current_hist->SetMarkerColor(colors[idx_col]);
+			current_hist->SetLineColor(Colors[idx_col]);
+			current_hist->SetMarkerColor(Colors[idx_col]);
 			current_hist->Draw("SAME");
 			PDFsSum.at(n)->SetLineColor(632);
 			PDFsSum.at(n)->SetMarkerColor(632);
@@ -273,6 +265,19 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 		Res[i]->Draw("AL");
 	}
 	c->Write();
+}
+
+// @brief For now, simply plot the results (simple fit example)
+auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
+                    NuFitResults results) -> void {
+	//----------------------------------------
+	//----------- Plot the results -----------
+	//----------------------------------------
+	// Open file to save the plots in
+	auto root_filename = config.output_name + ".root";
+	TFile *f = new TFile(root_filename.c_str(), "RECREATE");
+
+	plotToFile(f, data, pdfs, config, results);
 	f->Close();
 
 	//----------------------------------------
@@ -290,27 +295,20 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 auto ProcessResults(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
 	                const NuFitConfig config,
 					std::vector<NuFitResults> results) -> void {
-
-	auto factor {1. / (config.lifetime*config.mass_target)};
-
-
-	//----------------------------------------------------------------
-	//---------- Create the output rootfile --------------------------
-	//----------------------------------------------------------------
 	//----------------------------------------
-	//----------- Plot the distributions -----
+	//------ Create the output rootfile ------
 	//----------------------------------------
 	auto root_filename = config.output_name + ".root";
 	TFile *f = new TFile(root_filename.c_str(), "RECREATE");
 	f->cd();
 
+	// Initialise TTree
 	TTree *tree = new TTree("Distributions","Distributions");
-
 	std::vector<TString> names;
-	int npar = results[0].paramVector.size();
+	auto npar = results[0].paramVector.size();
 	Values val[npar];
 
-	//Loop to create all the branches of the TTree
+	// Create all the branches of the TTree
 	for (auto i = 0U; i < results[0].paramVector.size(); i++){
 		auto paramVec = results[0].paramVector[i];
 		auto name = config.param_names[paramVec[0].idx_pdf];
@@ -318,163 +316,30 @@ auto ProcessResults(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
 		tree->Branch(name, &val[i], "RecRates/D:StdDev/D");
 	}
 
-	//Loop to fill the TTree
+	// Fill the TTree
 	for (auto t = 0U; t < data.size(); t++){
-		auto popt_err = results[t].getUncertainties();
-		for (auto i = 0U; i < results[t].paramVector.size(); i++){
-			auto paramVec = results[t].paramVector[i];
-			auto j = paramVec[0].idx_pdf;
-			auto eff_exposure = factor / results[t].efficiencies[j];
-			val[i].mean = results[t].popt.at(i) * eff_exposure;
-			val[i].std_dev = popt_err[i] * eff_exposure;
+		auto results_ = results[t];
+		auto popt_cpd = toCpdPerkton(results_.popt, config, results_);
+		auto popt_err_cpd = toCpdPerkton(results_.getUncertainties(), config, results_);
+
+		for (auto i = 0U; i < npar; i++){
+			val[i].mean = popt_cpd[i];
+			val[i].std_dev = popt_err_cpd[i];
 		}
 		tree->Fill();
 	}
-
 	tree->Write();
 
-
-	//------------------------------------------------------------
-	//----------- Plot the results (only the last one) -----------
-	//------------------------------------------------------------
+	//----------------------------------------
+	//---------- Save example plot -----------
+	//----------------------------------------
 	int lasttoy = data.size()-1;
-	auto range = config.emax - config.emin;
-
-	std::vector<TH1D*> PDFsSum;
-	for (auto i : data[lasttoy]->hist_ids){
-		auto name = "PDFsSum_" + config.data_hist_names[i];
-		TH1D *PDFs_hists = new TH1D(name.c_str(), name.c_str(), range,
-		config.emin, config.emax);
-		PDFsSum.push_back(PDFs_hists);
-	}
-
-	// Create a canvas to plot the results in
-	auto nHists = data[lasttoy]->hist_ids.size();
-	TCanvas *c = new TCanvas("Plot", "Plot", 1500, 700);
-	gPad->SetLogy();
-
-	// Draw the data histograms
-	TPad *padUp[nHists];
-	TLegend *leg[nHists];
-	for (auto i = 0U; i < nHists; i++){
-		auto namePadUp = "PadUp_" + std::to_string(i+1);
-		auto nameLeg = "Leg_" + std::to_string(i+1);
-		padUp[i] = new TPad(namePadUp.c_str(), namePadUp.c_str(),
-		                    i/static_cast<float>(nHists), 0.3,
-							(1.+i)/static_cast<float>(nHists), 1.0);
-		leg[i] = new TLegend(0.34,0.55 + i/5. ,0.54,0.85,NULL,"brNDC");
-		c->cd();
-		padUp[i]->Draw();
-		padUp[i]->cd();
-		gPad->SetLogy();
-		data[lasttoy]->data_histograms[i]->SetLineColor(kBlack);
-		data[lasttoy]->data_histograms[i]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
-		data[lasttoy]->data_histograms[i]->GetYaxis()->SetTitle("Events");
-		data[lasttoy]->data_histograms[i]->GetYaxis()->SetRangeUser(1, 1e5);
-		data[lasttoy]->data_histograms[i]->GetXaxis()->SetRangeUser(config.emin, config.emax);
-		data[lasttoy]->data_histograms[i]->Draw();
-		leg[i]->SetTextAlign(13);
-		leg[i]->SetTextSize(0.04);
-		leg[i]->SetBorderSize(0);
-		leg[i]->SetFillStyle(0);
-		c->cd();
-	}
-
-	// Define colors to be used in the plots
-	int *Colors = new int [13]{632,632,632,409,616,400,600,870,921,801,801,881,419};
-	std::vector<int> colors;
-	std::vector<TString> used_names;
-	auto idx_col {0};
-
-	// Plot the pdfs for each parameter
-	for (auto i = 0U; i < results[lasttoy].paramVector.size(); i++) {
-		auto parData = results[lasttoy].paramVector[i];
-		for (auto el : parData) {
-			auto j = el.idx_pdf;
-			auto current_name = config.param_names[j];
-
-			// Manage color used
-			if (std::find(used_names.begin(), used_names.end(), current_name)
-			    == used_names.end()) {
-				used_names.push_back(current_name);
-				colors.push_back(Colors[idx_col]);
-			}
-
-			auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
-			current_hist->Scale(results[lasttoy].popt[i]/results[lasttoy].efficiencies[j]*config.param_eff[j]);
-
-			// Update PDFSum
-			for(auto k = 1U; k <= range; k++){
-				PDFsSum.at(el.idx_hist-1)->SetBinContent(k,PDFsSum.at(el.idx_hist-1)->GetBinContent(k)+current_hist->GetBinContent(k-1+config.emin));
-			}
-
-			// Draw PDF
-			padUp[el.idx_hist-1]->cd();
-			current_hist->SetLineColor(colors[idx_col]);
-			current_hist->SetMarkerColor(colors[idx_col]);
-			current_hist->Draw("SAME");
-			PDFsSum.at(el.idx_hist-1)->SetLineColor(632);
-			PDFsSum.at(el.idx_hist-1)->SetMarkerColor(632);
-			PDFsSum.at(el.idx_hist-1)->Draw("SAME");
-			if(el.idx_hist == 2 && (current_name == "C11_2" || current_name == "C10" || current_name == "He6")){
-				leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
-				leg[el.idx_hist-1]->Draw("SAME");
-			}
-			if(el.idx_hist == 1){
-				leg[el.idx_hist-1]->AddEntry(current_hist, config.param_names.at(j));
-				leg[el.idx_hist-1]->Draw("SAME");
-			}
-		}
-		idx_col++;
-		if (idx_col > 13) idx_col = 0;
-	}
-
-
-	// Fill vectors used to plot residuals
-	std::vector<std::vector<double>> rec_energy;
-	std::vector<std::vector<double>> residuals;
-	for (auto i : data[lasttoy]->hist_ids) {
-		std::vector<double> res, rec;
-		for(auto j = 0U; j < config.emax; j++){
-			rec.push_back(j+config.emin);
-			res.push_back((data[lasttoy]->data_histograms[i]->GetBinContent(j+config.emin) -
-			PDFsSum[i]->GetBinContent(j+1)) /
-			sqrt(data[lasttoy]->data_histograms[i]->GetBinContent(j+config.emin)));
-		}
-		rec_energy.push_back(rec);
-		residuals.push_back(res);
-	}
-
-	// Plot residuals
-	TPad *padDown[nHists];
-	TGraph *Res[nHists];
-
-	for (auto i = 0U; i < nHists; i++){
-		auto namePadDown = "PadDown_" + std::to_string(i+1);
-		padDown[i] = new TPad(namePadDown.c_str(), namePadDown.c_str(), i/static_cast<float>(nHists), 0, (1.+i)/static_cast<float>(nHists), 0.3);
-		c->cd();
-		padDown[i]->Draw();
-		padDown[i]->cd();
-		Res[i] = new TGraph(range, vec2Array(rec_energy[i]),
-		vec2Array(residuals[i]));
-		Res[i]->SetTitle("Residuals");
-		Res[i]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
-		Res[i]->GetYaxis()->SetTitle("(D-M)/sqrt(D)");
-		Res[i]->GetYaxis()->CenterTitle(true);
-		Res[i]->GetYaxis()->SetTitleSize(.05);
-		Res[i]->GetXaxis()->SetTitleSize(.05);
-		Res[i]->GetXaxis()->SetRangeUser(config.emin,config.emax);
-		Res[i]->GetYaxis()->SetRangeUser(-4.,4.);
-		Res[i]->SetLineWidth(1);
-		Res[i]->Draw("AL");
-	}
-	c->Write();
+	plotToFile(f, data[lasttoy], pdfs, config, results[lasttoy]);
 	f->Close();
 
-
-	//----------------------------------------------------------------
-	//---------- Create the output txt file --------------------------
-	//----------------------------------------------------------------
+	//----------------------------------------
+	//------ Create the output txt file ------
+	//----------------------------------------
 	std::ofstream outf;
 	auto out_filename = config.output_name + ".txt";
 	outf.open(out_filename.c_str());
