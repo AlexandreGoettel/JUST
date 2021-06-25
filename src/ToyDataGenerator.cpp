@@ -62,7 +62,6 @@ auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> std::ve
 				auto current_hist = (TH1D*)pdfs->pdf_histograms[idx]->Clone();
 				auto n_expected = config.param_initial_guess_toy[idx]*config.param_eff_toy[idx];
 				auto pois = gRandom->Poisson(n_expected);
-				std::cout << n_expected << ", " << pois << std::endl;
 				histogr.at(i)->FillRandom(current_hist, pois);
 			}
 		}
