@@ -385,8 +385,6 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 				config->paramVector_toy[idx_name].push_back(current_paramData);
 			}
 		}
-
-		std::cout << "[PARSER] " << config->paramVector_toy.size() << ", " << config->npdfs_toy << std::endl;
 	}
 
 	// -------------------------------------------------------------------------
