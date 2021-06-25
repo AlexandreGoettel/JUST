@@ -17,6 +17,7 @@
 #include "FitResults.h"
 #include "DataReader.h"
 #include "Parser.h"
+#include "ToyDataGenerator.h"
 
 //============================================================================
 // Method definitions
@@ -25,7 +26,9 @@ namespace NuFitter {
 
 // TODO: maybe a class here would be useful after all?
 void ProcessResults(NuFitData*, NuFitPDFs*, const NuFitConfig, NuFitResults);
-void ProcessResults(std::vector<NuFitData*>, NuFitPDFs*, const NuFitConfig, std::vector<NuFitResults>);
+void ProcessResults(NuFitToyData*, NuFitPDFs*, const NuFitConfig,
+	                std::vector<NuFitResults>);
+
 void fitToFile(std::ofstream&, NuFitResults, const NuFitConfig);
 void plotToFile(TFile*, NuFitData*, NuFitPDFs*, const NuFitConfig, NuFitResults);
 std::vector<double> toCpdPerkton(std::vector<double>, const NuFitConfig, NuFitResults);

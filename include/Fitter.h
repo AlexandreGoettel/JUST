@@ -15,6 +15,7 @@
 #include "FitResults.h"
 #include "DataReader.h"
 #include "Parser.h"
+#include "ToyDataGenerator.h"
 
 //============================================================================
 // Method definitions
@@ -78,8 +79,7 @@ public:  // Functions
 };
 
 NuFitResults Fit(NuFitData*, NuFitPDFs*, const NuFitConfig);
-std::vector<NuFitResults> Fit(std::vector<NuFitData*>, NuFitPDFs*,
-				  const NuFitConfig);
+std::vector<NuFitResults> Fit(NuFitToyData*, NuFitPDFs*, const NuFitConfig);
 void fcn(int&, double*, double&, double*, int);
 
 }  // namespace MCFit

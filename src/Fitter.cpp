@@ -438,21 +438,20 @@ auto Fit(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config)
 }
 
 // @brief Fit for each entry in vector<NuFitData*>
-// @param data vector of NuFitData pointers
+// @param data pointer to NuFitToyData objects for Toy-MC fits
 // @param pdfs pointer to NuFitPDFs with the MC PDFs
 // @param config pointer to the fit config variables
-// @return vector of NuFitResults*, one for each NuFitData* in data
-auto Fit(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
+// @return vector of NuFitResults*, one for each toy dataset
+auto Fit(NuFitToyData *toyData, NuFitPDFs *pdfs,
 	     const NuFitConfig config) -> std::vector<NuFitResults> {
-
+	// Initialise
 	std::vector<NuFitResults> results;
-
-	for (auto i = 0U; i < data.size(); i++) {
-		results.push_back(Fit(data[i], pdfs, config));
+	for (auto idx_dataset = 0U; idx_dataset < config.ToyData; idx_dataset++) {
+		toyData->loadDataset(idx_dataset);
+		results.push_back(Fit(toyData->dataset, pdfs, config));
 	}
 	return results;
 }
-
 
 }  // namespace MCFit
 }  // namespace NuFitter

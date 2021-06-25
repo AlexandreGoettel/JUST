@@ -13,7 +13,7 @@
 #include "DataReader.h"
 #include "TFile.h"
 
-namespace NuFitter{
+namespace NuFitter {
 
 //Temporary. It's the same function as in DataReader. Maybe there is an easier way to useit without
 //re-write it here
@@ -29,57 +29,72 @@ auto getBinEdges_(TH1D *hist, unsigned int nbins) -> std::vector<double> {
 	return bin_edges;
 }
 
-auto generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs) -> std::vector<NuFitData*> {
-	std::vector<NuFitData*> data;
-	std::vector<TH1D*> histogr;
-	auto nHists = config.nSp_histos_toy.size();
+NuFitToyData::NuFitToyData(const NuFitConfig config_, NuFitPDFs *pdfs_) {
+	pdfs = pdfs_;
+	config = config_;
 
 	// Fill the histogr vector with the TH1Ds in which the toy data will go
+	auto nHists = config.nSp_histos_toy.size();
 	for (auto i = 1U; i <= nHists; i++) {
-		if (std::find(config.hist_id_toy.begin(), config.hist_id_toy.end(), i) != config.hist_id_toy.end()) {
-			TH1D *hdata = new TH1D(config.data_hist_names[i-1].c_str(), config.data_hist_names[i-1].c_str(), config.nbins[i-1],
+		if (std::find(config.hist_id_toy.begin(), config.hist_id_toy.end(), i)
+		    != config.hist_id_toy.end()) {
+
+			TH1D *hdata = new TH1D(config.data_hist_names[i-1].c_str(),
+			                       config.data_hist_names[i-1].c_str(), config.nbins[i-1],
 			pdfs->bin_edges[i-1].front() + 1, pdfs->bin_edges[i-1].back());
 			histogr.push_back(hdata);
+			// Get and save the bin edges for re-use later
+			bin_edges.push_back(getBinEdges_(histogr.at(i-1), config.nbins[i-1]));
+			hist_ids.push_back(i-1);
+		}
+	}
+}
+
+// @brief Create dataset on the fly by filling the histograms with scaled PDFs
+auto NuFitToyData::loadDataset(unsigned int idx_dataset) -> void {
+	// Initialise
+	std::vector<std::vector<double>> vec_data;
+	assert(idx_dataset < config.ToyData);
+
+	// Make sure the TH1D(s) is(are) empty
+	for (auto el : histogr) {
+		el->Reset();
+	}
+
+	// Fill histogram from PDFs
+	auto samples = config.param_sampled[idx_dataset];
+	for (auto parData : config.paramVector_toy) {  // For each parameter
+		for (auto el : parData) {  // For each PDF
+			auto j = el.idx_pdf;
+			auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
+			histogr[el.idx_hist-1]->FillRandom(current_hist, samples[j]);
 		}
 	}
 
-	// For each toy dataset
-	for(auto t = 0U; t < config.ToyData; t++){
-		// Make sure the TH1D(s) is(are) empty
-		for (auto el : histogr) {
-			el->Reset();
-		}
-		std::vector<std::vector<double>> vec_data, bin_edges;
-		std::vector<unsigned int> hist_ids;
+	// Convert histogram to vector
+	// Loop of data histograms only if they were found in the toy specieslist!
+	for (auto i = 1U; i <= config.data_hist_names.size(); i++) {
+		if (std::find(config.hist_id_toy.begin(), config.hist_id_toy.end(), i)
+		    != config.hist_id_toy.end()) {
 
-		// Fill histogram from PDFs
-		auto samples = config.param_sampled[t];
-		for (auto parData : config.paramVector_toy) {
-			for (auto el : parData) {
-				auto j = el.idx_pdf;
-				auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
-				histogr[el.idx_hist-1]->FillRandom(current_hist, samples[j]);
-			}
-		}
-
-		// Convert histogram to vector
-		for (auto i = 1U; i <= nHists; i++) {
 			std::vector<double> vec_data_hist;
 			for (auto j = 0U; j <= config.nbins[i-1]; j++) {
 				vec_data_hist.push_back(histogr.at(i-1)->GetBinContent(j));
 			}
-			// Create bin_edges vector
-			auto bin_edges_hist = getBinEdges_(histogr.at(i-1), config.nbins[i-1]);
-
-			bin_edges.push_back(bin_edges_hist);
 			vec_data.push_back(vec_data_hist);
-			hist_ids.push_back(i-1);
 		}
-
-		auto *data_tofill = new NuFitData(vec_data, bin_edges, histogr, hist_ids);
-		data.push_back(data_tofill);
-
 	}
-	return data;
+
+	dataset = new NuFitData(vec_data, bin_edges, histogr, hist_ids);
 }
+
+namespace ToyData {
+
+// @brief Container to create a toy data object
+auto Initialise(const NuFitConfig config, NuFitPDFs* pdfs) -> NuFitToyData* {
+	auto *toyData = new NuFitToyData(config, pdfs);
+	return toyData;
+}
+
+}  // namespace ToyData
 }  // namespace NuFitter

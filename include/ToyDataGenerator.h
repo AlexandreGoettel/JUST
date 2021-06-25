@@ -7,9 +7,13 @@
 #define TOYDATAGENERATOR_H_
 
 //============================================================================
-// Includes
+// Standard includes
 #include <vector>
+// ROOT includes
+#include "TH1D.h"
+// Project includes
 #include "Parser.h"
+#include "DataReader.h"
 
 //============================================================================
 // Class definition
@@ -17,13 +21,32 @@
 namespace NuFitter {
 
 // Forward declaration
-class NuFitConfig;
 class NuFitData;
-class NuFitPDFs;
 
-// NuFitToyData *generateToyData(const NuFitConfig *config);
-std::vector<NuFitData*> generateToyData(const NuFitConfig config, const NuFitPDFs *pdfs);
+class NuFitToyData {
+public:  // Constructros and operator assigments
+	NuFitToyData(const NuFitConfig, NuFitPDFs*);  // constructor
+	~NuFitToyData() = default;  // destructor
+	NuFitToyData(const NuFitToyData&) = default;  // copy constructor
+	NuFitToyData(NuFitToyData&&) = default;  // move constructor
+	NuFitToyData &operator=(const NuFitToyData&) = default;  // copy assignment
+	NuFitToyData &operator=(NuFitToyData&&) = default;  // move assignment
 
+public: // Variables
+	NuFitPDFs *pdfs;
+	void loadDataset(unsigned int);
+	NuFitData *dataset;
+
+private:
+	NuFitConfig config;
+	std::vector<TH1D*> histogr;
+	std::vector<std::vector<double>> bin_edges;
+	std::vector<unsigned int> hist_ids;
+};
+
+namespace ToyData {
+	NuFitToyData *Initialise(const NuFitConfig, NuFitPDFs*);
+}  // namespace ToyData
 }  // namespace NuFitter
 
 

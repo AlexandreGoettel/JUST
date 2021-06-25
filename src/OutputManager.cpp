@@ -296,7 +296,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 }
 
 // @brief Same as the other ProcessResults() but for toy data fit(s)
-auto ProcessResults(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
+auto ProcessResults(NuFitToyData* data, NuFitPDFs *pdfs,
 	                const NuFitConfig config,
 					std::vector<NuFitResults> results) -> void {
 	//----------------------------------------
@@ -330,7 +330,7 @@ auto ProcessResults(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
 	}
 
 	// Fill the TTrees
-	for (auto t = 0U; t < data.size(); t++){
+	for (auto t = 0U; t < config.ToyData; t++){  // For each toy dataset
 		auto results_ = results[t];
 		auto popt_cpd = toCpdPerkton(results_.popt, config, results_);
 		auto popt_err_cpd = toCpdPerkton(results_.getUncertainties(), config, results_);
@@ -362,8 +362,7 @@ auto ProcessResults(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
 	//----------------------------------------
 	//---------- Save example plot -----------
 	//----------------------------------------
-	int lasttoy = data.size()-1;
-	plotToFile(f, data[lasttoy], pdfs, config, results[lasttoy]);
+	plotToFile(f, data->dataset, pdfs, config, results.back());
 	f->Close();
 
 	//----------------------------------------
@@ -373,7 +372,7 @@ auto ProcessResults(std::vector<NuFitData*> data, NuFitPDFs *pdfs,
 	auto out_filename = config.output_name + ".txt";
 	outf.open(out_filename.c_str());
 
-	for (auto t = 0U; t < data.size(); t++){
+	for (auto t = 0U; t < config.ToyData; t++){  // For each toy dataset
 		outf << "------------------------------------------" << std::endl;
 		outf << "Simulation number:\t" << t + 1 << std::endl;
 		outf << "------------------------------------------" << std::endl;
