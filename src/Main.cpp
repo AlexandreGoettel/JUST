@@ -41,7 +41,7 @@ auto main(int argc, char* argv[]) -> int {
 		// Generate toy data for the fit
 		auto data = ToyData::Initialise(config, pdfs_toy);
 		auto results = MCFit::Fit(data, pdfs, config);
-		ProcessResults(data, pdfs, config, results);
+		ProcessResults(data, pdfs_toy, pdfs, config, results);
 	} else {
 		// Read the data histogram(s)
 		auto data = Data::Read(config);
