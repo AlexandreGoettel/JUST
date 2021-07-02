@@ -26,6 +26,9 @@ struct ValuesToy {
 	double inj_rate_toy, toy_rate;
 	unsigned int gen_counts;
 };
+struct ValuesParam {
+	double injected_rate, initial_guess, stepsize, lowerlim, upperlim, isFixed;
+};
 
 template <class T>
 auto vec2Array(std::vector<T> v) -> T* {
@@ -343,6 +346,53 @@ auto DrawPDFs(TFile *f, NuFitPDFs *pdfs_toy, NuFitPDFs *pdfs_fit,
 	c->Write();
 }
 
+// @brief Create, fill, and save a tree with some meta information
+auto createParamTree(TFile *f, const NuFitConfig config, NuFitResults results) -> void {
+	f->cd();
+	f->mkdir("parameters");
+	f->cd("parameters");
+	TTree *paramTree = new TTree("Parameters", "Parameters");
+	TTree *configTree = new TTree("Config", "Config");
+
+	// Initialise branches
+	auto npar = results.paramVector.size();
+	ValuesParam val[npar];
+	for (auto i = 0U; i < npar; i++) {
+		// Initialise
+		auto paramVec = results.paramVector[i];
+		auto j = paramVec[0].idx_pdf;
+		auto name = config.param_names[j];
+		paramTree->Branch(name, &val[i], "injected_rate/D:initial_guess/D:stepsize/D:lowerlim/D:upperlim/D:isFixed/D");
+
+		// Fill
+		// double injected_rate, initial_guess, stepsize, lowerlim, upperlim
+		val[i].injected_rate = config.param_initial_guess_toy[j]/config.exposure;
+		val[i].initial_guess = config.param_initial_guess[j]/config.exposure;
+		val[i].stepsize = config.param_stepsize[j]/config.exposure;
+		val[i].lowerlim = config.param_lowerlim[j]/config.exposure;
+		val[i].upperlim = config.param_upperlim[j]/config.exposure;
+		val[i].isFixed = config.param_fixed[j];
+	}
+	paramTree->Fill();
+
+	// Now init tree for non-parameter numbers
+	double exposure, emin, emax;
+	configTree->Branch("exposure", &exposure, "exposure/D");
+	configTree->Branch("emin", &emin, "emin/D");
+	configTree->Branch("emax", &emax, "emax/D");
+
+	// Fill
+	exposure = config.exposure;
+	emin = config.emin;
+	emax = config.emax;
+	configTree->Fill();
+
+	// Write to file
+	paramTree->Write();
+	configTree->Write();
+	f->cd();
+}
+
 // @brief For now, simply plot the results (simple fit example)
 auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
                     NuFitResults results) -> void {
@@ -353,7 +403,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	auto root_filename = config.output_name + ".root";
 	TFile *f = new TFile(root_filename.c_str(), "RECREATE");
 
-	// TODO: also plot PDFs here?
+	// TODO: also plot PDFs here? Also add a paramTree?
 	plotToFile(f, data, pdfs, config, results);
 	f->Close();
 
@@ -379,11 +429,13 @@ auto ProcessResults(NuFitToyData* data, NuFitPDFs *pdfs_toy, NuFitPDFs *pdfs,
 	TFile *f = new TFile(root_filename.c_str(), "RECREATE");
 	f->cd();
 
+	// Draw pdfs separatly for comparison purposes (once per file only)
 	DrawPDFs(f, pdfs_toy, pdfs, config, results[0]);
 
 	// Initialise TTrees
 	TTree *fitTree = new TTree("Distributions", "Distributions");
 	TTree *toyTree = new TTree("ToyGeneration", "ToyGeneration");
+	createParamTree(f, config, results[0]);
 	auto npar = results[0].paramVector.size();
 	Values val[npar];
 

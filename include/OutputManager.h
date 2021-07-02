@@ -32,6 +32,7 @@ void ProcessResults(NuFitToyData*,NuFitPDFs*, NuFitPDFs*, const NuFitConfig,
 void fitToFile(std::ofstream&, NuFitResults, const NuFitConfig);
 void plotToFile(TFile*, NuFitData*, NuFitPDFs*, const NuFitConfig, NuFitResults);
 void DrawPDFs(TFile*, NuFitPDFs*, NuFitPDFs*, const NuFitConfig, NuFitResults);
+void createParamTree(TFile*, const NuFitConfig, NuFitResults);
 std::vector<double> toCpdPerkton(std::vector<double>, const NuFitConfig, NuFitResults);
 
 }  // namespace NuFitter
