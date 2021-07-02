@@ -23,7 +23,7 @@ struct Values {
 	double fit_rate, fit_rate_err, fit_counts_tot, fit_counts_range;
 };
 struct ValuesToy {
-	double inj_rate_toy, toy_rate;
+	double toy_rate;
 	unsigned int gen_counts;
 };
 struct ValuesParam {
@@ -453,7 +453,7 @@ auto ProcessResults(NuFitToyData* data, NuFitPDFs *pdfs_toy, NuFitPDFs *pdfs,
 	for (auto i = 0U; i < nparToy; i++) {
 		auto j = config.paramVector_toy[i][0].idx_pdf;
 		auto name = config.pdf_names_toy[j];
-		toyTree->Branch(name, &valToy[i], "inj_rate_toy/D:toy_rate/D:gen_counts/i");
+		toyTree->Branch(name, &valToy[i], "toy_rate/D:gen_counts/i");
 	}
 
 	// Fill the TTrees
@@ -486,7 +486,6 @@ auto ProcessResults(NuFitToyData* data, NuFitPDFs *pdfs_toy, NuFitPDFs *pdfs,
 				gen_counts += samples[k] / config.param_eff[k] / nPDFs_param;
 			}
 
-			valToy[i].inj_rate_toy = config.param_initial_guess_toy[i]/config.exposure;
 			valToy[i].toy_rate = gen_counts/config.exposure;
 			valToy[i].gen_counts = gen_counts;
 		}
