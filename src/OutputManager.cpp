@@ -20,12 +20,11 @@ namespace NuFitter {
 
 // @brief output values to be inserted in a ROOT tree branch
 struct Values {
-	double inj_rate, fit_rate, fit_rate_err, fit_counts_tot, fit_counts_range;
+	double fit_rate, fit_rate_err, fit_counts_tot, fit_counts_range;
 };
 struct ValuesToy {
 	double inj_rate_toy, toy_rate;
 	unsigned int gen_counts;
-	//double toy_rate;
 };
 
 template <class T>
@@ -41,10 +40,9 @@ auto toCpdPerkton(std::vector<double> ref, const NuFitConfig config,
 	auto factor {1. / config.exposure};
 	std::vector<double> output;
 
-	// TODO: Same param on different hists can have different efficiencies!
 	for (auto i = 0U; i < results.paramVector.size(); i++) {
-		auto paramVec = results.paramVector[i];
-		auto j = paramVec[0].idx_pdf;
+		// TODO: Same param on different hists can have different efficiencies!
+		auto j = results.paramVector[i][0].idx_pdf;
 		auto eff_exposure = factor;
 		if (config.param_fixed[j] != 1) {
 			// Fixed parameters are already scaled to the full spectrum
@@ -273,80 +271,76 @@ auto plotToFile(TFile *f,  NuFitData *data, NuFitPDFs *pdfs,
 	c->Write();
 }
 
-auto DrawPDFs(TFile *f, NuFitPDFs *pdfs_toy, NuFitPDFs *pdfs_fit, const NuFitConfig config, NuFitResults results) -> void {
+// @brief Function to draw extra PDFs for comparison
+auto DrawPDFs(TFile *f, NuFitPDFs *pdfs_toy, NuFitPDFs *pdfs_fit,
+	const NuFitConfig config, NuFitResults results) -> void {
+	f->cd();
 
-		f->cd();
+	TCanvas *c = new TCanvas("PDFs", "PDFs", 1500, 700);
+	gPad->SetLogy();
+	TPad *pad[2];
+	pad[0] = new TPad("PDFs_model", "PDFs_model",0.,0.,0.5,1.0);
+	pad[1] = new TPad("PDFs_data", "PDFs_data",0.5,0.,1.0,1.0);
+	pad[0]->Draw();
+	gPad->SetLogy();
+	pad[1]->Draw();
+	gPad->SetLogy();
+	c->cd();
 
-		TCanvas *c = new TCanvas("PDFs", "PDFs", 1500, 700);
-		gPad->SetLogy();
-		TPad *pad[2];
-		pad[0] = new TPad("PDFs_model", "PDFs_model",0.,0.,0.5,1.0);
-		pad[1] = new TPad("PDFs_data", "PDFs_data",0.5,0.,1.0,1.0);
-		pad[0]->Draw();
-		gPad->SetLogy();
-		pad[1]->Draw();
-		gPad->SetLogy();
-		c->cd();
+	// Define colors to be used in the plots
+	int *Colors = new int [13]{632,632,632,409,616,400,600,870,921,801,801,881,419};
+	auto idx_col {0};
 
-		// Define colors to be used in the plots
-		int *Colors = new int [13]{632,632,632,409,616,400,600,870,921,801,801,881,419};
-		auto idx_col {0};
+	// Plot the pdfs_fit for each parameter
+	for (auto i = 0U; i < results.paramVector.size(); i++) {
+		auto parData = results.paramVector[i];
+		for (auto el : parData) {
+			auto j = el.idx_pdf;
+			auto current_name = config.param_names[j];
+			auto current_hist = (TH1D*)pdfs_fit->pdf_histograms[j]->Clone();
 
-		// Plot the pdfs_fit for each parameter
-		for (auto i = 0U; i < results.paramVector.size(); i++) {
-			auto parData = results.paramVector[i];
-			for (auto el : parData) {
-				auto j = el.idx_pdf;
-				auto n = el.idx_hist-1;
-				auto current_name = config.param_names[j];
+			// Draw PDF
+			pad[0]->cd();
+			gPad->SetLogy();
+			current_hist->SetLineColor(Colors[idx_col]);
+			current_hist->SetMarkerColor(Colors[idx_col]);
+			current_hist->SetTitle("PDFs: model");
+			current_hist->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
+			current_hist->GetXaxis()->SetRangeUser(0,10000);
+			current_hist->GetYaxis()->SetRangeUser(1,0.02);
+			current_hist->Draw("SAME");
 
-				auto current_hist = (TH1D*)pdfs_fit->pdf_histograms[j]->Clone();
-
-				// Draw PDF
-				pad[0]->cd();
-				gPad->SetLogy();
-				current_hist->SetLineColor(Colors[idx_col]);
-				current_hist->SetMarkerColor(Colors[idx_col]);
-				current_hist->SetTitle("PDFs: model");
-				current_hist->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
-				current_hist->GetXaxis()->SetRangeUser(0,10000);
-				current_hist->GetYaxis()->SetRangeUser(1,0.02);
-				current_hist->Draw("SAME");
-
-			}
-			idx_col++;
-			if (idx_col > 13) idx_col = 0;
 		}
+		idx_col++;
+		if (idx_col > 13) idx_col = 0;
+	}
 
-		auto idx_col_toy {0};
+	// Plot the pdfs_toy for each parameter
+	auto idx_col_toy {0};
+	for (auto i = 0U; i < results.paramVector.size(); i++) {
+		auto parData = results.paramVector[i];
+		for (auto el : parData) {
+			auto j = el.idx_pdf;
+			auto current_name = config.param_names[j];
+			auto current_hist = (TH1D*)pdfs_toy->pdf_histograms[j]->Clone();
 
-		for (auto i = 0U; i < results.paramVector.size(); i++) {
-			auto parData = results.paramVector[i];
-			for (auto el : parData) {
-				auto j = el.idx_pdf;
-				auto n = el.idx_hist-1;
-				auto current_name = config.param_names[j];
+			// Draw PDF
+			pad[1]->cd();
+			gPad->SetLogy();
+			current_hist->SetLineColor(Colors[idx_col_toy]);
+			current_hist->SetMarkerColor(Colors[idx_col_toy]);
+			current_hist->SetTitle("PDFs: data");
+			current_hist->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
+			current_hist->GetYaxis()->SetTitle("Events");
+			current_hist->GetXaxis()->SetRangeUser(0,10000);
+			current_hist->GetYaxis()->SetRangeUser(1,0.02);
+			current_hist->Draw("SAME");
 
-				auto current_hist = (TH1D*)pdfs_toy->pdf_histograms[j]->Clone();
-
-				// Draw PDF
-				pad[1]->cd();
-				gPad->SetLogy();
-				current_hist->SetLineColor(Colors[idx_col_toy]);
-				current_hist->SetMarkerColor(Colors[idx_col_toy]);
-				current_hist->SetTitle("PDFs: data");
-				current_hist->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
-				current_hist->GetYaxis()->SetTitle("Events");
-				current_hist->GetXaxis()->SetRangeUser(0,10000);
-				current_hist->GetYaxis()->SetRangeUser(1,0.02);
-				current_hist->Draw("SAME");
-
-			}
-			idx_col_toy++;
-			if (idx_col_toy > 13) idx_col_toy = 0;
 		}
-		c->Write();
-
+		idx_col_toy++;
+		if (idx_col_toy > 13) idx_col_toy = 0;
+	}
+	c->Write();
 }
 
 // @brief For now, simply plot the results (simple fit example)
@@ -359,6 +353,7 @@ auto ProcessResults(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config,
 	auto root_filename = config.output_name + ".root";
 	TFile *f = new TFile(root_filename.c_str(), "RECREATE");
 
+	// TODO: also plot PDFs here?
 	plotToFile(f, data, pdfs, config, results);
 	f->Close();
 
@@ -394,10 +389,10 @@ auto ProcessResults(NuFitToyData* data, NuFitPDFs *pdfs_toy, NuFitPDFs *pdfs,
 
 	// Create all the branches of the TTrees
 	// fit_rate, fit_rate_err, fit_counts_tot, fit_counts_range, gen_counts
-	for (auto i = 0U; i < results[0].paramVector.size(); i++){
+	for (auto i = 0U; i < results[0].paramVector.size(); i++) {
 		auto paramVec = results[0].paramVector[i];
 		auto name = config.param_names[paramVec[0].idx_pdf];
-		fitTree->Branch(name, &val[i], "inj_rate/D:fit_rate/D:fit_rate_err/D:fit_counts_tot/D:fit_counts_range/D");
+		fitTree->Branch(name, &val[i], "fit_rate/D:fit_rate_err/D:fit_counts_tot/D:fit_counts_range/D");
 	}
 
 	// Create branches for the toy data tree
@@ -410,14 +405,13 @@ auto ProcessResults(NuFitToyData* data, NuFitPDFs *pdfs_toy, NuFitPDFs *pdfs,
 	}
 
 	// Fill the TTrees
-	for (auto t = 0U; t < config.ToyData; t++){  // For each toy dataset
+	for (auto t = 0U; t < config.ToyData; t++) {  // For each toy dataset
 		auto results_ = results[t];
 		auto popt_cpd = toCpdPerkton(results_.popt, config, results_);
 		auto popt_err_cpd = toCpdPerkton(results_.getUncertainties(), config, results_);
 
 		// Get the fit result information
-		for (auto i = 0U; i < npar; i++){
-			val[i].inj_rate = config.param_initial_guess[i]/config.exposure;
+		for (auto i = 0U; i < npar; i++) {
 			val[i].fit_rate = popt_cpd[i];
 			val[i].fit_rate_err = popt_err_cpd[i];
 			val[i].fit_counts_range = results_.popt[i];
@@ -426,11 +420,18 @@ auto ProcessResults(NuFitToyData* data, NuFitPDFs *pdfs_toy, NuFitPDFs *pdfs,
 
 		// Get the toy data information
 		auto samples = config.param_sampled[t];
-		for (auto i = 0U; i < config.paramVector_toy.size(); i++) {
-			auto gen_counts {0U};
+		for (auto i = 0U; i < config.paramVector_toy.size(); i++) {  // For each param
+			auto gen_counts {0.};
 			auto parData = config.paramVector_toy[i];
-			for (auto el : parData) {
-				gen_counts += samples[el.idx_pdf];
+
+			// Number of PDFs controlled by the parameter
+			auto nPDFs_param = parData.size();
+			for (auto j = 0U; j < nPDFs_param; j++) {
+				auto k = parData[j].idx_pdf;
+				// Dividing by param_eff points back directly to the total
+				// number of physical events. So take the average over the
+				// pdfs to get the toy-generated poisson-fluctuated rate
+				gen_counts += samples[k] / config.param_eff[k] / nPDFs_param;
 			}
 
 			valToy[i].inj_rate_toy = config.param_initial_guess_toy[i]/config.exposure;

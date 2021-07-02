@@ -341,7 +341,6 @@ auto ParseToyRates(std::unique_ptr<NuFitConfig> &config, std::string filename) -
 auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	auto config = std::make_unique<NuFitConfig>();
 	config->output_name = args.output_name;
-
 	// -------------------------------------------------------------------------
 	// Read the general_options config file
 	ParseGenOpts(config, args.gen);
@@ -358,8 +357,8 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 		std::cout << "Running random number generator for toy-data..." << std::endl;
 		// Sample species counts here to pass to toyDataGenerator
 		gRandom = new TRandom3(0);
+		gRandom->SetSeed(0);
 		for (auto t = 0U; t < config->ToyData; t++) {  // For each toy data fit
-			// gRandom->SetSeed(0);
 			std::vector<unsigned int> current_sampled_counts;
 			for (auto i = 0U; i < config->npdfs_toy; i++) {  // For each pdf
 				auto n_expected = config->param_initial_guess_toy[i]*config->param_eff_toy[i];

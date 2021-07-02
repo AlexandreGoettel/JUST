@@ -5,6 +5,7 @@ include/*.gch
 config/*
 data/*
 scripts/*
+plots/*
 
 test/config/gen_opt.cfg
 test/out.txt
