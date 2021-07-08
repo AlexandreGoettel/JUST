@@ -360,10 +360,19 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 		gRandom = new TRandom3(0);
 		gRandom->SetSeed(config->seed);
 		for (auto t = 0U; t < config->ToyData; t++) {  // For each toy data fit
-			std::vector<unsigned int> current_sampled_counts;
+			std::vector<unsigned long int> current_sampled_counts;
 			for (auto i = 0U; i < config->npdfs_toy; i++) {  // For each pdf
 				auto n_expected = config->param_initial_guess_toy[i]*config->param_eff_toy[i];
-				current_sampled_counts.push_back(gRandom->Poisson(n_expected));
+				unsigned long n_sampled;
+				// Use Gaus() for large numbers to avoid numeric int limits
+				if (n_expected > 10000) {
+					n_sampled = gRandom->Gaus(n_expected, sqrt(n_expected));
+					std::cout << n_sampled << std::endl;
+				} else {
+					n_sampled = gRandom->Poisson(n_expected);
+				}
+				current_sampled_counts.push_back(n_sampled);
+				std::cout << config->param_names[i] << ", " << n_expected << ", " << current_sampled_counts.back() << std::endl;
 			}
 			config->param_sampled.push_back(current_sampled_counts);
 		}

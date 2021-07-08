@@ -13,6 +13,8 @@
 #include "DataReader.h"
 #include "TFile.h"
 
+#define INT_MAX 2147483647
+
 namespace NuFitter {
 
 //Temporary. It's the same function as in DataReader. Maybe there is an easier way to useit without
@@ -67,7 +69,18 @@ auto NuFitToyData::loadDataset(unsigned int idx_dataset) -> void {
 		for (auto el : parData) {  // For each PDF
 			auto j = el.idx_pdf;
 			auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
+			auto n_samples = samples[j];
+			// Take care of problems when n_samples is greater than
+			// the numeric limit for integers
+			while (n_samples > INT_MAX) {
+				std::cout << config.param_names[j] << ", " << n_samples << std::endl;
+				histogr[el.idx_hist-1]->FillRandom(current_hist, INT_MAX);
+				n_samples -= INT_MAX;
+			}
 			histogr[el.idx_hist-1]->FillRandom(current_hist, samples[j]);
+			if (config.param_names[j] == "Po210") {
+				std::cout << samples[j] << std::endl;
+			}
 		}
 	}
 
