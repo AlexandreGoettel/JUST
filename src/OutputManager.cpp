@@ -137,7 +137,8 @@ auto fitToFile(std::ofstream &outf, NuFitResults results,
 	     << "Exposure: " << config.lifetime << " days * "
 		 << config.mass_target << " kton" << std::endl
 		 << "Fit range: " << config.emin << "-" << config.emax << std::endl
-		 << "Likelihood: '" << config.likelihood << "'" << std::endl;
+		 << "Likelihood: '" << config.likelihood << "'" << std::endl
+		 << "Random seed: " << config.seed << std::endl;
 }
 
 auto plotToFile(TFile *f,  NuFitData *data, NuFitPDFs *pdfs,
@@ -377,14 +378,17 @@ auto createParamTree(TFile *f, const NuFitConfig config, NuFitResults results) -
 
 	// Now init tree for non-parameter numbers
 	double exposure, emin, emax;
+	unsigned int seed;
 	configTree->Branch("exposure", &exposure, "exposure/D");
 	configTree->Branch("emin", &emin, "emin/D");
 	configTree->Branch("emax", &emax, "emax/D");
+	configTree->Branch("seed", &seed, "emax/i");
 
 	// Fill
 	exposure = config.exposure;
 	emin = config.emin;
 	emax = config.emax;
+	seed = config.seed;
 	configTree->Fill();
 
 	// Write to file

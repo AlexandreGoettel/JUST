@@ -154,6 +154,7 @@ auto ParseGenOpts(std::unique_ptr<NuFitConfig> &config, std::string filename) ->
 		else if (key == "Minos") config->doMinos = std::stoi(value);
 		else if (key == "Likelihood") config->likelihood = value;
 		else if (key == "TargetMass") config->mass_target = std::stod(value);
+		else if (key == "Seed") config->seed = std::stoi(value);
 		// Todo error handling in case some values are missing
 	}
 
@@ -357,7 +358,7 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 		std::cout << "Running random number generator for toy-data..." << std::endl;
 		// Sample species counts here to pass to toyDataGenerator
 		gRandom = new TRandom3(0);
-		gRandom->SetSeed(0);
+		gRandom->SetSeed(config->seed);
 		for (auto t = 0U; t < config->ToyData; t++) {  // For each toy data fit
 			std::vector<unsigned int> current_sampled_counts;
 			for (auto i = 0U; i < config->npdfs_toy; i++) {  // For each pdf

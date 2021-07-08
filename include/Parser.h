@@ -47,7 +47,8 @@ public:
 
 public:  // Initialise variables to be filled by parser
 	bool doHesse = false, doMinos = false;
-	unsigned int ToyData = 0; //0 by default means no toyfit
+	unsigned int ToyData = 0; // 0 by default means no toyfit
+	unsigned int seed = 0;
 	double emin = 0., emax = 5000.;  // Close to numeric limit
 	std::string likelihood = "poisson";
 
