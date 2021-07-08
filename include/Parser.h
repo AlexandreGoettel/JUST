@@ -36,14 +36,29 @@ public:
 	std::string gen, spec, toy, output_name;
 };
 
+void ErrorReading(std::string&);
+void HelpMessage(char*);
+template<typename T> void ReadAndFill_Spec(std::ifstream&, T&, std::vector<T>&);
+inline std::string GetValue(std::string&, std::string&);
+
+namespace CMDLParser {
+	NuFitCmdlArgs Parse(int argc, char* argv[]);
+}  // namespace CMDLParser
+}  // namespace NuFitter
+
 class NuFitConfig {
 public:
-	NuFitConfig() = default;
+	NuFitConfig(NuFitter::NuFitCmdlArgs);
 	~NuFitConfig() = default;  // destructor
-	NuFitConfig(const NuFitConfig&) = default;  // copy constructor
+	NuFitConfig(const NuFitConfig&) = delete;  // copy constructor
 	NuFitConfig(NuFitConfig&&) = default;  // move constructor
-	NuFitConfig &operator=(const NuFitConfig&) = default;  // copy assignment
+	NuFitConfig &operator=(const NuFitConfig&) = delete;  // copy assignment
 	NuFitConfig &operator=(NuFitConfig&&) = default;  // move assignment
+
+private:  // Member functions
+	void ParseGenOpts(std::string);
+	void ParseSpeciesList(std::string);
+	void ParseToyRates(std::string);
 
 public:  // Initialise variables to be filled by parser
 	bool doHesse = false, doMinos = false;
@@ -73,26 +88,10 @@ public:  // Initialise variables to be filled by parser
 	std::vector<double> param_initial_guess_toy, param_eff_toy;
 	std::vector<unsigned int> hist_id_toy, nSp_histos_toy;
 	std::vector<std::vector<unsigned long int>> param_sampled;
-	std::vector<std::vector<paramData>> paramVector_toy;
+	std::vector<std::vector<NuFitter::paramData>> paramVector_toy;
 };
 
-void ErrorReading(std::string&);
-void HelpMessage(char*);
-template<typename T> void ReadAndFill_Spec(std::ifstream&, T&, std::vector<T>&);
-inline std::string GetValue(std::string&, std::string&);
-
-namespace CMDLParser {
-	NuFitCmdlArgs Parse(int argc, char* argv[]);
-}  // namespace CMDLParser
-
-namespace ConfigParser {
-	void ParseGenOpts(std::unique_ptr<NuFitConfig>&, std::string);
-	void ParseSpeciesList(std::unique_ptr<NuFitConfig>&, std::string);
-	void ParseToyRates(std::unique_ptr<NuFitConfig>&, std::string);
-	NuFitConfig Parse(NuFitCmdlArgs);
-}  // namespace ConfigParser
-
-}  // namespace NuFitter
-
+// Define extern NuFitConfig for everyone else to access
+extern NuFitConfig const *config;
 
 #endif

@@ -16,9 +16,6 @@
 
 namespace NuFitter {
 
-// Forward declaration
-class NuFitConfig;
-
 class NuFitData {
 public:  // Constructros and operator assigments
 	NuFitData(std::vector<std::vector<double>>, std::vector<std::vector<double>>,
@@ -54,15 +51,15 @@ public:  // Variables
 };
 
 namespace Data {
-	NuFitData *Read(const NuFitConfig config);
+	NuFitData *Read();
 }  // namespace Data
 
 namespace PDFs {
-	NuFitPDFs* Read(const NuFitConfig config);
+	NuFitPDFs* Read();
 }  // namespace PDFs
 
 namespace Toy {
-	NuFitPDFs* Read(const NuFitConfig config);
+	NuFitPDFs* Read();
 }  // namespace Toy
 }  // namespace NuFitter
 

@@ -14,7 +14,6 @@
 // Project includes
 #include "FitResults.h"
 #include "DataReader.h"
-#include "Parser.h"
 #include "ToyDataGenerator.h"
 
 //============================================================================
@@ -24,7 +23,6 @@ namespace NuFitter {
 
 //============================================================================
 // Forward declarations
-class NuFitConfig;
 class NuFitPDFs;
 
 namespace MCFit {
@@ -32,7 +30,7 @@ namespace MCFit {
 class NuFitContainer {
 public:  // Constructors and assigment operators
 	NuFitContainer() = default;
-	NuFitContainer(NuFitData*, NuFitPDFs*, const NuFitConfig);  // constructor
+	NuFitContainer(NuFitData*, NuFitPDFs*);  // constructor
 	~NuFitContainer() = default;  // destructor
 	NuFitContainer(const NuFitContainer&) = default;  // copy constructor
 	NuFitContainer(NuFitContainer&&) = default;  // move constructor
@@ -42,7 +40,6 @@ public:  // Constructors and assigment operators
 public:
 	NuFitData *data;
 	NuFitPDFs *pdfs;
-	NuFitConfig config;
 public:  // Minuit functions
 	// double NLL_poisson(int, const double*);
     template <class T> T NLL_poisson(T, T);
@@ -60,7 +57,7 @@ private:  // Member variables
 
 class MinuitManager {
 public:  // Constructors and assigment operators
-	MinuitManager(const NuFitConfig);  // constructor
+	MinuitManager();  // constructor
 	~MinuitManager() = default;  // destructor
 	MinuitManager(const MinuitManager&) = default;  // copy constructor
 	MinuitManager(MinuitManager&&) = default;  // move constructor
@@ -68,7 +65,6 @@ public:  // Constructors and assigment operators
 	MinuitManager &operator=(MinuitManager&&) = default;  // move assignment
 
 public:  // Member variables
-	NuFitConfig config;
 	TMinuit *gMinuit;
 	int errorflag, errorflag_cov;
 
@@ -78,8 +74,8 @@ public:  // Functions
 	NuFitResults getResults();
 };
 
-NuFitResults Fit(NuFitData*, NuFitPDFs*, const NuFitConfig);
-std::vector<NuFitResults> Fit(NuFitToyData*, NuFitPDFs*, const NuFitConfig);
+NuFitResults Fit(NuFitData*, NuFitPDFs*);
+std::vector<NuFitResults> Fit(NuFitToyData*, NuFitPDFs*);
 void fcn(int&, double*, double&, double*, int);
 
 }  // namespace MCFit

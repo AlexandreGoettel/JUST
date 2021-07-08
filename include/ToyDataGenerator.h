@@ -25,7 +25,7 @@ class NuFitData;
 
 class NuFitToyData {
 public:  // Constructros and operator assigments
-	NuFitToyData(const NuFitConfig, NuFitPDFs*);  // constructor
+	NuFitToyData(NuFitPDFs*);  // constructor
 	~NuFitToyData() = default;  // destructor
 	NuFitToyData(const NuFitToyData&) = default;  // copy constructor
 	NuFitToyData(NuFitToyData&&) = default;  // move constructor
@@ -38,14 +38,13 @@ public: // Variables
 	NuFitData *dataset = nullptr;
 
 private:
-	NuFitConfig config;
 	std::vector<TH1D*> histogr;
 	std::vector<std::vector<double>> bin_edges;
 	std::vector<unsigned int> hist_ids;
 };
 
 namespace ToyData {
-	NuFitToyData *Initialise(const NuFitConfig, NuFitPDFs*);
+	NuFitToyData *Initialise(NuFitPDFs*);
 }  // namespace ToyData
 }  // namespace NuFitter
 

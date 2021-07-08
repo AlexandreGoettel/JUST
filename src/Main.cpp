@@ -22,6 +22,7 @@
 //! @param  argc  Command line (CMDL) argument count.
 //! @param  argv  Command line (CMDL) argument values.
 //! @return Status code, which is 0 if there were no problems.
+NuFitConfig const *config;
 auto main(int argc, char* argv[]) -> int {
 	using namespace NuFitter;
 
@@ -29,29 +30,31 @@ auto main(int argc, char* argv[]) -> int {
 	const NuFitCmdlArgs cmdl_args = CMDLParser::Parse(argc, argv);
 
 	// Parse config files
-	const NuFitConfig config = ConfigParser::Parse(cmdl_args);
+	// NuFitConfig const *config = new NuFitConfig(cmdl_args);
+	config = new NuFitConfig(cmdl_args);
 
 	// Read the PDFs to fit to the data
-	NuFitPDFs *pdfs = PDFs::Read(config);
+	NuFitPDFs *pdfs = PDFs::Read();
 
 	// Perform the fit with real or toy data
-	if (config.ToyData != 0) {
+	if (config->ToyData != 0) {
 		// Read the pdfs used to generate the toy data
-		NuFitPDFs *pdfs_toy = Toy::Read(config);
+		NuFitPDFs *pdfs_toy = Toy::Read();
 		// Generate toy data for the fit
-		auto data = ToyData::Initialise(config, pdfs_toy);
-		auto results = MCFit::Fit(data, pdfs, config);
-		ProcessResults(data, pdfs_toy, pdfs, config, results);
+		auto data = ToyData::Initialise(pdfs_toy);
+		auto results = MCFit::Fit(data, pdfs);
+		ProcessResults(data, pdfs_toy, pdfs, results);
 
 		delete data;
 		delete pdfs_toy;
 	} else {
 		// Read the data histogram(s)
-		auto data = Data::Read(config);
-		auto results = MCFit::Fit(data, pdfs, config);
-		ProcessResults(data, pdfs, config, results);
+		auto data = Data::Read();
+		auto results = MCFit::Fit(data, pdfs);
+		ProcessResults(data, pdfs, results);
 
 		delete data;
 	}
 	delete pdfs;
+	delete config;
 }

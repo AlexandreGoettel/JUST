@@ -26,7 +26,7 @@
 //============================================================================
 // Implementations
 
-namespace NuFitter{
+namespace NuFitter {
 
 // @brief Get the index of element el in vector v (first occurence)
 // TODO: move to more sensible place to share with fitter?
@@ -107,11 +107,9 @@ auto Parse(int argc, char* argv[]) -> NuFitCmdlArgs{
 	return *args;
 }
 }  // namespace CMDLParser
+}  // namespace NuFitter
 
-
-namespace ConfigParser {
-
-auto ParseGenOpts(std::unique_ptr<NuFitConfig> &config, std::string filename) -> void {
+auto NuFitConfig::ParseGenOpts(std::string filename) -> void {
 	// Make sure the file is valid
 	NuFitter::ErrorReading(filename);
 
@@ -138,44 +136,43 @@ auto ParseGenOpts(std::unique_ptr<NuFitConfig> &config, std::string filename) ->
 
 		// Assign the values to their keys
 		if (key.find("Hist") != std::string::npos) {
-			config->data_hist_names.push_back(value);
+			data_hist_names.push_back(value);
 		}
-		else if (key == "PDFsRootfile") config->pdf_name = value;
-		else if (key == "DataRootfile") config->data_name = value;
-		else if (key == "Lifetime") config->lifetime = std::stod(value);
-		else if (key == "LSDensity_g/mL") config->densityLS = std::stod(value);
-		else if (key == "Radius_m") config->radius = std::stod(value);
-		else if (key == "DAQTime") config->daq_time = std::stod(value);
-		else if (key == "Efficiency") config->efficiency = std::stod(value);
-		else if (key == "emax") config->emax = std::stod(value);
-		else if (key == "emin") config->emin = std::stod(value);
-		else if (key == "ToyData") config->ToyData = std::stoi(value);
-		else if (key == "Hesse") config->doHesse = std::stoi(value);
-		else if (key == "Minos") config->doMinos = std::stoi(value);
-		else if (key == "Likelihood") config->likelihood = value;
-		else if (key == "TargetMass") config->mass_target = std::stod(value);
-		else if (key == "Seed") config->seed = std::stoi(value);
+		else if (key == "PDFsRootfile") pdf_name = value;
+		else if (key == "DataRootfile") data_name = value;
+		else if (key == "Lifetime") lifetime = std::stod(value);
+		else if (key == "LSDensity_g/mL") densityLS = std::stod(value);
+		else if (key == "Radius_m") radius = std::stod(value);
+		else if (key == "DAQTime") daq_time = std::stod(value);
+		else if (key == "Efficiency") efficiency = std::stod(value);
+		else if (key == "emax") emax = std::stod(value);
+		else if (key == "emin") emin = std::stod(value);
+		else if (key == "ToyData") ToyData = std::stoi(value);
+		else if (key == "Hesse") doHesse = std::stoi(value);
+		else if (key == "Minos") doMinos = std::stoi(value);
+		else if (key == "Likelihood") likelihood = value;
+		else if (key == "TargetMass") mass_target = std::stod(value);
+		else if (key == "Seed") seed = std::stoi(value);
 		// Todo error handling in case some values are missing
 	}
 
 	// Give the option to define the target mass directly, or by geometry
-	if (config->mass_target <= 0.) {
+	if (mass_target <= 0.) {
 		std::cout << "calculating target mass from geometry..." << std::endl;
-		config->mass_target = 4 * PI * pow(config->radius,3) * config->densityLS / 3000.;
+		mass_target = 4 * PI * pow(radius,3) * densityLS / 3000.;
 	}
-	config->exposure = config->lifetime * config->mass_target * config->daq_time * config->efficiency;
-	assert(config->exposure > 0);
+	exposure = lifetime * mass_target * daq_time * efficiency;
+	assert(exposure > 0);
 
-    std::cout << "Found " << config->data_hist_names.size()
+    std::cout << "Found " << data_hist_names.size()
               << " histograms:" << std::endl;
-    for (auto i = 1U; i <= config->data_hist_names.size(); i++) {
-        std::cout << "\t" << i << ": " << config->data_hist_names[i-1] << std::endl;
+    for (auto i = 1U; i <= data_hist_names.size(); i++) {
+        std::cout << "\t" << i << ": " << data_hist_names[i-1] << std::endl;
     }
 }
 
 // @brief Parse the species_list content and save to config
-auto ParseSpeciesList(std::unique_ptr<NuFitConfig>& config,
-	                  std::string filename) -> void {
+auto NuFitConfig::ParseSpeciesList(std::string filename) -> void {
 	// Make sure the file is valid
 	NuFitter::ErrorReading(filename);
 
@@ -202,38 +199,38 @@ auto ParseSpeciesList(std::unique_ptr<NuFitConfig>& config,
 			switch (nElements) {
 				case 0:
 					nPDFs += 1;
-					config->pdf_names.push_back(word);
+					pdf_names.push_back(word);
 					break;
 				case 1:
 					// Check if param_names already contains the same word
-					if (std::find(config->param_names.begin(), config->param_names.end(), word)
-						== config->param_names.end()) {
+					if (std::find(param_names.begin(), param_names.end(), word)
+						== param_names.end()) {
 						nParams++;
 					}
-					config->param_names.push_back(word);
+					param_names.push_back(word);
 					break;
 				case 2:
-					config->param_initial_guess.push_back(std::stod(word)*config->exposure);
+					param_initial_guess.push_back(std::stod(word)*exposure);
 					break;
 				case 3:
-					config->param_lowerlim.push_back(std::stod(word)*config->exposure);
+					param_lowerlim.push_back(std::stod(word)*exposure);
 					break;
 				case 4:
-					config->param_upperlim.push_back(std::stod(word)*config->exposure);
+					param_upperlim.push_back(std::stod(word)*exposure);
 					break;
 				case 5:
-					config->param_stepsize.push_back(std::stod(word)*config->exposure);
+					param_stepsize.push_back(std::stod(word)*exposure);
 					break;
 				case 6:
-					config->param_fixed.push_back(std::stoi(word));
+					param_fixed.push_back(std::stoi(word));
 					// Fixed parameters do not count in the fit
 					if (std::stoi(word) == 1) nParams--;
 					break;
 				case 7:
-					config->hist_id.push_back(std::stoi(word));
+					hist_id.push_back(std::stoi(word));
 					break;
 				case 8:
-					config->param_eff.push_back(std::stod(word));
+					param_eff.push_back(std::stod(word));
 					break;
 				default:
 					std::cout << "[Warning] In file: " + filename +
@@ -255,22 +252,21 @@ auto ParseSpeciesList(std::unique_ptr<NuFitConfig>& config,
 	// Count how many species exist in each histogram
 	// TODO: count the number of different hists instead. Could be that
 	// people use hist 1 and 3 but not 2
-	auto max = *std::max_element(std::begin(config->hist_id),
-	                             std::end(config->hist_id));
+	auto max = *std::max_element(std::begin(hist_id),
+	                             std::end(hist_id));
 	std::vector<unsigned int> tmp_nSp(max);
-	for (auto el : config->hist_id) {
+	for (auto el : hist_id) {
 		tmp_nSp[el-1]++;
 	}
-	config->nSp_histos = tmp_nSp;
+	nSp_histos = tmp_nSp;
 
 	// Bookkeeping
-	config->npdfs = nPDFs;
-	config->nparams = nParams;
-
+	npdfs = nPDFs;
+	nparams = nParams;
 }
 
-auto ParseToyRates(std::unique_ptr<NuFitConfig> &config, std::string filename) -> void {
-
+// @brief Parse the toy_rates content and save to config
+auto NuFitConfig::ParseToyRates(std::string filename) -> void {
 	// Make sure the file is valid
 	NuFitter::ErrorReading(filename);
 
@@ -297,16 +293,16 @@ auto ParseToyRates(std::unique_ptr<NuFitConfig> &config, std::string filename) -
 			switch (nElements) {
 				case 0:
 					nPDFs += 1;
-					config->pdf_names_toy.push_back(word);
+					pdf_names_toy.push_back(word);
 					break;
 				case 1:
-					config->param_initial_guess_toy.push_back(std::stod(word)*config->exposure);
+					param_initial_guess_toy.push_back(std::stod(word)*exposure);
 					break;
 				case 2:
-					config->hist_id_toy.push_back(std::stoi(word));
+					hist_id_toy.push_back(std::stoi(word));
 					break;
 				case 3:
-					config->param_eff_toy.push_back(std::stod(word));
+					param_eff_toy.push_back(std::stod(word));
 					break;
 				default:
 					std::cout << "[Warning] In file: " + filename +
@@ -326,43 +322,42 @@ auto ParseToyRates(std::unique_ptr<NuFitConfig> &config, std::string filename) -
     // TODO: additional error handling
 
 	// Count how many species exist in each histogram
-	auto max = *std::max_element(std::begin(config->hist_id_toy),
-	                             std::end(config->hist_id_toy));
+	auto max = *std::max_element(std::begin(hist_id_toy),
+	                             std::end(hist_id_toy));
 	std::vector<unsigned int> tmp_nSp(max);
-	for (auto el : config->hist_id_toy) {
+	for (auto el : hist_id_toy) {
 		tmp_nSp[el-1]++;
 	}
-	config->nSp_histos_toy = tmp_nSp;
+	nSp_histos_toy = tmp_nSp;
 
 	// Bookkeeping
-	config->npdfs_toy = nPDFs;
-
+	npdfs_toy = nPDFs;
 }
 
-auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
-	auto config = std::make_unique<NuFitConfig>();
-	config->output_name = args.output_name;
+// @brief Constructor for NuFitConfig
+NuFitConfig::NuFitConfig(NuFitter::NuFitCmdlArgs args) {
+	output_name = args.output_name;
 	// -------------------------------------------------------------------------
 	// Read the general_options config file
-	ParseGenOpts(config, args.gen);
+	ParseGenOpts(args.gen);
 
 	// -------------------------------------------------------------------------
 	// Read the species-list
-	ParseSpeciesList(config, args.spec);
+	ParseSpeciesList(args.spec);
 
 	// -------------------------------------------------------------------------
 	// Read the toy-rates
-	if(config->ToyData != 0){
-		ParseToyRates(config, args.toy);
+	if(ToyData != 0){
+		ParseToyRates(args.toy);
 
 		std::cout << "Running random number generator for toy-data..." << std::endl;
 		// Sample species counts here to pass to toyDataGenerator
 		gRandom = new TRandom3(0);
-		gRandom->SetSeed(config->seed);
-		for (auto t = 0U; t < config->ToyData; t++) {  // For each toy data fit
+		gRandom->SetSeed(seed);
+		for (auto t = 0U; t < ToyData; t++) {  // For each toy data fit
 			std::vector<unsigned long int> current_sampled_counts;
-			for (auto i = 0U; i < config->npdfs_toy; i++) {  // For each pdf
-				auto n_expected = config->param_initial_guess_toy[i]*config->param_eff_toy[i];
+			for (auto i = 0U; i < npdfs_toy; i++) {  // For each pdf
+				auto n_expected = param_initial_guess_toy[i]*param_eff_toy[i];
 				unsigned long n_sampled;
 				// Use Gaus() for large numbers to avoid numeric int limits
 				if (n_expected > 10000) {
@@ -372,24 +367,24 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 				}
 				current_sampled_counts.push_back(n_sampled);
 			}
-			config->param_sampled.push_back(current_sampled_counts);
+			param_sampled.push_back(current_sampled_counts);
 		}
 
 		// Create a paramVector object for the toy data parameters
 		std::vector<TString> used_names, used_names_fixed;
-		for (auto i = 0U; i < config->npdfs_toy; i++) {
-			paramData current_paramData {i, config->hist_id_toy[i]};
-			auto name = config->pdf_names_toy[i];
+		for (auto i = 0U; i < npdfs_toy; i++) {
+			NuFitter::paramData current_paramData {i, hist_id_toy[i]};
+			auto name = pdf_names_toy[i];
 
 			if (std::find(used_names.begin(), used_names.end(), name) == used_names.end()) {
-				std::vector<paramData> tmp_paramVector;
+				std::vector<NuFitter::paramData> tmp_paramVector;
 				tmp_paramVector.push_back(current_paramData);
-				config->paramVector_toy.push_back(tmp_paramVector);
+				paramVector_toy.push_back(tmp_paramVector);
 				used_names.push_back(name);
 			} else {
-				auto idx_name = getIndexOf_(name, used_names);
+				auto idx_name = NuFitter::getIndexOf_(name, used_names);
 				assert(idx_name != -1);
-				config->paramVector_toy[idx_name].push_back(current_paramData);
+				paramVector_toy[idx_name].push_back(current_paramData);
 			}
 		}
 	}
@@ -397,30 +392,25 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 	// -------------------------------------------------------------------------
 	// TODO: make sure pdfs are compatible
 	// Get nbins from the data hists or from the PDFs if we want to use ToyData
-	if(config->ToyData == 0){
-		for (auto i = 0U; i < config->data_hist_names.size(); i++) {
+	if(ToyData == 0){
+		for (auto i = 0U; i < data_hist_names.size(); i++) {
 			// Only load the histogram if it is used!
-			if (std::find(config->hist_id.begin(), config->hist_id.end(), i+1)
-			    == config->hist_id.end()) continue;
-			TFile *fdata = new TFile(config->data_name.c_str());
-			TH1D* hdata = (TH1D*)fdata->Get(config->data_hist_names[i].c_str());
-			config->nbins.push_back(hdata->GetNbinsX());
+			if (std::find(hist_id.begin(), hist_id.end(), i+1)
+			    == hist_id.end()) continue;
+			TFile *fdata = new TFile(data_name.c_str());
+			TH1D* hdata = (TH1D*)fdata->Get(data_hist_names[i].c_str());
+			nbins.push_back(hdata->GetNbinsX());
 			fdata->Close();
 		}
 	} else {
-		for (auto i = 0U; i < config->data_hist_names.size(); i++) {
+		for (auto i = 0U; i < data_hist_names.size(); i++) {
 			// Only load the histogram if it is used!
-			if (std::find(config->hist_id_toy.begin(), config->hist_id_toy.end(), i+1)
-			    == config->hist_id_toy.end()) continue;
-			TFile *fpdf = new TFile(config->pdf_name.c_str());
-			TH1D* hpdf = (TH1D*)fpdf->Get(config->pdf_names[0]);
-			config->nbins.push_back(hpdf->GetNbinsX());
+			if (std::find(hist_id_toy.begin(), hist_id_toy.end(), i+1)
+			    == hist_id_toy.end()) continue;
+			TFile *fpdf = new TFile(pdf_name.c_str());
+			TH1D* hpdf = (TH1D*)fpdf->Get(pdf_names[0]);
+			nbins.push_back(hpdf->GetNbinsX());
 			fpdf->Close();
 		}
 	}
-
-	return *config;
 }
-
-}  // namespace ConfigParser
-}  // namespace NuFitter

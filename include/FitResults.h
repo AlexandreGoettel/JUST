@@ -19,7 +19,7 @@ namespace NuFitter {
 class NuFitResults {
 public: // Constructors and operator assignments
 	NuFitResults(std::vector<double>, std::vector<std::vector<double>>,
-		         std::vector<double>, int, int, const NuFitConfig,
+		         std::vector<double>, int, int,
 	             std::vector<std::vector<paramData>>,
 			 	 std::vector<std::vector<paramData>>);  // constructor
 	~NuFitResults() = default;  // destructor
@@ -42,7 +42,7 @@ public: // Functions
 private:
 	std::vector<std::vector<paramData>> combineParamVectors(
 		std::vector<std::vector<paramData>>,
-		std::vector<std::vector<paramData>>, const NuFitConfig);
+		std::vector<std::vector<paramData>>);
 };
 
 }  // namespace NuFitter

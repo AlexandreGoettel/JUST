@@ -16,7 +16,6 @@
 // Project includes
 #include "FitResults.h"
 #include "DataReader.h"
-#include "Parser.h"
 #include "ToyDataGenerator.h"
 
 //============================================================================
@@ -25,15 +24,14 @@
 namespace NuFitter {
 
 // TODO: maybe a class here would be useful after all?
-void ProcessResults(NuFitData*, NuFitPDFs*, const NuFitConfig, NuFitResults);
-void ProcessResults(NuFitToyData*,NuFitPDFs*, NuFitPDFs*, const NuFitConfig,
-	                std::vector<NuFitResults>);
+void ProcessResults(NuFitData*, NuFitPDFs*, NuFitResults);
+void ProcessResults(NuFitToyData*,NuFitPDFs*, NuFitPDFs*, std::vector<NuFitResults>);
 
-void fitToFile(std::ofstream&, NuFitResults, const NuFitConfig);
-void plotToFile(TFile*, NuFitData*, NuFitPDFs*, const NuFitConfig, NuFitResults);
-void DrawPDFs(TFile*, NuFitPDFs*, NuFitPDFs*, const NuFitConfig, NuFitResults);
-void createParamTree(TFile*, const NuFitConfig, NuFitResults);
-std::vector<double> toCpdPerkton(std::vector<double>, const NuFitConfig, NuFitResults);
+void fitToFile(std::ofstream&, NuFitResults);
+void plotToFile(TFile*, NuFitData*, NuFitPDFs*, NuFitResults);
+void DrawPDFs(TFile*, NuFitPDFs*, NuFitPDFs*, NuFitResults);
+void createParamTree(TFile*, NuFitResults);
+std::vector<double> toCpdPerkton(std::vector<double>, NuFitResults);
 
 }  // namespace NuFitter
 
