@@ -42,10 +42,16 @@ auto main(int argc, char* argv[]) -> int {
 		auto data = ToyData::Initialise(config, pdfs_toy);
 		auto results = MCFit::Fit(data, pdfs, config);
 		ProcessResults(data, pdfs_toy, pdfs, config, results);
+
+		delete data;
+		delete pdfs_toy;
 	} else {
 		// Read the data histogram(s)
 		auto data = Data::Read(config);
 		auto results = MCFit::Fit(data, pdfs, config);
 		ProcessResults(data, pdfs, config, results);
+
+		delete data;
 	}
+	delete pdfs;
 }

@@ -19,7 +19,7 @@
 namespace NuFitter {
 namespace MCFit {
 
-NuFitContainer fitCtnr;
+NuFitContainer *fitCtnr;
 
 // TODO: if needed, move this to a more accessible location?
 // @brief Multiply all vector elements by the same number
@@ -109,11 +109,11 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_,
 	// 4. Fill the paramVector object which contains useful information
 	//    about the parameters to be used in the fit
 	std::vector<TString> used_names, used_names_fixed;
-	for (auto i = 0U; i < fitCtnr.config.param_names.size(); i++) {
-		auto isFixed = fitCtnr.config.param_fixed[i] == 1;
+	for (auto i = 0U; i < config.param_names.size(); i++) {
+		auto isFixed = config.param_fixed[i] == 1;
 
-		paramData current_paramData {i, fitCtnr.config.hist_id[i]};
-		auto name = fitCtnr.config.param_names[i];
+		paramData current_paramData {i, config.hist_id[i]};
+		auto name = config.param_names[i];
 
 		if (isFixed) {
 			if (std::find(used_names_fixed.begin(), used_names_fixed.end(), name)
@@ -250,9 +250,9 @@ auto MinuitManager::initMinuit() -> void {
 	gMinuit = new TMinuit();  // TODO: Add protection -> v0.3?
 	gMinuit->SetFCN(fcn);
 	// Set each parameter in Minuit
-	for (auto j = 0U; j < fitCtnr.n_params; j++) {
+	for (auto j = 0U; j < fitCtnr->n_params; j++) {
 		// Convert index space
-		auto i = fitCtnr.paramVector[j][0].idx_pdf;
+		auto i = fitCtnr->paramVector[j][0].idx_pdf;
 		// Give the parameter information to Minuit
 		gMinuit->mnparm(j, config.param_names[i],
 			config.param_initial_guess[i], config.param_stepsize[i],
@@ -292,15 +292,15 @@ auto MinuitManager::callMinuit() -> void {
 // @brief Convert fit results to vectors, store in member variables popt/pcov
 auto MinuitManager::getResults() -> NuFitResults {
 	// Get the total number of (free+fixed(+constr)) parameters
-	auto n_params_tot = fitCtnr.paramVector.size() + fitCtnr.paramVector_fixed.size();
+	auto n_params_tot = fitCtnr->paramVector.size() + fitCtnr->paramVector_fixed.size();
 
 	// Initialise variables
 	double x, _;
 	std::vector<double> popt(n_params_tot);
 	std::vector<std::vector<double>> pcov(n_params_tot,
 	                                      std::vector<double>(n_params_tot)),
-									 pcov_(fitCtnr.n_params,
-									       std::vector<double>(fitCtnr.n_params));
+									 pcov_(fitCtnr->n_params,
+									       std::vector<double>(fitCtnr->n_params));
 
 	// Fill parameter vector
 	// Make sure fixed params are inserted properly
@@ -308,11 +308,11 @@ auto MinuitManager::getResults() -> NuFitResults {
 	while (iPopt < n_params_tot) {
 		auto idx_pdf_free = config.npdfs;  // Initialise to a larger number
 		auto idx_pdf_fixed = config.npdfs;  // For the comparison below
-		if (iFree < fitCtnr.n_params) {
-			idx_pdf_free = fitCtnr.paramVector[iFree][0].idx_pdf;
+		if (iFree < fitCtnr->n_params) {
+			idx_pdf_free = fitCtnr->paramVector[iFree][0].idx_pdf;
 		}
-		if (iFixed < fitCtnr.paramVector_fixed.size()) {
-			idx_pdf_fixed = fitCtnr.paramVector_fixed[iFixed][0].idx_pdf;
+		if (iFixed < fitCtnr->paramVector_fixed.size()) {
+			idx_pdf_fixed = fitCtnr->paramVector_fixed[iFixed][0].idx_pdf;
 		}
 
 		// Fill popt in the order they are seen by parser
@@ -321,18 +321,18 @@ auto MinuitManager::getResults() -> NuFitResults {
 			popt[iPopt] = x;
 			iFree++;
 		} else {
-			popt[iPopt] = fitCtnr.config.param_initial_guess[idx_pdf_fixed];
+			popt[iPopt] = fitCtnr->config.param_initial_guess[idx_pdf_fixed];
 			iFixed++;
 		}
 		iPopt++;
 	}
 
 	// Get the covariance matrix
-	double mat[fitCtnr.n_params][fitCtnr.n_params];
-	gMinuit->mnemat(&mat[0][0], fitCtnr.n_params);
+	double mat[fitCtnr->n_params][fitCtnr->n_params];
+	gMinuit->mnemat(&mat[0][0], fitCtnr->n_params);
 	// Convert to vector<vector>
-	for (auto i = 0U; i < fitCtnr.n_params; i++) {
-		for (auto j = 0U; j < fitCtnr.n_params; j++) {
+	for (auto i = 0U; i < fitCtnr->n_params; i++) {
+		for (auto j = 0U; j < fitCtnr->n_params; j++) {
 			pcov_[i][j] = mat[i][j];
 		}
 	}
@@ -346,11 +346,11 @@ auto MinuitManager::getResults() -> NuFitResults {
 		while (iPopt < n_params_tot) {
 			auto idx_pdf_free = config.npdfs;  // Initialise to a larger number
 			auto idx_pdf_fixed = config.npdfs;  // For the comparison below
-			if (iFree < fitCtnr.n_params) {
-				idx_pdf_free = fitCtnr.paramVector[iFree][0].idx_pdf;
+			if (iFree < fitCtnr->n_params) {
+				idx_pdf_free = fitCtnr->paramVector[iFree][0].idx_pdf;
 			}
-			if (iFixed < fitCtnr.paramVector_fixed.size()) {
-				idx_pdf_fixed = fitCtnr.paramVector_fixed[iFixed][0].idx_pdf;
+			if (iFixed < fitCtnr->paramVector_fixed.size()) {
+				idx_pdf_fixed = fitCtnr->paramVector_fixed[iFixed][0].idx_pdf;
 			}
 
 			// Check if the entire row corresponds to a fixed parameter
@@ -379,9 +379,9 @@ auto MinuitManager::getResults() -> NuFitResults {
     int tmp_;
     gMinuit->mnstat(_, _, _, tmp_, tmp_, errorflag_cov);
 
-	auto results = NuFitResults(popt, pcov, fitCtnr.efficiencies,
+	auto results = NuFitResults(popt, pcov, fitCtnr->efficiencies,
                                 errorflag, errorflag_cov, config,
-								fitCtnr.paramVector, fitCtnr.paramVector_fixed);
+								fitCtnr->paramVector, fitCtnr->paramVector_fixed);
 
 	return results;
 }
@@ -389,26 +389,26 @@ auto MinuitManager::getResults() -> NuFitResults {
 // @brief Used by TMinuit to sample the likelihood
 auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
     // Calculate the log-likelihood according to different methods
-	if (fitCtnr.config.likelihood.compare("poisson") == 0) {
-		f = fitCtnr.NLL([](double a, double b){return fitCtnr.NLL_poisson(a, b);},
+	if (fitCtnr->config.likelihood.compare("poisson") == 0) {
+		f = fitCtnr->NLL([](double a, double b){return fitCtnr->NLL_poisson(a, b);},
                         npar, par);
-	} else if (fitCtnr.config.likelihood.compare("must") == 0) {
-        f = fitCtnr.NLL([](double a, double b){return fitCtnr.NLL_MUST(a, b);},
+	} else if (fitCtnr->config.likelihood.compare("must") == 0) {
+        f = fitCtnr->NLL([](double a, double b){return fitCtnr->NLL_MUST(a, b);},
                         npar, par);
 	} else {
-		throw std::invalid_argument("'" + fitCtnr.config.likelihood +
+		throw std::invalid_argument("'" + fitCtnr->config.likelihood +
 			"' is not a valid likelihood.\nAllowed: ['poisson']" +
 			"\nPay attention to the capitalisation!");
 	}
 
 	// In case of parameter constraints, add (Gaussian) pull terms here
-    for (auto i = 0U; i < fitCtnr.paramVector.size(); i++) {
-        auto paramVec = fitCtnr.paramVector[i];
+    for (auto i = 0U; i < fitCtnr->paramVector.size(); i++) {
+        auto paramVec = fitCtnr->paramVector[i];
         auto j = paramVec[0].idx_pdf;
-        if (fitCtnr.config.param_fixed[j] != 2) continue;
+        if (fitCtnr->config.param_fixed[j] != 2) continue;
 
-        auto diff = par[i] - fitCtnr.config.param_initial_guess[j]*fitCtnr.efficiencies[j];
-        auto sigma = fitCtnr.config.param_stepsize[j]*fitCtnr.efficiencies[j];
+        auto diff = par[i] - fitCtnr->config.param_initial_guess[j]*fitCtnr->efficiencies[j];
+        auto sigma = fitCtnr->config.param_stepsize[j]*fitCtnr->efficiencies[j];
         f += 0.5*diff*diff/sigma/sigma;
     }
 }
@@ -422,8 +422,7 @@ auto Fit(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config)
 		-> NuFitResults {
 	// 1. Create the NuFitContainer object -> formats data according to config
 	// 1.1 Overwrite NuFitContainer at static location in MCFit scope
-	// TODO: Need memory leak protection?
-	new (&fitCtnr) NuFitContainer(data, pdfs, config);
+	fitCtnr = new NuFitContainer(data, pdfs, config);
 
 	// 2. Prepare TMinuit
 	auto manager = std::make_unique<MinuitManager>(config);
@@ -433,7 +432,10 @@ auto Fit(NuFitData *data, NuFitPDFs *pdfs, const NuFitConfig config)
 	manager->callMinuit();
 
 	// 4. Return results
-	return manager->getResults();
+	auto results = manager->getResults();
+
+	if (fitCtnr) delete fitCtnr;
+	return results;
 }
 
 // @brief Fit for each entry in vector<NuFitData*>

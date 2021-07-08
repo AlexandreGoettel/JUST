@@ -34,6 +34,14 @@ NuFitData::NuFitData(std::vector<std::vector<double>> data_,
 	hist_ids = ids_;
 }
 
+NuFitData::NuFitData(std::vector<std::vector<double>> data_,
+	                 std::vector<std::vector<double>> bin_edges_,
+                     std::vector<unsigned int> ids_) {
+	data = data_;
+	bin_edges = bin_edges_;
+	hist_ids = ids_;
+}
+
 // TODO: do we want this function somewhere else?
 auto getBinEdges(TH1D *hist, unsigned int nbins) -> std::vector<double> {
 	// Create bin_edges vector

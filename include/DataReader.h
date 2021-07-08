@@ -23,6 +23,8 @@ class NuFitData {
 public:  // Constructros and operator assigments
 	NuFitData(std::vector<std::vector<double>>, std::vector<std::vector<double>>,
 	          std::vector<TH1D*>, std::vector<unsigned int>);  // constructor
+	NuFitData(std::vector<std::vector<double>>, std::vector<std::vector<double>>,
+	          std::vector<unsigned int>);  // constructor
 	NuFitData();
 	~NuFitData() = default;  // destructor
 	NuFitData(const NuFitData&) = default;  // copy constructor
