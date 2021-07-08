@@ -178,9 +178,8 @@ auto NuFitContainer::fitFunction(unsigned int npar, const double *par)
 
 	// Fill the output vector with function values
 	for (auto k = 0U; k < paramVector.size(); k++) {  // each parameter
-		auto parDataVec = paramVector[k];
         auto parValue = par[k];
-		for (auto parData : parDataVec) { // each hist in parData
+		for (auto parData : paramVector[k]) { // each hist in parData
 			for (auto j = 0U; j < data_vector[parData.idx_hist-1].size(); j++) {  // each bin
                 fitFuncVal[parData.idx_hist-1][j] += pdf_vectors[parData.idx_pdf][j]
                     * parValue * config.param_eff[parData.idx_pdf];

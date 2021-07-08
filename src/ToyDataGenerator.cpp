@@ -98,6 +98,7 @@ auto NuFitToyData::loadDataset(unsigned int idx_dataset) -> void {
 		}
 	}
 
+	if (dataset) delete dataset;
 	dataset = new NuFitData(vec_data, bin_edges, histogr, hist_ids);
 }
 

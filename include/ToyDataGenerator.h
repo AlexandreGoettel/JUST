@@ -35,7 +35,7 @@ public:  // Constructros and operator assigments
 public: // Variables
 	NuFitPDFs *pdfs;
 	void loadDataset(unsigned int);
-	NuFitData *dataset;
+	NuFitData *dataset = nullptr;
 
 private:
 	NuFitConfig config;
