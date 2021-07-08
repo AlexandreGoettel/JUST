@@ -23,11 +23,11 @@ struct Values {
 	double fit_rate, fit_rate_err, fit_counts_tot, fit_counts_range;
 };
 struct ValuesToy {
-	double toy_rate;
-	unsigned int gen_counts;
+	double toy_rate, gen_counts;
 };
 struct ValuesParam {
-	double injected_rate, initial_guess, stepsize, lowerlim, upperlim, isFixed;
+	double injected_rate, initial_guess, stepsize, lowerlim, upperlim;
+	unsigned int isFixed;
 };
 
 template <class T>
@@ -363,7 +363,7 @@ auto createParamTree(TFile *f, const NuFitConfig config, NuFitResults results) -
 		auto paramVec = results.paramVector[i];
 		auto j = paramVec[0].idx_pdf;
 		auto name = config.param_names[j];
-		paramTree->Branch(name, &val[i], "injected_rate/D:initial_guess/D:stepsize/D:lowerlim/D:upperlim/D:isFixed/D");
+		paramTree->Branch(name, &val[i], "injected_rate/D:initial_guess/D:stepsize/D:lowerlim/D:upperlim/D:isFixed/i");
 
 		// Fill
 		// double injected_rate, initial_guess, stepsize, lowerlim, upperlim
@@ -457,7 +457,7 @@ auto ProcessResults(NuFitToyData* data, NuFitPDFs *pdfs_toy, NuFitPDFs *pdfs,
 	for (auto i = 0U; i < nparToy; i++) {
 		auto j = config.paramVector_toy[i][0].idx_pdf;
 		auto name = config.pdf_names_toy[j];
-		toyTree->Branch(name, &valToy[i], "toy_rate/D:gen_counts/i");
+		toyTree->Branch(name, &valToy[i], "toy_rate/D:gen_counts/D");
 	}
 
 	// Fill the TTrees
@@ -477,7 +477,7 @@ auto ProcessResults(NuFitToyData* data, NuFitPDFs *pdfs_toy, NuFitPDFs *pdfs,
 		// Get the toy data information
 		auto samples = config.param_sampled[t];
 		for (auto i = 0U; i < config.paramVector_toy.size(); i++) {  // For each param
-			auto gen_counts {0.};
+			auto gen_counts {0UL};
 			auto parData = config.paramVector_toy[i];
 
 			// Number of PDFs controlled by the parameter
