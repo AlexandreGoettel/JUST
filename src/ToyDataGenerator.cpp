@@ -72,17 +72,16 @@ auto NuFitToyData::loadDataset(unsigned int idx_dataset) -> void {
 			auto n_samples = samples[j];
 			// Take care of problems when n_samples is greater than
 			// the numeric limit for integers
+			if (n_samples > INT_MAX) std::cout << "Warning: the rate of " << config.param_names[j] << "is very high, it could cause numeric problems." << std::endl;
 			while (n_samples > INT_MAX) {
-				std::cout << config.param_names[j] << ", " << n_samples << std::endl;
 				histogr[el.idx_hist-1]->FillRandom(current_hist, INT_MAX);
 				n_samples -= INT_MAX;
 			}
 			histogr[el.idx_hist-1]->FillRandom(current_hist, samples[j]);
-			if (config.param_names[j] == "Po210") {
-				std::cout << samples[j] << std::endl;
-			}
 		}
 	}
+
+	// TODO: add a check that no bin contains more than DOUBLE_MAX?
 
 	// Convert histogram to vector
 	// Loop of data histograms only if they were found in the toy specieslist!

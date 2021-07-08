@@ -367,12 +367,10 @@ auto Parse(NuFitCmdlArgs args) -> NuFitConfig {
 				// Use Gaus() for large numbers to avoid numeric int limits
 				if (n_expected > 10000) {
 					n_sampled = gRandom->Gaus(n_expected, sqrt(n_expected));
-					std::cout << n_sampled << std::endl;
 				} else {
 					n_sampled = gRandom->Poisson(n_expected);
 				}
 				current_sampled_counts.push_back(n_sampled);
-				std::cout << config->param_names[i] << ", " << n_expected << ", " << current_sampled_counts.back() << std::endl;
 			}
 			config->param_sampled.push_back(current_sampled_counts);
 		}
