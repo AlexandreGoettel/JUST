@@ -34,7 +34,7 @@ public:  // Constructros and operator assigments
 
 public:
 	void loadDataset(unsigned int);
-	NuFitPDFs *pdfs;
+	NuFitPDFs *pdfs = nullptr;
 	NuFitData *dataset = nullptr;
 	TH1D *hdata = nullptr;
 
@@ -43,10 +43,6 @@ private:
 	std::vector<std::vector<double>> bin_edges;
 	std::vector<unsigned int> hist_ids;
 };
-
-namespace ToyData {
-	NuFitToyData *Initialise(NuFitPDFs*&);
-}  // namespace ToyData
 }  // namespace NuFitter
 
 

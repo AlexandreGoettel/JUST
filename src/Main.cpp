@@ -44,7 +44,7 @@ auto main(int argc, char* argv[]) -> int {
 		pdfs_toy->Read(config->pdf_names_toy, config->npdfs_toy, config->hist_id_toy);
 
 		// Generate toy data for the fit
-		NuFitToyData *data = ToyData::Initialise(pdfs_toy);
+		NuFitToyData *data = new NuFitToyData(pdfs_toy);
 
 		// Fit the toy-data
 		auto results = MCFit::Fit(data, pdfs);

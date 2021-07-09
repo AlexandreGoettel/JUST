@@ -112,7 +112,7 @@ auto NuFitToyData::loadDataset(unsigned int idx_dataset) -> void {
 	}
 
 	if (dataset) delete dataset;
-	// Only the last one needs root histograms to plot
+	// Only the last one needs root histograms to be plotted
 	if (idx_dataset < config->ToyData-1) {
 		dataset = new NuFitData(vec_data, bin_edges, hist_ids);
 	} else {
@@ -120,14 +120,4 @@ auto NuFitToyData::loadDataset(unsigned int idx_dataset) -> void {
 	}
 
 }
-
-namespace ToyData {
-
-// @brief Container to create a toy data object
-auto Initialise(NuFitPDFs *&pdfs) -> NuFitToyData* {
-	auto *toyData = new NuFitToyData(pdfs);
-	return toyData;
-}
-
-}  // namespace ToyData
 }  // namespace NuFitter
