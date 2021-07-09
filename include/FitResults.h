@@ -22,11 +22,11 @@ public: // Constructors and operator assignments
 		         std::vector<double>, int, int,
 	             std::vector<std::vector<paramData>>,
 			 	 std::vector<std::vector<paramData>>);  // constructor
-	~NuFitResults() = default;  // destructor
-	NuFitResults(const NuFitResults&) = default;  // copy constructor
-	NuFitResults(NuFitResults&&) = default;  // move constructor
-	NuFitResults &operator=(const NuFitResults&) = default;  // copy assignment
-	NuFitResults &operator=(NuFitResults&&) = default;  // move assignment
+	~NuFitResults();  // destructor
+	NuFitResults(const NuFitResults&) = delete;  // copy constructor
+	NuFitResults(NuFitResults&&) = delete;  // move constructor
+	NuFitResults &operator=(const NuFitResults&) = delete;  // copy assignment
+	NuFitResults &operator=(NuFitResults&&) = delete;  // move assignment
 
 public: // Member variables
 	std::vector<double> popt, efficiencies;
@@ -35,7 +35,6 @@ public: // Member variables
 	std::vector<std::vector<paramData>> paramVector;
 
 public: // Functions
-	void addResults(NuFitResults);
 	std::vector<double> getUncertainties();
 	std::vector<std::vector<double>> getCorrMatrix();
 
@@ -44,8 +43,6 @@ private:
 		std::vector<std::vector<paramData>>,
 		std::vector<std::vector<paramData>>);
 };
-
 }  // namespace NuFitter
-
 
 #endif

@@ -5,22 +5,29 @@
 
 // includes
 #include <cmath>
+#include <iostream>
 #include "FitResults.h"
 
 namespace NuFitter {
 
-// @brief Constructor
+// @brief Constructor for NuFitResults
 NuFitResults::NuFitResults(std::vector<double> popt_,
 	std::vector<std::vector<double>> pcov_, std::vector<double> eff_,
 	int errflg, int errflg_cov, std::vector<std::vector<paramData>> vec,
 	std::vector<std::vector<paramData>> vec_fixed) {
 
+	std::cout << "Constructing NuFitResults" << std::endl;
 	popt = popt_;
 	pcov = pcov_;
 	efficiencies = eff_;
 	errorflag = errflg;
 	errorflag_cov = errflg_cov;
 	paramVector = combineParamVectors(vec, vec_fixed);
+}
+
+// @brief Destructor for NuFitResults
+NuFitResults::~NuFitResults() {
+	std::cout << "Destructing NuFitResults" << std::endl;
 }
 
 // @brief combine paramVectors to include free/constrained and fixed parameters
@@ -85,10 +92,4 @@ auto NuFitResults::getCorrMatrix() -> std::vector<std::vector<double>> {
 	}
 	return out;
 }
-
-// @brief Add results to existing NuFitResults. Used for ToyData fits.
-auto NuFitResults::addResults(NuFitResults results) -> void {
-
-}
-
 }  // namespace NuFitter

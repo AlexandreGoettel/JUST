@@ -71,11 +71,11 @@ public:  // Member variables
 public:  // Functions
 	void initMinuit();
 	void callMinuit();
-	NuFitResults getResults();
+	NuFitResults *getResults();
 };
 
-NuFitResults Fit(NuFitData*&, NuFitPDFs*&);
-std::vector<NuFitResults> Fit(NuFitToyData*&, NuFitPDFs*&);
+NuFitResults* Fit(NuFitData*&, NuFitPDFs*&);
+std::vector<NuFitResults*> Fit(NuFitToyData*&, NuFitPDFs*&);
 void fcn(int&, double*, double&, double*, int);
 
 }  // namespace MCFit

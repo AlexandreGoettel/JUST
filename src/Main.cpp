@@ -5,9 +5,7 @@
 
 //============================================================================
 // Standard includes
-#include <memory>
 #include <vector>
-#include <iostream>
 // Project includes
 #include "Parser.h"
 #include "DataReader.h"
@@ -50,8 +48,10 @@ auto main(int argc, char* argv[]) -> int {
 		auto results = MCFit::Fit(data, pdfs);
 		ProcessResults(data, pdfs_toy, pdfs, results);
 
+		// Cleanup
 		delete data;
 		delete pdfs_toy;
+		for (auto el : results) delete el;
 	} else {
 		// Read the data histogram(s)
 		NuFitData *data = new NuFitData();
@@ -61,7 +61,9 @@ auto main(int argc, char* argv[]) -> int {
 		auto results = MCFit::Fit(data, pdfs);
 		ProcessResults(data, pdfs, results);
 
+		// Cleanup
 		delete data;
+		delete results;
 	}
 	delete pdfs;
 	delete config;

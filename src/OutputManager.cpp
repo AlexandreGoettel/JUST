@@ -38,18 +38,18 @@ auto vec2Array(std::vector<T> v) -> T* {
 }
 
 // @brief Convert a results parameter vector of counts into cpd/kton
-auto toCpdPerkton(std::vector<double> ref, NuFitResults results) -> std::vector<double> {
-	assert(ref.size() == results.paramVector.size());
+auto toCpdPerkton(std::vector<double> ref, NuFitResults *&results) -> std::vector<double> {
+	assert(ref.size() == results->paramVector.size());
 	auto factor {1. / config->exposure};
 	std::vector<double> output;
 
-	for (auto i = 0U; i < results.paramVector.size(); i++) {
+	for (auto i = 0U; i < results->paramVector.size(); i++) {
 		// TODO: Same param on different hists can have different efficiencies!
-		auto j = results.paramVector[i][0].idx_pdf;
+		auto j = results->paramVector[i][0].idx_pdf;
 		auto eff_exposure = factor;
 		if (config->param_fixed[j] != 1) {
 			// Fixed parameters are already scaled to the full spectrum
-			eff_exposure /= results.efficiencies[j];
+			eff_exposure /= results->efficiencies[j];
 		}
 		output.push_back(ref[i] * eff_exposure);
 	}
@@ -57,18 +57,18 @@ auto toCpdPerkton(std::vector<double> ref, NuFitResults results) -> std::vector<
 }
 
 // @brief Write the output of one fit to file
-auto fitToFile(std::ofstream &outf, NuFitResults results) -> void {
+auto fitToFile(std::ofstream &outf, NuFitResults *&results) -> void {
 	// Write the fit status
 	outf << "[STATUS] Migrad status: ";
-	if (results.errorflag != 0) {
-		outf << "FAILED - ierflg =" << results.errorflag;
+	if (results->errorflag != 0) {
+		outf << "FAILED - ierflg =" << results->errorflag;
 	} else {
 		outf << "SUCCESS";
 	}
 
 	// Write the covariance matrix calculation status
 	outf << std::endl << "[STATUS] Covariance matrix status: ";
-	switch (results.errorflag_cov) {
+	switch (results->errorflag_cov) {
 		case 0:
 			outf << "FAILED - not calculated";
 			break;
@@ -82,14 +82,14 @@ auto fitToFile(std::ofstream &outf, NuFitResults results) -> void {
 			outf << "SUCCESS";
 			break;
 		default:
-			outf << "FAILED - istat=" << results.errorflag_cov;
+			outf << "FAILED - istat=" << results->errorflag_cov;
 	}
 	outf << std::endl;
 
 	// Convert counts to cpd/100t
 	// cpd = count / (lifetime) / mass_target / efficiency;
-	auto popt_err = results.getUncertainties();
-	auto popt_cpd = toCpdPerkton(results.popt, results);
+	auto popt_err = results->getUncertainties();
+	auto popt_cpd = toCpdPerkton(results->popt, results);
 	auto popt_err_cpd = toCpdPerkton(popt_err, results);
 
 	// Write params with uncertainties in counts and cpd/kton
@@ -97,10 +97,10 @@ auto fitToFile(std::ofstream &outf, NuFitResults results) -> void {
 		 << "Species\tcounts\t\tsigma\t\trate(cpd/kton)\tsigma(cpd/kton)\n"
 	     << std::scientific;
 	outf.precision(4);
-    for (auto i = 0U; i < results.paramVector.size(); i++) {  // For each parameter
-        auto paramVec = results.paramVector[i];
+    for (auto i = 0U; i < results->paramVector.size(); i++) {  // For each parameter
+        auto paramVec = results->paramVector[i];
         outf << config->param_names[paramVec[0].idx_pdf] << "\t";
-        outf << results.popt[i] << "\t" << popt_err[i] << "\t";
+        outf << results->popt[i] << "\t" << popt_err[i] << "\t";
         outf << popt_cpd[i] << "\t" << popt_err_cpd[i];
 		outf << "\n";
     }
@@ -110,14 +110,14 @@ auto fitToFile(std::ofstream &outf, NuFitResults results) -> void {
 	     << "Covariance matrix:" << std::endl
 	     << "------------------" << std::endl;
 	outf.precision(2);
-	for (auto el : results.pcov) {
+	for (auto el : results->pcov) {
 		for (auto sub : el) {
 			outf << sub << "\t";
 		}
 		outf << std::endl;
 	}
 	// Write the correlation matrix
-	auto test = results.getCorrMatrix();
+	auto test = results->getCorrMatrix();
 	outf << "-------------------" << std::endl
 	     << "Correlation matrix:" << std::endl
 	     << "-------------------" << std::endl;
@@ -140,7 +140,7 @@ auto fitToFile(std::ofstream &outf, NuFitResults results) -> void {
 		 << "Random seed: " << config->seed << std::endl;
 }
 
-auto plotToFile(TFile *&f,  NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults results) -> void {
+auto plotToFile(TFile *&f,  NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults *&results) -> void {
 	f->cd();
 	// Create a std::vector<TH1D*> to fill with the fit results
     // TODO: bin width isn't always integer nor 1 !!
@@ -192,8 +192,8 @@ auto plotToFile(TFile *&f,  NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults res
 	auto idx_col {0};
 
 	// Plot the pdfs for each parameter
-	for (auto i = 0U; i < results.paramVector.size(); i++) {
-		auto parData = results.paramVector[i];
+	for (auto i = 0U; i < results->paramVector.size(); i++) {
+		auto parData = results->paramVector[i];
 		for (auto el : parData) {
 			auto j = el.idx_pdf;
 			auto n = el.idx_hist-1;
@@ -201,10 +201,10 @@ auto plotToFile(TFile *&f,  NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults res
 
 			auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
 			if (config->param_fixed[j] == 1) {
-				current_hist->Scale(results.popt[i] * config->param_eff[j]);
+				current_hist->Scale(results->popt[i] * config->param_eff[j]);
 			} else {
-				current_hist->Scale(results.popt[i] * config->param_eff[j]
-				                    / results.efficiencies[j]);
+				current_hist->Scale(results->popt[i] * config->param_eff[j]
+				                    / results->efficiencies[j]);
 			}
 
 			// Update PDFSum
@@ -275,7 +275,7 @@ auto plotToFile(TFile *&f,  NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults res
 
 // @brief Function to draw extra PDFs for comparison
 auto DrawPDFs(TFile *&f, NuFitPDFs *&pdfs_toy, NuFitPDFs *&pdfs_fit,
-	          NuFitResults results) -> void {
+	          NuFitResults *&results) -> void {
 	f->cd();
 
 	TCanvas *c = new TCanvas("PDFs", "PDFs", 1500, 700);
@@ -294,8 +294,8 @@ auto DrawPDFs(TFile *&f, NuFitPDFs *&pdfs_toy, NuFitPDFs *&pdfs_fit,
 	auto idx_col {0};
 
 	// Plot the pdfs_fit for each parameter
-	for (auto i = 0U; i < results.paramVector.size(); i++) {
-		auto parData = results.paramVector[i];
+	for (auto i = 0U; i < results->paramVector.size(); i++) {
+		auto parData = results->paramVector[i];
 		for (auto el : parData) {
 			auto j = el.idx_pdf;
 			auto current_name = config->param_names[j];
@@ -319,8 +319,8 @@ auto DrawPDFs(TFile *&f, NuFitPDFs *&pdfs_toy, NuFitPDFs *&pdfs_fit,
 
 	// Plot the pdfs_toy for each parameter
 	auto idx_col_toy {0};
-	for (auto i = 0U; i < results.paramVector.size(); i++) {
-		auto parData = results.paramVector[i];
+	for (auto i = 0U; i < results->paramVector.size(); i++) {
+		auto parData = results->paramVector[i];
 		for (auto el : parData) {
 			auto j = el.idx_pdf;
 			auto current_name = config->param_names[j];
@@ -346,7 +346,7 @@ auto DrawPDFs(TFile *&f, NuFitPDFs *&pdfs_toy, NuFitPDFs *&pdfs_fit,
 }
 
 // @brief Create, fill, and save a tree with some meta information
-auto createParamTree(TFile *&f, NuFitResults results) -> void {
+auto createParamTree(TFile *&f, NuFitResults *&results) -> void {
 	f->cd();
 	f->mkdir("parameters");
 	f->cd("parameters");
@@ -354,11 +354,11 @@ auto createParamTree(TFile *&f, NuFitResults results) -> void {
 	TTree *configTree = new TTree("Config", "Config");
 
 	// Initialise branches
-	auto npar = results.paramVector.size();
+	auto npar = results->paramVector.size();
 	ValuesParam val[npar];
 	for (auto i = 0U; i < npar; i++) {
 		// Initialise
-		auto paramVec = results.paramVector[i];
+		auto paramVec = results->paramVector[i];
 		auto j = paramVec[0].idx_pdf;
 		auto name = config->param_names[j];
 		paramTree->Branch(name, &val[i], "injected_rate/D:initial_guess/D:stepsize/D:lowerlim/D:upperlim/D:isFixed/i");
@@ -396,7 +396,7 @@ auto createParamTree(TFile *&f, NuFitResults results) -> void {
 }
 
 // @brief For now, simply plot the results (simple fit example)
-auto ProcessResults(NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults results) -> void {
+auto ProcessResults(NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults *&results) -> void {
 	//----------------------------------------
 	//----------- Plot the results -----------
 	//----------------------------------------
@@ -421,7 +421,7 @@ auto ProcessResults(NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults results) ->
 
 // @brief Same as the other ProcessResults() but for toy data fit(s)
 auto ProcessResults(NuFitToyData *&data, NuFitPDFs *&pdfs_toy, NuFitPDFs *&pdfs,
-					std::vector<NuFitResults> results) -> void {
+					std::vector<NuFitResults*> &results) -> void {
 	//----------------------------------------
 	//------ Create the output rootfile ------
 	//----------------------------------------
@@ -436,13 +436,13 @@ auto ProcessResults(NuFitToyData *&data, NuFitPDFs *&pdfs_toy, NuFitPDFs *&pdfs,
 	TTree *fitTree = new TTree("Distributions", "Distributions");
 	TTree *toyTree = new TTree("ToyGeneration", "ToyGeneration");
 	createParamTree(f, results[0]);
-	auto npar = results[0].paramVector.size();
+	auto npar = results[0]->paramVector.size();
 	Values val[npar];
 
 	// Create all the branches of the TTrees
 	// fit_rate, fit_rate_err, fit_counts_tot, fit_counts_range, gen_counts
-	for (auto i = 0U; i < results[0].paramVector.size(); i++) {
-		auto paramVec = results[0].paramVector[i];
+	for (auto i = 0U; i < results[0]->paramVector.size(); i++) {
+		auto paramVec = results[0]->paramVector[i];
 		auto name = config->param_names[paramVec[0].idx_pdf];
 		fitTree->Branch(name, &val[i], "fit_rate/D:fit_rate_err/D:fit_counts_tot/D:fit_counts_range/D");
 	}
@@ -459,14 +459,14 @@ auto ProcessResults(NuFitToyData *&data, NuFitPDFs *&pdfs_toy, NuFitPDFs *&pdfs,
 	// Fill the TTrees
 	for (auto t = 0U; t < config->ToyData; t++) {  // For each toy dataset
 		auto results_ = results[t];
-		auto popt_cpd = toCpdPerkton(results_.popt, results_);
-		auto popt_err_cpd = toCpdPerkton(results_.getUncertainties(), results_);
+		auto popt_cpd = toCpdPerkton(results_->popt, results_);
+		auto popt_err_cpd = toCpdPerkton(results_->getUncertainties(), results_);
 
 		// Get the fit result information
 		for (auto i = 0U; i < npar; i++) {
 			val[i].fit_rate = popt_cpd[i];
 			val[i].fit_rate_err = popt_err_cpd[i];
-			val[i].fit_counts_range = results_.popt[i];
+			val[i].fit_counts_range = results_->popt[i];
 			val[i].fit_counts_tot = popt_cpd[i]*config->exposure;
 		}
 

@@ -303,7 +303,7 @@ auto MinuitManager::callMinuit() -> void {
 }
 
 // @brief Convert fit results to vectors, store in member variables popt/pcov
-auto MinuitManager::getResults() -> NuFitResults {
+auto MinuitManager::getResults() -> NuFitResults* {
 	// Get the total number of (free+fixed(+constr)) parameters
 	auto n_params_tot = fitCtnr->paramVector.size() + fitCtnr->paramVector_fixed.size();
 
@@ -392,10 +392,9 @@ auto MinuitManager::getResults() -> NuFitResults {
     int tmp_;
     gMinuit->mnstat(_, _, _, tmp_, tmp_, errorflag_cov);
 
-	auto results = NuFitResults(popt, pcov, fitCtnr->efficiencies,
-                                errorflag, errorflag_cov, fitCtnr->paramVector,
-								fitCtnr->paramVector_fixed);
-
+	auto results = new NuFitResults(popt, pcov, fitCtnr->efficiencies,
+                                    errorflag, errorflag_cov, fitCtnr->paramVector,
+								    fitCtnr->paramVector_fixed);
 	return results;
 }
 
@@ -431,7 +430,7 @@ auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
 // @param pdfs MC PDFs to fit to
 // @param config container for fit options / variables
 // @return NuFitResults object containing relevant fit results info
-auto Fit(NuFitData *&data, NuFitPDFs *&pdfs) -> NuFitResults {
+auto Fit(NuFitData *&data, NuFitPDFs *&pdfs) -> NuFitResults* {
 	// 1. Create the NuFitContainer object -> formats data according to config
 	// 1.1 Overwrite NuFitContainer at static location in MCFit scope
 	fitCtnr = new NuFitContainer(data, pdfs);
@@ -457,9 +456,9 @@ auto Fit(NuFitData *&data, NuFitPDFs *&pdfs) -> NuFitResults {
 // @param pdfs pointer to NuFitPDFs with the MC PDFs
 // @param config pointer to the fit config variables
 // @return vector of NuFitResults*, one for each toy dataset
-auto Fit(NuFitToyData *&toyData, NuFitPDFs *&pdfs) -> std::vector<NuFitResults> {
+auto Fit(NuFitToyData *&toyData, NuFitPDFs *&pdfs) -> std::vector<NuFitResults*> {
 	// Initialise
-	std::vector<NuFitResults> results;
+	std::vector<NuFitResults*> results;
 	for (auto idx_dataset = 0U; idx_dataset < config->ToyData; idx_dataset++) {
 		toyData->loadDataset(idx_dataset);
 		results.push_back(Fit(toyData->dataset, pdfs));
