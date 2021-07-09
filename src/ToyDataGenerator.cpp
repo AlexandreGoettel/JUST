@@ -31,8 +31,11 @@ auto getBinEdges_(TH1D *hist, unsigned int nbins) -> std::vector<double> {
 	return bin_edges;
 }
 
-NuFitToyData::NuFitToyData(NuFitPDFs *pdfs_) {
+// @brief Constructor for NuFitToyData
+// pass reference to pdf pointer -> no need for delete later
+NuFitToyData::NuFitToyData(NuFitPDFs *&pdfs_) {
 	pdfs = pdfs_;
+	std::cout << "Constructing NuFitToyData" << std::endl;
 
 	// Fill the histogr vector with the TH1Ds in which the toy data will go
 	auto nHists = config->nSp_histos_toy.size();
@@ -40,14 +43,25 @@ NuFitToyData::NuFitToyData(NuFitPDFs *pdfs_) {
 		if (std::find(config->hist_id_toy.begin(), config->hist_id_toy.end(), i)
 		    != config->hist_id_toy.end()) {
 
-			TH1D *hdata = new TH1D(config->data_hist_names[i-1].c_str(),
-			                       config->data_hist_names[i-1].c_str(), config->nbins[i-1],
+			hdata = new TH1D(config->data_hist_names[i-1].c_str(),
+			                 config->data_hist_names[i-1].c_str(), config->nbins[i-1],
 			pdfs->bin_edges[i-1].front() + 1, pdfs->bin_edges[i-1].back());
 			histogr.push_back(hdata);
 			// Get and save the bin edges for re-use later
 			bin_edges.push_back(getBinEdges_(histogr.at(i-1), config->nbins[i-1]));
 			hist_ids.push_back(i-1);
 		}
+	}
+}
+
+// @brief Destructor for NuFitToyData
+// @brief No need to delete pdfs -> pointer was passed by reference
+NuFitToyData::~NuFitToyData() {
+	std::cout << "Destructing NuFitToyData" << std::endl;
+	if (dataset) delete dataset;
+	// This also implicitely does "delete hdata" that points to the last hist
+	for (auto el : histogr) {
+		delete el;
 	}
 }
 
@@ -77,6 +91,7 @@ auto NuFitToyData::loadDataset(unsigned int idx_dataset) -> void {
 				n_samples -= INT_MAX;
 			}
 			histogr[el.idx_hist-1]->FillRandom(current_hist, samples[j]);
+			delete current_hist;
 		}
 	}
 
@@ -97,7 +112,6 @@ auto NuFitToyData::loadDataset(unsigned int idx_dataset) -> void {
 	}
 
 	if (dataset) delete dataset;
-
 	// Only the last one needs root histograms to plot
 	if (idx_dataset < config->ToyData-1) {
 		dataset = new NuFitData(vec_data, bin_edges, hist_ids);
@@ -110,7 +124,7 @@ auto NuFitToyData::loadDataset(unsigned int idx_dataset) -> void {
 namespace ToyData {
 
 // @brief Container to create a toy data object
-auto Initialise(NuFitPDFs* pdfs) -> NuFitToyData* {
+auto Initialise(NuFitPDFs *&pdfs) -> NuFitToyData* {
 	auto *toyData = new NuFitToyData(pdfs);
 	return toyData;
 }

@@ -34,12 +34,14 @@ auto main(int argc, char* argv[]) -> int {
 	config = new NuFitConfig(cmdl_args);
 
 	// Read the PDFs to fit to the data
-	NuFitPDFs *pdfs = PDFs::Read();
+	NuFitPDFs *pdfs = new NuFitPDFs();
+	pdfs->Read(config->pdf_names, config->npdfs, config->hist_id);
 
 	// Perform the fit with real or toy data
 	if (config->ToyData != 0) {
 		// Read the pdfs used to generate the toy data
-		NuFitPDFs *pdfs_toy = Toy::Read();
+		NuFitPDFs *pdfs_toy = new NuFitPDFs();
+		pdfs_toy->Read(config->pdf_names_toy, config->npdfs_toy, config->hist_id_toy);
 		// Generate toy data for the fit
 		auto data = ToyData::Initialise(pdfs_toy);
 		auto results = MCFit::Fit(data, pdfs);

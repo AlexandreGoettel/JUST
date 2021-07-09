@@ -49,11 +49,11 @@ namespace CMDLParser {
 class NuFitConfig {
 public:
 	NuFitConfig(NuFitter::NuFitCmdlArgs);
-	~NuFitConfig() = default;  // destructor
+	~NuFitConfig();  // destructor
 	NuFitConfig(const NuFitConfig&) = delete;  // copy constructor
-	NuFitConfig(NuFitConfig&&) = default;  // move constructor
+	NuFitConfig(NuFitConfig&&) = delete;  // move constructor
 	NuFitConfig &operator=(const NuFitConfig&) = delete;  // copy assignment
-	NuFitConfig &operator=(NuFitConfig&&) = default;  // move assignment
+	NuFitConfig &operator=(NuFitConfig&&) = delete;  // move assignment
 
 private:  // Member functions
 	void ParseGenOpts(std::string);

@@ -25,17 +25,18 @@ class NuFitData;
 
 class NuFitToyData {
 public:  // Constructros and operator assigments
-	NuFitToyData(NuFitPDFs*);  // constructor
-	~NuFitToyData() = default;  // destructor
+	NuFitToyData(NuFitPDFs*&);  // constructor
+	~NuFitToyData();  // destructor
 	NuFitToyData(const NuFitToyData&) = default;  // copy constructor
 	NuFitToyData(NuFitToyData&&) = default;  // move constructor
 	NuFitToyData &operator=(const NuFitToyData&) = default;  // copy assignment
 	NuFitToyData &operator=(NuFitToyData&&) = default;  // move assignment
 
-public: // Variables
-	NuFitPDFs *pdfs;
+public:
 	void loadDataset(unsigned int);
+	NuFitPDFs *pdfs;
 	NuFitData *dataset = nullptr;
+	TH1D *hdata = nullptr;
 
 private:
 	std::vector<TH1D*> histogr;
@@ -44,7 +45,7 @@ private:
 };
 
 namespace ToyData {
-	NuFitToyData *Initialise(NuFitPDFs*);
+	NuFitToyData *Initialise(NuFitPDFs*&);
 }  // namespace ToyData
 }  // namespace NuFitter
 

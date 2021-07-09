@@ -10,6 +10,7 @@
 // Includes
 #include <vector>
 #include "TH1.h"
+#include "TFile.h"
 
 //============================================================================
 // Class definition
@@ -37,30 +38,24 @@ public: // Variables
 
 class NuFitPDFs {
 public:  // Constructors and operator assigments
-	NuFitPDFs(std::vector<std::vector<double>>,  // constructor
-		      std::vector<std::vector<double>>, std::vector<TH1D*>);
-	~NuFitPDFs() = default;  // destructor
-	NuFitPDFs(const NuFitPDFs&) = default;  // copy constructor
-	NuFitPDFs(NuFitPDFs&&) = default;  // move constructor
-	NuFitPDFs &operator=(const NuFitPDFs&) = default;  // copy assignment
-	NuFitPDFs &operator=(NuFitPDFs&&) = default;  // move assignment
+	NuFitPDFs();  // constructor
+	~NuFitPDFs();  // destructor
+	NuFitPDFs(const NuFitPDFs&) = delete;  // copy constructor
+	NuFitPDFs(NuFitPDFs&&) = delete;  // move constructor
+	NuFitPDFs &operator=(const NuFitPDFs&) = delete;  // copy assignment
+	NuFitPDFs &operator=(NuFitPDFs&&) = delete;  // move assignment
 
 public:  // Variables
 	std::vector<std::vector<double>> pdfs, bin_edges;
 	std::vector<TH1D*> pdf_histograms;
+	void Read(const std::vector<TString>&, const unsigned int&, const std::vector<unsigned int>&);
+private:
+	TFile *file_pdf = nullptr;
 };
 
 namespace Data {
 	NuFitData *Read();
 }  // namespace Data
-
-namespace PDFs {
-	NuFitPDFs* Read();
-}  // namespace PDFs
-
-namespace Toy {
-	NuFitPDFs* Read();
-}  // namespace Toy
 }  // namespace NuFitter
 
 
