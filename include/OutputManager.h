@@ -24,11 +24,11 @@
 namespace NuFitter {
 
 // TODO: maybe a class here would be useful after all?
-void ProcessResults(NuFitData*, NuFitPDFs*&, NuFitResults);
+void ProcessResults(NuFitData*&, NuFitPDFs*&, NuFitResults);
 void ProcessResults(NuFitToyData*,NuFitPDFs*&, NuFitPDFs*&, std::vector<NuFitResults>);
 
 void fitToFile(std::ofstream&, NuFitResults);
-void plotToFile(TFile*, NuFitData*, NuFitPDFs*&, NuFitResults);
+void plotToFile(TFile*, NuFitData*&, NuFitPDFs*&, NuFitResults);
 void DrawPDFs(TFile*, NuFitPDFs*&, NuFitPDFs*&, NuFitResults);
 void createParamTree(TFile*, NuFitResults);
 std::vector<double> toCpdPerkton(std::vector<double>, NuFitResults);

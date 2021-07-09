@@ -42,8 +42,11 @@ auto main(int argc, char* argv[]) -> int {
 		// Read the pdfs used to generate the toy data
 		NuFitPDFs *pdfs_toy = new NuFitPDFs();
 		pdfs_toy->Read(config->pdf_names_toy, config->npdfs_toy, config->hist_id_toy);
+
 		// Generate toy data for the fit
-		auto data = ToyData::Initialise(pdfs_toy);
+		NuFitToyData *data = ToyData::Initialise(pdfs_toy);
+
+		// Fit the toy-data
 		auto results = MCFit::Fit(data, pdfs);
 		ProcessResults(data, pdfs_toy, pdfs, results);
 
@@ -51,7 +54,10 @@ auto main(int argc, char* argv[]) -> int {
 		delete pdfs_toy;
 	} else {
 		// Read the data histogram(s)
-		auto data = Data::Read();
+		NuFitData *data = new NuFitData();
+		data->Read();
+
+		// Fit the data
 		auto results = MCFit::Fit(data, pdfs);
 		ProcessResults(data, pdfs, results);
 

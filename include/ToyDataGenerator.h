@@ -27,10 +27,10 @@ class NuFitToyData {
 public:  // Constructros and operator assigments
 	NuFitToyData(NuFitPDFs*&);  // constructor
 	~NuFitToyData();  // destructor
-	NuFitToyData(const NuFitToyData&) = default;  // copy constructor
-	NuFitToyData(NuFitToyData&&) = default;  // move constructor
-	NuFitToyData &operator=(const NuFitToyData&) = default;  // copy assignment
-	NuFitToyData &operator=(NuFitToyData&&) = default;  // move assignment
+	NuFitToyData(const NuFitToyData&) = delete;  // copy constructor
+	NuFitToyData(NuFitToyData&&) = delete;  // move constructor
+	NuFitToyData &operator=(const NuFitToyData&) = delete;  // copy assignment
+	NuFitToyData &operator=(NuFitToyData&&) = delete;  // move assignment
 
 public:
 	void loadDataset(unsigned int);

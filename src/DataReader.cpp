@@ -80,6 +80,7 @@ NuFitData::NuFitData(std::vector<std::vector<double>> data_,
 	                 std::vector<std::vector<double>> bin_edges_,
 	                 std::vector<TH1D*> data_histograms_,
                      std::vector<unsigned int> ids_) {
+    std::cout << "Constructing NuFitData" << std::endl;
 	data = data_;
 	bin_edges = bin_edges_;
 	data_histograms = data_histograms_;
@@ -90,25 +91,37 @@ NuFitData::NuFitData(std::vector<std::vector<double>> data_,
 NuFitData::NuFitData(std::vector<std::vector<double>> data_,
 	                 std::vector<std::vector<double>> bin_edges_,
                      std::vector<unsigned int> ids_) {
+	std::cout << "Constructing NuFitData without hists" << std::endl;
 	data = data_;
 	bin_edges = bin_edges_;
 	hist_ids = ids_;
 }
 
-namespace Data {
+// @brief Constructor for an empty NuFitData
+NuFitData::NuFitData() {
+	std::cout << "Constructing NuFitData empty" << std::endl;
+}
 
-auto Read() -> NuFitData* {
-	// Initialise variables
-	std::vector<TH1D*> hists;
-	std::vector<std::vector<double>> vec_data, bin_edges;
-	std::vector<unsigned int> hist_ids;
+// @brief Destroctor for NuFitData
+NuFitData::~NuFitData() {
+	std::cout << "Destructing NuFitData" << std::endl;
+	if (file_data) file_data->Close();
+	// If file_data existed then the data was obtained from Read()
+	// In that case there is no need to delete the histograms since
+	// closing the TFile does it automatically (on ROOT's side)
+	// If not then data_histograms is filled with pointers that are taken
+	// care of by ToyDataGenerator. So all good here.
+}
 
+// @brief Use with empty NuFitData to read data from file and fill hists.
+auto NuFitData::Read() -> void {
 	// Read the histograms if their id was found in specieslist
 	std::cout << "INFO: Reading data from " << config->data_name << std::endl;
 	for (auto i = 1U; i <= config->data_hist_names.size(); i++) {
 		if (std::find(config->hist_id.begin(), config->hist_id.end(), i) != config->hist_id.end()) {
 			// Read histogram
-			TFile *file_data = new TFile(config->data_name.c_str());
+			if (file_data) file_data->Close();
+			file_data = new TFile(config->data_name.c_str());
 			TH1D* hdata = (TH1D*)file_data->Get(config->data_hist_names[i-1].c_str());
 
 			// Convert histogram to vector
@@ -121,20 +134,15 @@ auto Read() -> NuFitData* {
 			auto bin_edges_hist = getBinEdges(hdata, config->nbins[i-1]);
 
 			// Save to vectors
-			hists.push_back(hdata);
+			data_histograms.push_back(hdata);
 			bin_edges.push_back(bin_edges_hist);
-			vec_data.push_back(vec_data_hist);
+			data.push_back(vec_data_hist);
 			hist_ids.push_back(i-1);
 	    }
 	}
 
-	std::cout << "[DATA READER]" << "nHists: " << vec_data.size()
+	std::cout << "[DATA READER]" << "nHists: " << data.size()
 	          << ", nBins: " << config->nbins[0] << std::endl;
-
-	// Create and return NuFitData object
-	auto *data = new NuFitData(vec_data, bin_edges, hists, hist_ids);
-	return data;
 }
 
-}  // namespace Data
 }  // namespace NuFitter

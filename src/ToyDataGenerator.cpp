@@ -59,7 +59,7 @@ NuFitToyData::NuFitToyData(NuFitPDFs *&pdfs_) {
 NuFitToyData::~NuFitToyData() {
 	std::cout << "Destructing NuFitToyData" << std::endl;
 	if (dataset) delete dataset;
-	// This also implicitely does "delete hdata" that points to the last hist
+	// This also implicitely does "delete hdata" that points to histogr.back()
 	for (auto el : histogr) {
 		delete el;
 	}

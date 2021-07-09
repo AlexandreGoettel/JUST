@@ -30,16 +30,16 @@ namespace MCFit {
 class NuFitContainer {
 public:  // Constructors and assigment operators
 	NuFitContainer() = default;
-	NuFitContainer(NuFitData*, NuFitPDFs*);  // constructor
-	~NuFitContainer() = default;  // destructor
-	NuFitContainer(const NuFitContainer&) = default;  // copy constructor
-	NuFitContainer(NuFitContainer&&) = default;  // move constructor
-	NuFitContainer &operator=(const NuFitContainer&) = default;  // copy assignment
-	NuFitContainer &operator=(NuFitContainer&&) = default;  // move assignment
+	NuFitContainer(NuFitData*&, NuFitPDFs*&);  // constructor
+	~NuFitContainer();  // destructor
+	NuFitContainer(const NuFitContainer&) = delete;  // copy constructor
+	NuFitContainer(NuFitContainer&&) = delete;  // move constructor
+	NuFitContainer &operator=(const NuFitContainer&) = delete;  // copy assignment
+	NuFitContainer &operator=(NuFitContainer&&) = delete;  // move assignment
 
 public:
-	NuFitData *data;
-	NuFitPDFs *pdfs;
+	NuFitData *data = nullptr;
+	NuFitPDFs *pdfs = nullptr;
 public:  // Minuit functions
 	// double NLL_poisson(int, const double*);
     template <class T> T NLL_poisson(T, T);
@@ -58,14 +58,14 @@ private:  // Member variables
 class MinuitManager {
 public:  // Constructors and assigment operators
 	MinuitManager();  // constructor
-	~MinuitManager() = default;  // destructor
-	MinuitManager(const MinuitManager&) = default;  // copy constructor
-	MinuitManager(MinuitManager&&) = default;  // move constructor
-	MinuitManager &operator=(const MinuitManager&) = default;  // copy assignment
-	MinuitManager &operator=(MinuitManager&&) = default;  // move assignment
+	~MinuitManager();  // destructor
+	MinuitManager(const MinuitManager&) = delete;  // copy constructor
+	MinuitManager(MinuitManager&&) = delete;  // move constructor
+	MinuitManager &operator=(const MinuitManager&) = delete;  // copy assignment
+	MinuitManager &operator=(MinuitManager&&) = delete;  // move assignment
 
 public:  // Member variables
-	TMinuit *gMinuit;
+	TMinuit *gMinuit = nullptr;
 	int errorflag, errorflag_cov;
 
 public:  // Functions
@@ -74,8 +74,8 @@ public:  // Functions
 	NuFitResults getResults();
 };
 
-NuFitResults Fit(NuFitData*, NuFitPDFs*&);
-std::vector<NuFitResults> Fit(NuFitToyData*, NuFitPDFs*&);
+NuFitResults Fit(NuFitData*&, NuFitPDFs*&);
+std::vector<NuFitResults> Fit(NuFitToyData*&, NuFitPDFs*&);
 void fcn(int&, double*, double&, double*, int);
 
 }  // namespace MCFit

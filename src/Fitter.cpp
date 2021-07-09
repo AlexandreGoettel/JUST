@@ -31,7 +31,7 @@ auto MultiplyVectorByScalar(std::vector<Q> &v, P k) -> void {
 
 // @brief Get the index of element el in vector v (first occurence)
 template <class T>
-auto getIndexOf(T el, std::vector<T> v) -> int {
+auto getIndexOf(T el, std::vector<T> &v) -> int {
 	auto it = std::find(v.begin(), v.end(), el);
 
 	// If element was found, calculate the index
@@ -53,7 +53,8 @@ auto NuFitContainer::InFitRange(T lower_edge, T upper_edge) -> bool {
 // @brief Constructor for NuFitContainer
 // @brief Create new data/pdf vector objects with applied fit range cuts
 // @brief Then separate free/fixed parameters and create the index maps
-NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_) {
+NuFitContainer::NuFitContainer(NuFitData *&data_, NuFitPDFs *&pdfs_) {
+	std::cout << "Constructing NuFitContainer" << std::endl;
 	data = data_;
 	pdfs = pdfs_;
 
@@ -164,7 +165,13 @@ NuFitContainer::NuFitContainer(NuFitData *data_, NuFitPDFs *pdfs_) {
     // 6. If same var same pdf on same hist->raise error? Smth for parser?
 }
 
-// Maybe return answer as a vector?
+// @brief Destructor for NuFitContainer
+NuFitContainer::~NuFitContainer() {
+	// data and pdfs are managed elsewhere, nothing to do here
+	std::cout << "Destructing NuFitContainer" << std::endl;
+}
+
+// @brief Calculate the fit function for a set of parameters
 auto NuFitContainer::fitFunction(unsigned int npar, const double *par)
 	                             -> std::vector<std::vector<double>> {
 	// TODO: fixed params
@@ -239,13 +246,21 @@ auto NuFitContainer::NLL_MUST(T ni, T yi) -> T {
 
 // @brief MinuitManager constructor
 MinuitManager::MinuitManager() {
+	std::cout << "Constructing MinuitManager" << std::endl;
 	errorflag = 0;
+}
+
+// @brief MinuitManager destructor
+MinuitManager::~MinuitManager() {
+	std::cout << "Destructing MinuitManager" << std::endl;
+	if (gMinuit) delete gMinuit;
 }
 
 // @brief Initialise Minuit with params etc.
 auto MinuitManager::initMinuit() -> void {
 	// Create a new instance
-	gMinuit = new TMinuit();  // TODO: Add protection -> v0.3?
+	if (gMinuit) delete gMinuit;
+	gMinuit = new TMinuit();
 	gMinuit->SetFCN(fcn);
 	// Set each parameter in Minuit
 	for (auto j = 0U; j < fitCtnr->n_params; j++) {
@@ -416,13 +431,13 @@ auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
 // @param pdfs MC PDFs to fit to
 // @param config container for fit options / variables
 // @return NuFitResults object containing relevant fit results info
-auto Fit(NuFitData *data, NuFitPDFs *&pdfs) -> NuFitResults {
+auto Fit(NuFitData *&data, NuFitPDFs *&pdfs) -> NuFitResults {
 	// 1. Create the NuFitContainer object -> formats data according to config
 	// 1.1 Overwrite NuFitContainer at static location in MCFit scope
 	fitCtnr = new NuFitContainer(data, pdfs);
 
 	// 2. Prepare TMinuit
-	auto manager = std::make_unique<MinuitManager>();
+	MinuitManager *manager = new MinuitManager();
 	manager->initMinuit();
 
 	// 3. Start minimization
@@ -431,7 +446,9 @@ auto Fit(NuFitData *data, NuFitPDFs *&pdfs) -> NuFitResults {
 	// 4. Return results
 	auto results = manager->getResults();
 
-	if (fitCtnr) delete fitCtnr;
+	// Clean up and return
+	delete fitCtnr;
+	delete manager;
 	return results;
 }
 
@@ -440,7 +457,7 @@ auto Fit(NuFitData *data, NuFitPDFs *&pdfs) -> NuFitResults {
 // @param pdfs pointer to NuFitPDFs with the MC PDFs
 // @param config pointer to the fit config variables
 // @return vector of NuFitResults*, one for each toy dataset
-auto Fit(NuFitToyData *toyData, NuFitPDFs *&pdfs) -> std::vector<NuFitResults> {
+auto Fit(NuFitToyData *&toyData, NuFitPDFs *&pdfs) -> std::vector<NuFitResults> {
 	// Initialise
 	std::vector<NuFitResults> results;
 	for (auto idx_dataset = 0U; idx_dataset < config->ToyData; idx_dataset++) {

@@ -24,16 +24,19 @@ public:  // Constructros and operator assigments
 	NuFitData(std::vector<std::vector<double>>, std::vector<std::vector<double>>,
 	          std::vector<unsigned int>);  // constructor
 	NuFitData();
-	~NuFitData() = default;  // destructor
-	NuFitData(const NuFitData&) = default;  // copy constructor
-	NuFitData(NuFitData&&) = default;  // move constructor
-	NuFitData &operator=(const NuFitData&) = default;  // copy assignment
-	NuFitData &operator=(NuFitData&&) = default;  // move assignment
+	~NuFitData();  // destructor
+	NuFitData(const NuFitData&) = delete;  // copy constructor
+	NuFitData(NuFitData&&) = delete;  // move constructor
+	NuFitData &operator=(const NuFitData&) = delete;  // copy assignment
+	NuFitData &operator=(NuFitData&&) = delete;  // move assignment
 
 public: // Variables
 	std::vector<std::vector<double>> data, bin_edges;
 	std::vector<TH1D*> data_histograms;
 	std::vector<unsigned int> hist_ids;
+	void Read();
+private:
+	TFile *file_data = nullptr;
 };
 
 class NuFitPDFs {
@@ -52,10 +55,6 @@ public:  // Variables
 private:
 	TFile *file_pdf = nullptr;
 };
-
-namespace Data {
-	NuFitData *Read();
-}  // namespace Data
 }  // namespace NuFitter
 
 

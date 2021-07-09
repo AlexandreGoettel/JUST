@@ -140,7 +140,7 @@ auto fitToFile(std::ofstream &outf, NuFitResults results) -> void {
 		 << "Random seed: " << config->seed << std::endl;
 }
 
-auto plotToFile(TFile *f,  NuFitData *data, NuFitPDFs *&pdfs, NuFitResults results) -> void {
+auto plotToFile(TFile *f,  NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults results) -> void {
 	f->cd();
 	// Create a std::vector<TH1D*> to fill with the fit results
     // TODO: bin width isn't always integer nor 1 !!
@@ -396,7 +396,7 @@ auto createParamTree(TFile *f, NuFitResults results) -> void {
 }
 
 // @brief For now, simply plot the results (simple fit example)
-auto ProcessResults(NuFitData *data, NuFitPDFs *&pdfs, NuFitResults results) -> void {
+auto ProcessResults(NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults results) -> void {
 	//----------------------------------------
 	//----------- Plot the results -----------
 	//----------------------------------------
