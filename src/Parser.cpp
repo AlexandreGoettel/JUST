@@ -336,7 +336,6 @@ auto NuFitConfig::ParseToyRates(std::string filename) -> void {
 
 // @brief Constructor for NuFitConfig
 NuFitConfig::NuFitConfig(NuFitter::NuFitCmdlArgs args) {
-	std::cout << "Constructing NuFitConfig" << std::endl;
 	output_name = args.output_name;
 	// -------------------------------------------------------------------------
 	// Read the general_options config file
@@ -417,6 +416,4 @@ NuFitConfig::NuFitConfig(NuFitter::NuFitCmdlArgs args) {
 }
 
 // @brief Destructor for NuFitConfig
-NuFitConfig::~NuFitConfig() {
-	std::cout << "Destructing NuFitConfig" << std::endl;
-}
+NuFitConfig::~NuFitConfig() {}

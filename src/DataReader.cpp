@@ -28,12 +28,10 @@ auto getBinEdges(TH1D *hist, unsigned int nbins) -> std::vector<double> {
 
 // @brief Constructor for NuFitPDFs
 NuFitPDFs::NuFitPDFs() {
-	std::cout << "Constructing NuFitPDFs" << std::endl;
 }
 
 // @brief Destructor for NuFitPDFs
 NuFitPDFs::~NuFitPDFs() {
-	std::cout << "Destructing NuFitPDFs" << std::endl;
 	if (file_pdf) file_pdf->Close();
 	// Histograms should already be deleted by root when file_pdf is closed
 	// for (auto el : pdf_histograms) {
@@ -80,7 +78,6 @@ NuFitData::NuFitData(std::vector<std::vector<double>> data_,
 	                 std::vector<std::vector<double>> bin_edges_,
 	                 std::vector<TH1D*> data_histograms_,
                      std::vector<unsigned int> ids_) {
-    std::cout << "Constructing NuFitData" << std::endl;
 	data = data_;
 	bin_edges = bin_edges_;
 	data_histograms = data_histograms_;
@@ -91,20 +88,16 @@ NuFitData::NuFitData(std::vector<std::vector<double>> data_,
 NuFitData::NuFitData(std::vector<std::vector<double>> data_,
 	                 std::vector<std::vector<double>> bin_edges_,
                      std::vector<unsigned int> ids_) {
-	std::cout << "Constructing NuFitData without hists" << std::endl;
 	data = data_;
 	bin_edges = bin_edges_;
 	hist_ids = ids_;
 }
 
 // @brief Constructor for an empty NuFitData
-NuFitData::NuFitData() {
-	std::cout << "Constructing NuFitData empty" << std::endl;
-}
+NuFitData::NuFitData() {}
 
 // @brief Destroctor for NuFitData
 NuFitData::~NuFitData() {
-	std::cout << "Destructing NuFitData" << std::endl;
 	if (file_data) file_data->Close();
 	// If file_data existed then the data was obtained from Read()
 	// In that case there is no need to delete the histograms since

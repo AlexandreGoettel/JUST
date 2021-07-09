@@ -20,28 +20,19 @@
 // Method definitions
 
 namespace NuFitter {
-
-//============================================================================
-// Forward declarations
-class NuFitPDFs;
-
 namespace MCFit {
 
 class NuFitContainer {
 public:  // Constructors and assigment operators
 	NuFitContainer() = default;
-	NuFitContainer(NuFitData*&, NuFitPDFs*&);  // constructor
+	NuFitContainer(NuFitPDFs*&);  // constructor
 	~NuFitContainer();  // destructor
 	NuFitContainer(const NuFitContainer&) = delete;  // copy constructor
 	NuFitContainer(NuFitContainer&&) = delete;  // move constructor
 	NuFitContainer &operator=(const NuFitContainer&) = delete;  // copy assignment
 	NuFitContainer &operator=(NuFitContainer&&) = delete;  // move assignment
 
-public:
-	NuFitData *data = nullptr;
-	NuFitPDFs *pdfs = nullptr;
 public:  // Minuit functions
-	// double NLL_poisson(int, const double*);
     template <class T> T NLL_poisson(T, T);
 	template <class T> T NLL_MUST(T, T);
     template <typename L> double NLL(L, int, const double*);
@@ -50,9 +41,12 @@ public:  // Member variables
 	unsigned int n_params, n_fixed;
 	std::vector<double> efficiencies;
 	std::vector<std::vector<paramData>> paramVector, paramVector_fixed;
-private:  // Member variables
+private:
 	std::vector<std::vector<double>> pdf_vectors, data_vector, fitValFixed;
 	template <class T> bool InFitRange(T, T);
+	std::vector<std::vector<double>> convertToVec(NuFitData*&);
+public:
+	void setData(NuFitData*&);
 };
 
 class MinuitManager {
@@ -71,7 +65,10 @@ public:  // Member variables
 public:  // Functions
 	void initMinuit();
 	void callMinuit();
+	void resetMinuit();
 	NuFitResults *getResults();
+private:
+	double arglist[2];
 };
 
 NuFitResults* Fit(NuFitData*&, NuFitPDFs*&);

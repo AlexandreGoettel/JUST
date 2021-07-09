@@ -20,7 +20,7 @@
 namespace NuFitter {
 namespace MCFit {
 
-NuFitContainer *fitCtnr;
+NuFitContainer *fitCtnr = nullptr;
 
 // TODO: if needed, move this to a more accessible location?
 // @brief Multiply all vector elements by the same number
@@ -50,17 +50,13 @@ auto NuFitContainer::InFitRange(T lower_edge, T upper_edge) -> bool {
 	return upper_edge > config->emin && lower_edge < config->emax;
 }
 
-// @brief Constructor for NuFitContainer
-// @brief Create new data/pdf vector objects with applied fit range cuts
-// @brief Then separate free/fixed parameters and create the index maps
-NuFitContainer::NuFitContainer(NuFitData *&data_, NuFitPDFs *&pdfs_) {
-	std::cout << "Constructing NuFitContainer" << std::endl;
-	data = data_;
-	pdfs = pdfs_;
+auto NuFitContainer::setData(NuFitData *&data) -> void {
+	data_vector = convertToVec(data);
+}
 
-	// Adjust the data, pdf vectors according to config, save efficiencies
-	// 1. Create the data vector for all histograms
-    for (auto n = 0U; n < data->data.size(); n++) {
+auto NuFitContainer::convertToVec(NuFitData *&data) -> std::vector<std::vector<double>> {
+	std::vector<std::vector<double>> data_vector_;
+	for (auto n = 0U; n < data->data.size(); n++) {
         auto bin_edges = data->bin_edges[n];
         auto hist_data = data->data[n];
         std::vector<double> current_hist;
@@ -72,8 +68,18 @@ NuFitContainer::NuFitContainer(NuFitData *&data_, NuFitPDFs *&pdfs_) {
     			current_hist.push_back(hist_data[i]);
     		}
     	}
-        data_vector.push_back(current_hist);
+        data_vector_.push_back(current_hist);
     }
+	return data_vector_;
+}
+
+// @brief Constructor for NuFitContainer
+// @brief Create new data/pdf vector objects with applied fit range cuts
+// @brief Then separate free/fixed parameters and create the index maps
+NuFitContainer::NuFitContainer(NuFitPDFs *&pdfs) {
+	// Adjust the data, pdf vectors according to config, save efficiencies
+	// 1. Create the data vector for all histograms
+	// data_vector = convertToVec(data);
 
 	// 2. Create a vector of PDF vectors. Save efficiencies
     for (auto n = 0U; n < pdfs->pdfs.size(); n++) {
@@ -102,8 +108,8 @@ NuFitContainer::NuFitContainer(NuFitData *&data_, NuFitPDFs *&pdfs_) {
     // Quick check that everything went according to plan
     for (auto i = 0U; i < config->hist_id.size(); i++) {
         auto n = config->hist_id[i];
-        assert(data_vector[n-1].size() == pdf_vectors[i].size());
-        assert(data_vector[n-1].size() != 0);
+        assert(pdf_vectors[n-1].size() == pdf_vectors[i].size());
+        assert(pdf_vectors[n-1].size() != 0);
     }
 
 	// 4. Fill the paramVector object which contains useful information
@@ -145,7 +151,7 @@ NuFitContainer::NuFitContainer(NuFitData *&data_, NuFitPDFs *&pdfs_) {
 
 	// 5. Make sure params are fixed/constr properly in the new setup
 	// First initialise zeros in the fitValFixed vector
-	for (auto el : data_vector) {
+	for (auto el : pdf_vectors) {
 		std::vector<double> tmp (el.size(), 0);
 		fitValFixed.push_back(tmp);
 	}
@@ -154,7 +160,7 @@ NuFitContainer::NuFitContainer(NuFitData *&data_, NuFitPDFs *&pdfs_) {
 	for (auto parDataVec : paramVector_fixed) {  // each parameter
 		auto parValue = config->param_initial_guess[parDataVec[0].idx_pdf];
 		for (auto parData : parDataVec) {  // each hist in parData
-			for (auto j = 0U; j < data_vector[parData.idx_hist-1].size(); j++) {  // each bin
+			for (auto j = 0U; j < pdf_vectors[parData.idx_hist-1].size(); j++) {  // each bin
                 fitValFixed[parData.idx_hist-1][j] += pdf_vectors[parData.idx_pdf][j]
                     * parValue * config->param_eff[parData.idx_pdf]
 					* efficiencies[parData.idx_pdf];
@@ -166,10 +172,8 @@ NuFitContainer::NuFitContainer(NuFitData *&data_, NuFitPDFs *&pdfs_) {
 }
 
 // @brief Destructor for NuFitContainer
-NuFitContainer::~NuFitContainer() {
-	// data and pdfs are managed elsewhere, nothing to do here
-	std::cout << "Destructing NuFitContainer" << std::endl;
-}
+// data and pdfs are managed elsewhere, nothing to do here
+NuFitContainer::~NuFitContainer() {}
 
 // @brief Calculate the fit function for a set of parameters
 auto NuFitContainer::fitFunction(unsigned int npar, const double *par)
@@ -246,13 +250,11 @@ auto NuFitContainer::NLL_MUST(T ni, T yi) -> T {
 
 // @brief MinuitManager constructor
 MinuitManager::MinuitManager() {
-	std::cout << "Constructing MinuitManager" << std::endl;
 	errorflag = 0;
 }
 
 // @brief MinuitManager destructor
 MinuitManager::~MinuitManager() {
-	std::cout << "Destructing MinuitManager" << std::endl;
 	if (gMinuit) delete gMinuit;
 }
 
@@ -271,22 +273,36 @@ auto MinuitManager::initMinuit() -> void {
 			config->param_initial_guess[i], config->param_stepsize[i],
 			config->param_lowerlim[i], config->param_upperlim[i], errorflag);
 	}
-}
-
-// @brief start the minimization process by executing Minuit commands
-auto MinuitManager::callMinuit() -> void {
-	// Give Minuit a list of commands through arglist
-	double arglist[2];
 
 	// We are doing maximum likelihood fits: errors at +0.5 logL
 	arglist[0] = 0.5;
-	gMinuit ->mnexcm("SET ERR", arglist, 1, errorflag);
+	gMinuit->mnexcm("SET ERR", arglist, 1, errorflag);
 
 	// STR=1: standard fit
 	// STR=2: additional search around found minimum, needs derivatives
 	arglist[0] = 2;
 	gMinuit->mnexcm("SET STR", arglist, 1, errorflag);
+}
 
+// @brief Reset the fit results to prepare for a new fit
+auto MinuitManager::resetMinuit() -> void {
+	gMinuit->mnrset(1);
+
+	// Not strictly necessary but better adherence to original initial guess
+	gMinuit->mncler();
+	// Set each parameter in Minuit
+	for (auto j = 0U; j < fitCtnr->n_params; j++) {
+		// Convert index space
+		auto i = fitCtnr->paramVector[j][0].idx_pdf;
+		// Give the parameter information to Minuit
+		gMinuit->mnparm(j, config->param_names[i],
+			config->param_initial_guess[i], config->param_stepsize[i],
+			config->param_lowerlim[i], config->param_upperlim[i], errorflag);
+	}
+}
+
+// @brief start the minimization process by executing Minuit commands
+auto MinuitManager::callMinuit() -> void {
 	// Call MIGRAD (+ SIMPLEX method if Migrad fails)
 	arglist[0] = 50000;
 	arglist[1] = 0.001;
@@ -430,24 +446,33 @@ auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
 // @param pdfs MC PDFs to fit to
 // @param config container for fit options / variables
 // @return NuFitResults object containing relevant fit results info
-auto Fit(NuFitData *&data, NuFitPDFs *&pdfs) -> NuFitResults* {
-	// 1. Create the NuFitContainer object -> formats data according to config
-	// 1.1 Overwrite NuFitContainer at static location in MCFit scope
-	fitCtnr = new NuFitContainer(data, pdfs);
+auto doFit(MinuitManager *&manager, NuFitData *&data) -> NuFitResults* {
+	// 1. Update the data used for the fit
+	fitCtnr->setData(data);
 
 	// 2. Prepare TMinuit
-	MinuitManager *manager = new MinuitManager();
-	manager->initMinuit();
+	manager->resetMinuit();
 
 	// 3. Start minimization
 	manager->callMinuit();
 
 	// 4. Return results
-	auto results = manager->getResults();
+	return manager->getResults();
+}
 
-	// Clean up and return
-	delete fitCtnr;
+// @brief Container for doFit - to externally manage the MinuitManager
+auto Fit(NuFitData *&data, NuFitPDFs *&pdfs) -> NuFitResults* {
+	// Initialise Minuit manager
+	MinuitManager *manager = new MinuitManager();
+	fitCtnr = new NuFitContainer(pdfs);
+	manager->initMinuit();
+
+	// Perform fit
+	auto results = doFit(manager, data);
+
+	// Cleanup and return
 	delete manager;
+	delete fitCtnr;
 	return results;
 }
 
@@ -456,13 +481,30 @@ auto Fit(NuFitData *&data, NuFitPDFs *&pdfs) -> NuFitResults* {
 // @param pdfs pointer to NuFitPDFs with the MC PDFs
 // @param config pointer to the fit config variables
 // @return vector of NuFitResults*, one for each toy dataset
-auto Fit(NuFitToyData *&toyData, NuFitPDFs *&pdfs) -> std::vector<NuFitResults*> {
+auto doFit(MinuitManager *&manager, NuFitToyData *&toyData) -> std::vector<NuFitResults*> {
 	// Initialise
 	std::vector<NuFitResults*> results;
 	for (auto idx_dataset = 0U; idx_dataset < config->ToyData; idx_dataset++) {
 		toyData->loadDataset(idx_dataset);
-		results.push_back(Fit(toyData->dataset, pdfs));
+		results.push_back(doFit(manager, toyData->dataset));
 	}
+	return results;
+}
+
+// @brief Container for doFit - to externally manage the MinuitManager
+auto Fit(NuFitToyData *&toyData, NuFitPDFs *&pdfs) -> std::vector<NuFitResults*> {
+	// Initialise Minuit manager
+	MinuitManager *manager = new MinuitManager();
+	toyData->loadDataset(0);
+	fitCtnr = new NuFitContainer(pdfs);
+	manager->initMinuit();
+
+	// Perform fit
+	auto results = doFit(manager, toyData);
+
+	// Cleanup and return
+	delete manager;
+	delete fitCtnr;
 	return results;
 }
 

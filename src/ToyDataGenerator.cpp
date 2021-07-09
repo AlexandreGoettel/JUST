@@ -35,7 +35,6 @@ auto getBinEdges_(TH1D *hist, unsigned int nbins) -> std::vector<double> {
 // pass reference to pdf pointer -> no need for delete later
 NuFitToyData::NuFitToyData(NuFitPDFs *&pdfs_) {
 	pdfs = pdfs_;
-	std::cout << "Constructing NuFitToyData" << std::endl;
 
 	// Fill the histogr vector with the TH1Ds in which the toy data will go
 	auto nHists = config->nSp_histos_toy.size();
@@ -57,7 +56,6 @@ NuFitToyData::NuFitToyData(NuFitPDFs *&pdfs_) {
 // @brief Destructor for NuFitToyData
 // @brief No need to delete pdfs -> pointer was passed by reference
 NuFitToyData::~NuFitToyData() {
-	std::cout << "Destructing NuFitToyData" << std::endl;
 	if (dataset) delete dataset;
 	// This also implicitely does "delete hdata" that points to histogr.back()
 	for (auto el : histogr) {

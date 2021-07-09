@@ -16,7 +16,6 @@ NuFitResults::NuFitResults(std::vector<double> popt_,
 	int errflg, int errflg_cov, std::vector<std::vector<paramData>> vec,
 	std::vector<std::vector<paramData>> vec_fixed) {
 
-	std::cout << "Constructing NuFitResults" << std::endl;
 	popt = popt_;
 	pcov = pcov_;
 	efficiencies = eff_;
@@ -26,9 +25,7 @@ NuFitResults::NuFitResults(std::vector<double> popt_,
 }
 
 // @brief Destructor for NuFitResults
-NuFitResults::~NuFitResults() {
-	std::cout << "Destructing NuFitResults" << std::endl;
-}
+NuFitResults::~NuFitResults() {}
 
 // @brief combine paramVectors to include free/constrained and fixed parameters
 auto NuFitResults::combineParamVectors(std::vector<std::vector<paramData>> vec,

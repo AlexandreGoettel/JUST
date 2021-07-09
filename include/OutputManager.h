@@ -24,6 +24,7 @@
 namespace NuFitter {
 
 // TODO: maybe a class here would be useful after all?
+// TODO: a lot of these refs can/should be const refs
 void ProcessResults(NuFitData*&, NuFitPDFs*&, NuFitResults*&);
 void ProcessResults(NuFitToyData*&,NuFitPDFs*&, NuFitPDFs*&, std::vector<NuFitResults*>&);
 
