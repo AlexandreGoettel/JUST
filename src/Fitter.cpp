@@ -207,6 +207,28 @@ auto NuFitContainer::fitFunction(unsigned int npar, const double *par)
 	return fitFuncVal;
 }
 
+// @brief Calculate the chi square value for a given set of parameters
+// @brief Warning: this ignores 0-bins
+auto NuFitContainer::getChiSquare(int npar, const double *par) -> double {
+	auto chi_sqr { 0. };
+	auto n {0U};
+	auto fitFuncVal = fitFunction(npar, par);
+
+	// Loop over data
+	for (auto i = 0U; i < data_vector.size(); i++) {
+		for (auto j = 0U; j < data_vector[i].size(); j++) {
+			auto yi = fitFuncVal[i][j];
+			auto ni = data_vector[i][j];
+
+			if (ni > 0) {
+				chi_sqr += (yi - ni) * (yi - ni) / ni;
+				n++;
+			}
+		}
+	}
+	return chi_sqr / (n - npar);
+}
+
 // @brief Container for the likelihood calculation
 template <typename L>
 auto NuFitContainer::NLL(L eval, int npar, const double *par) -> double {
@@ -321,11 +343,13 @@ auto MinuitManager::callMinuit() -> void {
 // @brief Convert fit results to vectors, store in member variables popt/pcov
 auto MinuitManager::getResults() -> NuFitResults* {
 	// Get the total number of (free+fixed(+constr)) parameters
-	auto n_params_tot = fitCtnr->paramVector.size() + fitCtnr->paramVector_fixed.size();
+	auto n_params_free = fitCtnr->paramVector.size();
+	auto n_params_tot = n_params_free + fitCtnr->paramVector_fixed.size();
 
 	// Initialise variables
 	double x, _;
 	std::vector<double> popt(n_params_tot);
+	double popt_ [n_params_free];
 	std::vector<std::vector<double>> pcov(n_params_tot,
 	                                      std::vector<double>(n_params_tot)),
 									 pcov_(fitCtnr->n_params,
@@ -354,6 +378,12 @@ auto MinuitManager::getResults() -> NuFitResults* {
 			iFixed++;
 		}
 		iPopt++;
+	}
+
+	// Get the free parameters only
+	for (auto i = 0U; i < n_params_free; i++) {
+		gMinuit->GetParameter(i, x, _);
+		popt_[i] = x;
 	}
 
 	// Get the covariance matrix
@@ -408,9 +438,13 @@ auto MinuitManager::getResults() -> NuFitResults* {
     int tmp_;
     gMinuit->mnstat(_, _, _, tmp_, tmp_, errorflag_cov);
 
+	// Get chi-square
+	auto chi_sqr_ndof = fitCtnr->getChiSquare(fitCtnr->paramVector.size(),
+	                                          popt_);
+
 	auto results = new NuFitResults(popt, pcov, fitCtnr->efficiencies,
                                     errorflag, errorflag_cov, fitCtnr->paramVector,
-								    fitCtnr->paramVector_fixed);
+								    fitCtnr->paramVector_fixed, chi_sqr_ndof);
 	return results;
 }
 

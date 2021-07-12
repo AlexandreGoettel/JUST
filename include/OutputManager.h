@@ -59,6 +59,7 @@ void ProcessResults(NuFitData*&, NuFitPDFs*&, NuFitResults*&);
 void ProcessResults(NuFitToyData*&,NuFitPDFs*&, NuFitPDFs*&, std::vector<NuFitResults*>&);
 
 std::vector<double> toCpdPerkton(std::vector<double>, NuFitResults*&);
+template <class T> bool InFitRange(T, T);
 
 }  // namespace NuFitter
 

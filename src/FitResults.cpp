@@ -14,7 +14,7 @@ namespace NuFitter {
 NuFitResults::NuFitResults(std::vector<double> popt_,
 	std::vector<std::vector<double>> pcov_, std::vector<double> eff_,
 	int errflg, int errflg_cov, std::vector<std::vector<paramData>> vec,
-	std::vector<std::vector<paramData>> vec_fixed) {
+	std::vector<std::vector<paramData>> vec_fixed, double chi) {
 
 	popt = popt_;
 	pcov = pcov_;
@@ -22,6 +22,7 @@ NuFitResults::NuFitResults(std::vector<double> popt_,
 	errorflag = errflg;
 	errorflag_cov = errflg_cov;
 	paramVector = combineParamVectors(vec, vec_fixed);
+	chi_sqr_ndof = chi;
 }
 
 // @brief Destructor for NuFitResults

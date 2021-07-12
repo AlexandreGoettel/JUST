@@ -37,6 +37,7 @@ public:  // Minuit functions
 	template <class T> T NLL_MUST(T, T);
     template <typename L> double NLL(L, int, const double*);
 	std::vector<std::vector<double>> fitFunction(unsigned int, const double*);
+	double getChiSquare(int, const double*);
 public:  // Member variables
 	unsigned int n_params, n_fixed;
 	std::vector<double> efficiencies;

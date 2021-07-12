@@ -21,7 +21,7 @@ public: // Constructors and operator assignments
 	NuFitResults(std::vector<double>, std::vector<std::vector<double>>,
 		         std::vector<double>, int, int,
 	             std::vector<std::vector<paramData>>,
-			 	 std::vector<std::vector<paramData>>);  // constructor
+			 	 std::vector<std::vector<paramData>>, double);  // constructor
 	~NuFitResults();  // destructor
 	NuFitResults(const NuFitResults&) = delete;  // copy constructor
 	NuFitResults(NuFitResults&&) = delete;  // move constructor
@@ -32,6 +32,7 @@ public: // Member variables
 	std::vector<double> popt, efficiencies;
 	std::vector<std::vector<double>> pcov;
 	unsigned int errorflag, errorflag_cov;
+	double chi_sqr_ndof;
 	std::vector<std::vector<paramData>> paramVector;
 
 public: // Functions

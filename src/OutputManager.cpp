@@ -38,23 +38,12 @@ auto vec2Array(std::vector<T> v) -> T* {
     return array;
 }
 
-// // @brief OutputManager constructor for data fits
-// OutputManager::OutputManager(NuFitData*& data_, NuFitPDFs*& pdfs_, NuFitResults*& results_) {
-// 	data = data_;
-// 	pdfs = pdfs_;
-// 	std::vector<NuFitResults*> res {results_};
-// 	results = res;
-// 	// TODO??
-// }
-//
-// // @brief OutputManager constructor for toy fits
-// OutputManager::OutputManager(NuFitToyData*& data_, NuFitPDFs*& pdfs_,
-// 	                         NuFitPDFs*& pdfs_toy_, std::vector<NuFitResults*>& results_) {
-// 	data_toy = data_;
-// 	pdfs = pdfs_;
-// 	pdfs_toy = pdfs_toy_;
-// 	results = results_;
-// }
+// @brief Evaluate whether the bin between lower_edge and upper edge is
+// inside of the bin range
+template <class T>
+auto InFitRange(T lower_edge, T upper_edge) -> bool {
+	return upper_edge > config->emin && lower_edge < config->emax;
+}
 
 // @brief Convert a results parameter vector of counts into cpd/kton
 auto toCpdPerkton(std::vector<double> ref, NuFitResults *&results) -> std::vector<double> {
@@ -99,6 +88,7 @@ auto OutputManager::makePDFsSum(NuFitData *&data, NuFitPDFs*& pdfs,
 	// TODO: bin width isn't always integer nor 1 !!
 	auto range = config->emax - config->emin;
 
+	if (PDFsSum) delete PDFsSum;
 	PDFsSum = new std::vector<TH1D*>;
 	for (auto i : data->hist_ids){
 		auto name = "PDFsSum_" + config->data_hist_names[i];
@@ -195,8 +185,10 @@ auto OutputManager::writeFitTree(std::vector<NuFitResults*>& results) -> void {
 	TTree *fitTree = new TTree("FitResults", "FitResults");
 	auto npar = results[0]->paramVector.size();
 	Values val[npar];
+	auto chi {0.};
 
 	// Create all the branches of the Tree
+	fitTree->Branch("chi_sqr_ndof", &chi, "chi_sqr_ndof/D");
 	for (auto i = 0U; i < results[0]->paramVector.size(); i++) {
 		auto paramVec = results[0]->paramVector[i];
 		auto name = config->param_names[paramVec[0].idx_pdf];
@@ -216,6 +208,7 @@ auto OutputManager::writeFitTree(std::vector<NuFitResults*>& results) -> void {
 			val[i].fit_counts_range = results_->popt[i];
 			val[i].fit_counts_tot = popt_cpd[i]*config->exposure;
 		}
+		chi = results_->chi_sqr_ndof;
 
 		fitTree->Fill();
 	}
