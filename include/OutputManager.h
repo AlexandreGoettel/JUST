@@ -11,6 +11,7 @@
 #include <memory>
 #include <vector>
 #include <fstream>
+#include <cstring>
 // ROOT includes
 #include "TFile.h"
 // Project includes
@@ -23,15 +24,40 @@
 
 namespace NuFitter {
 
-// TODO: maybe a class here would be useful after all?
+class OutputManager {
+public:  // Constructors and operator assigments
+	// OutputManager(NuFitData*&, NuFitPDFs*&, NuFitResults*&);
+	// OutputManager(NuFitToyData*&,NuFitPDFs*&, NuFitPDFs*&, std::vector<NuFitResults*>&);
+	OutputManager() = default;
+	~OutputManager();  // destructor
+	OutputManager(const OutputManager&) = default;  // copy constructor
+	OutputManager(OutputManager&&) = default;  // move constructor
+	OutputManager &operator=(const OutputManager&) = default;  // copy assignment
+	OutputManager &operator=(OutputManager&&) = default;  // move assignment
+
+public:
+	void initRootFile(std::string&);
+	void closeRootFile();
+	void writeParamTree(NuFitResults*&);
+	void writeFitTree(std::vector<NuFitResults*>&);
+	void writeToyTree();
+	void plotToFile(NuFitData*&, NuFitPDFs*&, NuFitResults*&);
+	void drawPDFs(NuFitPDFs*&, NuFitPDFs*&);
+	void fitToFile(std::ofstream&, NuFitResults*&);
+
+private:
+	void makePDFsSum(NuFitData*&, NuFitPDFs*&, NuFitResults*&);
+
+private:
+	TFile *f;
+	std::vector<TH1D*> *PDFsSum = nullptr;
+	std::vector<std::vector<paramData>> paramVector;
+};
+
 // TODO: a lot of these refs can/should be const refs
 void ProcessResults(NuFitData*&, NuFitPDFs*&, NuFitResults*&);
 void ProcessResults(NuFitToyData*&,NuFitPDFs*&, NuFitPDFs*&, std::vector<NuFitResults*>&);
 
-void fitToFile(std::ofstream&, NuFitResults*&);
-void plotToFile(TFile*&, NuFitData*&, NuFitPDFs*&, NuFitResults*&);
-void DrawPDFs(TFile*&, NuFitPDFs*&, NuFitPDFs*&, NuFitResults*&);
-void createParamTree(TFile*&, NuFitResults*&);
 std::vector<double> toCpdPerkton(std::vector<double>, NuFitResults*&);
 
 }  // namespace NuFitter

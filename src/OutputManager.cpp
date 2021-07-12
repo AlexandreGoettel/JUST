@@ -31,11 +31,30 @@ struct ValuesParam {
 	unsigned int isFixed;
 };
 
+// @brief Convert a vector to an array, works because C++ guarantees ordering
 template <class T>
 auto vec2Array(std::vector<T> v) -> T* {
     T *array = &v[0];
     return array;
 }
+
+// // @brief OutputManager constructor for data fits
+// OutputManager::OutputManager(NuFitData*& data_, NuFitPDFs*& pdfs_, NuFitResults*& results_) {
+// 	data = data_;
+// 	pdfs = pdfs_;
+// 	std::vector<NuFitResults*> res {results_};
+// 	results = res;
+// 	// TODO??
+// }
+//
+// // @brief OutputManager constructor for toy fits
+// OutputManager::OutputManager(NuFitToyData*& data_, NuFitPDFs*& pdfs_,
+// 	                         NuFitPDFs*& pdfs_toy_, std::vector<NuFitResults*>& results_) {
+// 	data_toy = data_;
+// 	pdfs = pdfs_;
+// 	pdfs_toy = pdfs_toy_;
+// 	results = results_;
+// }
 
 // @brief Convert a results parameter vector of counts into cpd/kton
 auto toCpdPerkton(std::vector<double> ref, NuFitResults *&results) -> std::vector<double> {
@@ -56,8 +75,197 @@ auto toCpdPerkton(std::vector<double> ref, NuFitResults *&results) -> std::vecto
 	return output;
 }
 
+// @brief Destructor for OutputManager
+OutputManager::~OutputManager() {
+	if (f->IsOpen()) f->Close();
+	delete PDFsSum;
+}
+
+// @brief Open the root file to be used to write the results in
+auto OutputManager::initRootFile(std::string &filename) -> void {
+	f = new TFile(filename.c_str(), "RECREATE");
+	f->cd();
+}
+
+// @brief Close the root file
+auto OutputManager::closeRootFile() -> void {
+	f->Close();
+}
+
+// @brief Initialise and fill PDFsSum so it can be shared later
+auto OutputManager::makePDFsSum(NuFitData *&data, NuFitPDFs*& pdfs,
+                                NuFitResults *& results) -> void {
+	// Temporary
+	// TODO: bin width isn't always integer nor 1 !!
+	auto range = config->emax - config->emin;
+
+	PDFsSum = new std::vector<TH1D*>;
+	for (auto i : data->hist_ids){
+		auto name = "PDFsSum_" + config->data_hist_names[i];
+		TH1D *PDFs_hists = new TH1D(name.c_str(), name.c_str(), range,
+		    config->emin, config->emax);
+		PDFsSum->push_back(PDFs_hists);
+	}
+
+	// Fill PDFsSum
+	for (auto i = 0U; i < results->paramVector.size(); i++) {
+		auto parData = results->paramVector[i];
+		for (auto el : parData) {
+			auto j = el.idx_pdf;
+			auto n = el.idx_hist-1;
+			auto current_name = config->param_names[j];
+			auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
+			auto current_PDFsSum = PDFsSum->at(n);
+
+			if (config->param_fixed[j] == 1) {
+				current_hist->Scale(results->popt[i] * config->param_eff[j]);
+			} else {
+				current_hist->Scale(results->popt[i] * config->param_eff[j]
+				                    / results->efficiencies[j]);
+			}
+
+			// Update PDFSum
+			for(auto k = 1U; k <= current_PDFsSum->GetNbinsX(); k++){
+				current_PDFsSum->SetBinContent(k, current_PDFsSum->GetBinContent(k)
+				    + current_hist->GetBinContent(k - 1 + config->emin));
+			}
+		}
+	}
+
+	paramVector = results->paramVector;
+}
+
+// @brief Create, fill, and save a tree with some meta information
+auto OutputManager::writeParamTree(NuFitResults *&results) -> void {
+	f->cd();
+	f->mkdir("parameters");
+	f->cd("parameters");
+	TTree *paramTree = new TTree("Parameters", "Parameters");
+	TTree *configTree = new TTree("Config", "Config");
+
+	// Initialise branches
+	auto npar = results->paramVector.size();
+	ValuesParam val[npar];
+	for (auto i = 0U; i < npar; i++) {
+		// Initialise
+		auto paramVec = results->paramVector[i];
+		auto j = paramVec[0].idx_pdf;
+		auto name = config->param_names[j];
+		paramTree->Branch(name, &val[i], "injected_rate/D:initial_guess/D:stepsize/D:lowerlim/D:upperlim/D:isFixed/i");
+
+		// Check if its a toy or data fit
+		if (config->param_initial_guess_toy.size() > 0) {
+			val[i].injected_rate = config->param_initial_guess_toy[j]/config->exposure;
+		}
+
+		// Fill
+		// double injected_rate, initial_guess, stepsize, lowerlim, upperlim
+		val[i].initial_guess = config->param_initial_guess[j]/config->exposure;
+		val[i].stepsize = config->param_stepsize[j]/config->exposure;
+		val[i].lowerlim = config->param_lowerlim[j]/config->exposure;
+		val[i].upperlim = config->param_upperlim[j]/config->exposure;
+		val[i].isFixed = config->param_fixed[j];
+	}
+	paramTree->Fill();
+
+	// Now init tree for non-parameter numbers
+	double exposure, emin, emax;
+	unsigned int seed;
+	configTree->Branch("exposure", &exposure, "exposure/D");
+	configTree->Branch("emin", &emin, "emin/D");
+	configTree->Branch("emax", &emax, "emax/D");
+	configTree->Branch("seed", &seed, "emax/i");
+
+	// Fill
+	exposure = config->exposure;
+	emin = config->emin;
+	emax = config->emax;
+	seed = config->seed;
+	configTree->Fill();
+
+	// Write to file
+	paramTree->Write();
+	configTree->Write();
+	f->cd();
+}
+
+// @brief Create, fill, and write a tree containing the fit results
+auto OutputManager::writeFitTree(std::vector<NuFitResults*>& results) -> void {
+	// Initialise
+	TTree *fitTree = new TTree("FitResults", "FitResults");
+	auto npar = results[0]->paramVector.size();
+	Values val[npar];
+
+	// Create all the branches of the Tree
+	for (auto i = 0U; i < results[0]->paramVector.size(); i++) {
+		auto paramVec = results[0]->paramVector[i];
+		auto name = config->param_names[paramVec[0].idx_pdf];
+		fitTree->Branch(name, &val[i], "fit_rate/D:fit_rate_err/D:fit_counts_tot/D:fit_counts_range/D");
+	}
+
+	// Fill the Tree
+	for (auto t = 0U; t < results.size(); t++) {  // For each toy dataset
+		auto results_ = results[t];
+		auto popt_cpd = toCpdPerkton(results_->popt, results_);
+		auto popt_err_cpd = toCpdPerkton(results_->getUncertainties(), results_);
+
+		// Get the fit result information
+		for (auto i = 0U; i < npar; i++) {
+			val[i].fit_rate = popt_cpd[i];
+			val[i].fit_rate_err = popt_err_cpd[i];
+			val[i].fit_counts_range = results_->popt[i];
+			val[i].fit_counts_tot = popt_cpd[i]*config->exposure;
+		}
+
+		fitTree->Fill();
+	}
+	f->cd();
+	fitTree->Write();
+}
+
+// @brief Create, fill, and write a tree containing toy generation information
+auto OutputManager::writeToyTree() -> void {
+	// Initialise
+	TTree *toyTree = new TTree("ToyGeneration", "ToyGeneration");
+
+	// Create branches for the toy data tree
+	auto nparToy = config->paramVector_toy.size();
+	ValuesToy valToy[nparToy];
+	for (auto i = 0U; i < nparToy; i++) {
+		auto j = config->paramVector_toy[i][0].idx_pdf;
+		auto name = config->pdf_names_toy[j];
+		toyTree->Branch(name, &valToy[i], "toy_rate/D:gen_counts/D");
+	}
+
+	// Fill the TTrees
+	for (auto t = 0U; t < config->ToyData; t++) {  // For each toy dataset
+		// Get the toy data information
+		auto samples = config->param_sampled[t];
+		for (auto i = 0U; i < config->paramVector_toy.size(); i++) {  // For each param
+			auto gen_counts {0UL};
+			auto parData = config->paramVector_toy[i];
+
+			// Number of PDFs controlled by the parameter
+			auto nPDFs_param = parData.size();
+			for (auto j = 0U; j < nPDFs_param; j++) {
+				auto k = parData[j].idx_pdf;
+				// Dividing by param_eff points back directly to the total
+				// number of physical events. So take the average over the
+				// pdfs to get the toy-generated poisson-fluctuated rate
+				gen_counts += samples[k] / config->param_eff[k] / nPDFs_param;
+			}
+
+			valToy[i].toy_rate = gen_counts/config->exposure;
+			valToy[i].gen_counts = gen_counts;
+		}
+		toyTree->Fill();
+	}
+	f->cd();
+	toyTree->Write();
+}
+
 // @brief Write the output of one fit to file
-auto fitToFile(std::ofstream &outf, NuFitResults *&results) -> void {
+auto OutputManager::fitToFile(std::ofstream &outf, NuFitResults *&results) -> void {
 	// Write the fit status
 	outf << "[STATUS] Migrad status: ";
 	if (results->errorflag != 0) {
@@ -140,19 +348,11 @@ auto fitToFile(std::ofstream &outf, NuFitResults *&results) -> void {
 		 << "Random seed: " << config->seed << std::endl;
 }
 
-auto plotToFile(TFile *&f,  NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults *&results) -> void {
+auto OutputManager::plotToFile(NuFitData *&data, NuFitPDFs *&pdfs,
+	                           NuFitResults *&results) -> void {
 	f->cd();
-	// Create a std::vector<TH1D*> to fill with the fit results
-    // TODO: bin width isn't always integer nor 1 !!
-	auto range = config->emax - config->emin;
-
-	std::vector<TH1D*> PDFsSum;
-	for (auto i : data->hist_ids){
-		auto name = "PDFsSum_" + config->data_hist_names[i];
-		TH1D *PDFs_hists = new TH1D(name.c_str(), name.c_str(), range,
-		    config->emin, config->emax);
-		PDFsSum.push_back(PDFs_hists);
-	}
+	// Alternative: build PDFsSum with OututManager constructors?
+	if (!PDFsSum) makePDFsSum(data, pdfs, results);
 
 	// Create a canvas to plot the results in
 	auto nHists = data->hist_ids.size();
@@ -187,7 +387,7 @@ auto plotToFile(TFile *&f,  NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults *&r
 		c->cd();
 	}
 
-	// Define colors to be used in the plots
+	// Define colors to be used in the pdfs
 	int *Colors = new int [13]{632,632,632,409,616,400,600,870,921,801,801,881,419};
 	auto idx_col {0};
 
@@ -198,8 +398,9 @@ auto plotToFile(TFile *&f,  NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults *&r
 			auto j = el.idx_pdf;
 			auto n = el.idx_hist-1;
 			auto current_name = config->param_names[j];
-
 			auto current_hist = (TH1D*)pdfs->pdf_histograms[j]->Clone();
+			auto current_PDFsSum = PDFsSum->at(n);
+
 			if (config->param_fixed[j] == 1) {
 				current_hist->Scale(results->popt[i] * config->param_eff[j]);
 			} else {
@@ -207,19 +408,14 @@ auto plotToFile(TFile *&f,  NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults *&r
 				                    / results->efficiencies[j]);
 			}
 
-			// Update PDFSum
-			for(auto k = 1U; k <= range; k++){
-				PDFsSum.at(n)->SetBinContent(k,PDFsSum.at(n)->GetBinContent(k)+current_hist->GetBinContent(k-1+config->emin));
-			}
-
 			// Draw PDF
 			padUp[n]->cd();
 			current_hist->SetLineColor(Colors[idx_col]);
 			current_hist->SetMarkerColor(Colors[idx_col]);
 			current_hist->Draw("SAME");
-			PDFsSum.at(n)->SetLineColor(632);
-			PDFsSum.at(n)->SetMarkerColor(632);
-			PDFsSum.at(n)->Draw("SAME");
+			current_PDFsSum->SetLineColor(632);
+			current_PDFsSum->SetMarkerColor(632);
+			current_PDFsSum->Draw("SAME");
 			if(n == 1 && (current_name == "C11_2" || current_name == "C10" || current_name == "He6")){
 				leg[n]->AddEntry(current_hist, config->param_names.at(j));
 				leg[n]->Draw("SAME");
@@ -241,7 +437,7 @@ auto plotToFile(TFile *&f,  NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults *&r
 		for(auto j = 0U; j < config->emax; j++){
 			rec.push_back(j+config->emin);
 			res.push_back((data->data_histograms[i]->GetBinContent(j+config->emin) -
-			               PDFsSum[i]->GetBinContent(j+1)) /
+			               PDFsSum->at(i)->GetBinContent(j+1)) /
 						  sqrt(data->data_histograms[i]->GetBinContent(j+config->emin)));
 		}
 		rec_energy.push_back(rec);
@@ -257,7 +453,7 @@ auto plotToFile(TFile *&f,  NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults *&r
 		c->cd();
 		padDown[i]->Draw();
 		padDown[i]->cd();
-		Res[i] = new TGraph(range, vec2Array(rec_energy[i]),
+		Res[i] = new TGraph(PDFsSum->at(i)->GetNbinsX(), vec2Array(rec_energy[i]),
 	                        vec2Array(residuals[i]));
 		Res[i]->SetTitle("Residuals");
 		Res[i]->GetXaxis()->SetTitle("Reconstructed energy [p.e.]");
@@ -274,13 +470,13 @@ auto plotToFile(TFile *&f,  NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults *&r
 }
 
 // @brief Function to draw extra PDFs for comparison
-auto DrawPDFs(TFile *&f, NuFitPDFs *&pdfs_toy, NuFitPDFs *&pdfs_fit,
-	          NuFitResults *&results) -> void {
+auto OutputManager::drawPDFs(NuFitPDFs *&pdfs_fit, NuFitPDFs *&pdfs_toy) -> void {
 	f->cd();
 
 	TCanvas *c = new TCanvas("PDFs", "PDFs", 1500, 700);
 	gPad->SetLogy();
 	TPad *pad[2];
+	// TODO: auto-adjust to the number of histograms..
 	pad[0] = new TPad("PDFs_model", "PDFs_model",0.,0.,0.5,1.0);
 	pad[1] = new TPad("PDFs_data", "PDFs_data",0.5,0.,1.0,1.0);
 	pad[0]->Draw();
@@ -293,9 +489,8 @@ auto DrawPDFs(TFile *&f, NuFitPDFs *&pdfs_toy, NuFitPDFs *&pdfs_fit,
 	int *Colors = new int [13]{632,632,632,409,616,400,600,870,921,801,801,881,419};
 	auto idx_col {0};
 
-	// Plot the pdfs_fit for each parameter
-	for (auto i = 0U; i < results->paramVector.size(); i++) {
-		auto parData = results->paramVector[i];
+	for (auto i = 0U; i < paramVector.size(); i++) {
+		auto parData = paramVector[i];
 		for (auto el : parData) {
 			auto j = el.idx_pdf;
 			auto current_name = config->param_names[j];
@@ -319,8 +514,8 @@ auto DrawPDFs(TFile *&f, NuFitPDFs *&pdfs_toy, NuFitPDFs *&pdfs_fit,
 
 	// Plot the pdfs_toy for each parameter
 	auto idx_col_toy {0};
-	for (auto i = 0U; i < results->paramVector.size(); i++) {
-		auto parData = results->paramVector[i];
+	for (auto i = 0U; i < paramVector.size(); i++) {
+		auto parData = paramVector[i];
 		for (auto el : parData) {
 			auto j = el.idx_pdf;
 			auto current_name = config->param_names[j];
@@ -345,68 +540,30 @@ auto DrawPDFs(TFile *&f, NuFitPDFs *&pdfs_toy, NuFitPDFs *&pdfs_fit,
 	c->Write();
 }
 
-// @brief Create, fill, and save a tree with some meta information
-auto createParamTree(TFile *&f, NuFitResults *&results) -> void {
-	f->cd();
-	f->mkdir("parameters");
-	f->cd("parameters");
-	TTree *paramTree = new TTree("Parameters", "Parameters");
-	TTree *configTree = new TTree("Config", "Config");
-
-	// Initialise branches
-	auto npar = results->paramVector.size();
-	ValuesParam val[npar];
-	for (auto i = 0U; i < npar; i++) {
-		// Initialise
-		auto paramVec = results->paramVector[i];
-		auto j = paramVec[0].idx_pdf;
-		auto name = config->param_names[j];
-		paramTree->Branch(name, &val[i], "injected_rate/D:initial_guess/D:stepsize/D:lowerlim/D:upperlim/D:isFixed/i");
-
-		// Fill
-		// double injected_rate, initial_guess, stepsize, lowerlim, upperlim
-		val[i].injected_rate = config->param_initial_guess_toy[j]/config->exposure;
-		val[i].initial_guess = config->param_initial_guess[j]/config->exposure;
-		val[i].stepsize = config->param_stepsize[j]/config->exposure;
-		val[i].lowerlim = config->param_lowerlim[j]/config->exposure;
-		val[i].upperlim = config->param_upperlim[j]/config->exposure;
-		val[i].isFixed = config->param_fixed[j];
-	}
-	paramTree->Fill();
-
-	// Now init tree for non-parameter numbers
-	double exposure, emin, emax;
-	unsigned int seed;
-	configTree->Branch("exposure", &exposure, "exposure/D");
-	configTree->Branch("emin", &emin, "emin/D");
-	configTree->Branch("emax", &emax, "emax/D");
-	configTree->Branch("seed", &seed, "emax/i");
-
-	// Fill
-	exposure = config->exposure;
-	emin = config->emin;
-	emax = config->emax;
-	seed = config->seed;
-	configTree->Fill();
-
-	// Write to file
-	paramTree->Write();
-	configTree->Write();
-	f->cd();
-}
-
 // @brief For now, simply plot the results (simple fit example)
-auto ProcessResults(NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults *&results) -> void {
-	//----------------------------------------
-	//----------- Plot the results -----------
-	//----------------------------------------
-	// Open file to save the plots in
-	auto root_filename = config->output_name + ".root";
-	TFile *f = new TFile(root_filename.c_str(), "RECREATE");
+auto ProcessResults(NuFitData *&data, NuFitPDFs *&pdfs,
+	                NuFitResults *&results) -> void {
+	auto manager = OutputManager();
 
-	// TODO: also plot PDFs here? Also add a paramTree?
-	plotToFile(f, data, pdfs, results);
-	f->Close();
+	//----------------------------------------
+	//------ Create the output rootfile ------
+	//----------------------------------------
+	auto root_filename = config->output_name + ".root";
+	manager.initRootFile(root_filename);
+
+	//----------------------------------------
+	//------ Create and fill the TTrees ------
+	//----------------------------------------
+	manager.writeParamTree(results);
+	std::vector<NuFitResults*> results_vec {results};
+	manager.writeFitTree(results_vec);
+
+	//----------------------------
+	//---------- Plots -----------
+	//----------------------------
+	// Save example plot
+	manager.plotToFile(data, pdfs, results);
+	manager.closeRootFile();
 
 	//----------------------------------------
 	//------ Create the output txt file ------
@@ -415,91 +572,37 @@ auto ProcessResults(NuFitData *&data, NuFitPDFs *&pdfs, NuFitResults *&results) 
 	auto out_filename = config->output_name + ".txt";
 	outf.open(out_filename.c_str());
 
-	fitToFile(outf, results);
+	manager.fitToFile(outf, results);
 	outf.close();
 }
 
 // @brief Same as the other ProcessResults() but for toy data fit(s)
 auto ProcessResults(NuFitToyData *&data, NuFitPDFs *&pdfs_toy, NuFitPDFs *&pdfs,
 					std::vector<NuFitResults*> &results) -> void {
+	auto manager = OutputManager();
+
 	//----------------------------------------
 	//------ Create the output rootfile ------
 	//----------------------------------------
 	auto root_filename = config->output_name + ".root";
-	TFile *f = new TFile(root_filename.c_str(), "RECREATE");
-	f->cd();
+	manager.initRootFile(root_filename);
 
+	//----------------------------------------
+	//------ Create and fill the TTrees ------
+	//----------------------------------------
+	manager.writeParamTree(results[0]);
+	manager.writeFitTree(results);
+	manager.writeToyTree();
+
+	//----------------------------
+	//---------- Plots -----------
+	//----------------------------
+	// Save example plot
+	manager.plotToFile(data->dataset, pdfs, results.back());
 	// Draw pdfs separatly for comparison purposes (once per file only)
-	DrawPDFs(f, pdfs_toy, pdfs, results[0]);
+	manager.drawPDFs(pdfs, pdfs_toy);
 
-	// Initialise TTrees
-	TTree *fitTree = new TTree("Distributions", "Distributions");
-	TTree *toyTree = new TTree("ToyGeneration", "ToyGeneration");
-	createParamTree(f, results[0]);
-	auto npar = results[0]->paramVector.size();
-	Values val[npar];
-
-	// Create all the branches of the TTrees
-	// fit_rate, fit_rate_err, fit_counts_tot, fit_counts_range, gen_counts
-	for (auto i = 0U; i < results[0]->paramVector.size(); i++) {
-		auto paramVec = results[0]->paramVector[i];
-		auto name = config->param_names[paramVec[0].idx_pdf];
-		fitTree->Branch(name, &val[i], "fit_rate/D:fit_rate_err/D:fit_counts_tot/D:fit_counts_range/D");
-	}
-
-	// Create branches for the toy data tree
-	auto nparToy = config->paramVector_toy.size();
-	ValuesToy valToy[nparToy];
-	for (auto i = 0U; i < nparToy; i++) {
-		auto j = config->paramVector_toy[i][0].idx_pdf;
-		auto name = config->pdf_names_toy[j];
-		toyTree->Branch(name, &valToy[i], "toy_rate/D:gen_counts/D");
-	}
-
-	// Fill the TTrees
-	for (auto t = 0U; t < config->ToyData; t++) {  // For each toy dataset
-		auto results_ = results[t];
-		auto popt_cpd = toCpdPerkton(results_->popt, results_);
-		auto popt_err_cpd = toCpdPerkton(results_->getUncertainties(), results_);
-
-		// Get the fit result information
-		for (auto i = 0U; i < npar; i++) {
-			val[i].fit_rate = popt_cpd[i];
-			val[i].fit_rate_err = popt_err_cpd[i];
-			val[i].fit_counts_range = results_->popt[i];
-			val[i].fit_counts_tot = popt_cpd[i]*config->exposure;
-		}
-
-		// Get the toy data information
-		auto samples = config->param_sampled[t];
-		for (auto i = 0U; i < config->paramVector_toy.size(); i++) {  // For each param
-			auto gen_counts {0UL};
-			auto parData = config->paramVector_toy[i];
-
-			// Number of PDFs controlled by the parameter
-			auto nPDFs_param = parData.size();
-			for (auto j = 0U; j < nPDFs_param; j++) {
-				auto k = parData[j].idx_pdf;
-				// Dividing by param_eff points back directly to the total
-				// number of physical events. So take the average over the
-				// pdfs to get the toy-generated poisson-fluctuated rate
-				gen_counts += samples[k] / config->param_eff[k] / nPDFs_param;
-			}
-
-			valToy[i].toy_rate = gen_counts/config->exposure;
-			valToy[i].gen_counts = gen_counts;
-		}
-		fitTree->Fill();
-		toyTree->Fill();
-	}
-	fitTree->Write();
-	toyTree->Write();
-
-	//----------------------------------------
-	//---------- Save example plot -----------
-	//----------------------------------------
-	plotToFile(f, data->dataset, pdfs, results.back());
-	f->Close();
+	manager.closeRootFile();
 
 	//----------------------------------------
 	//------ Create the output txt file ------
@@ -512,7 +615,7 @@ auto ProcessResults(NuFitToyData *&data, NuFitPDFs *&pdfs_toy, NuFitPDFs *&pdfs,
 		outf << "------------------------------------------" << std::endl;
 		outf << "Simulation number:\t" << t + 1 << std::endl;
 		outf << "------------------------------------------" << std::endl;
-		fitToFile(outf, results[t]);
+		manager.fitToFile(outf, results[t]);
 	}
 	outf.close();
 }

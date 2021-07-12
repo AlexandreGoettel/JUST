@@ -18,7 +18,7 @@
 namespace NuFitter {
 
 class NuFitData {
-public:  // Constructros and operator assigments
+public:  // Constructors and operator assigments
 	NuFitData(std::vector<std::vector<double>>, std::vector<std::vector<double>>,
 	          std::vector<TH1D*>, std::vector<unsigned int>);  // constructor
 	NuFitData(std::vector<std::vector<double>>, std::vector<std::vector<double>>,
