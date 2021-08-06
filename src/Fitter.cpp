@@ -459,7 +459,7 @@ auto fcn(int &npar, double *gin, double &f, double *par, int iflag) -> void {
                         npar, par);
 	} else {
 		throw std::invalid_argument("'" + config->likelihood +
-			"' is not a valid likelihood.\nAllowed: ['poisson']" +
+			"' is not a valid likelihood.\nAllowed: ['poisson', 'must']" +
 			"\nPay attention to the capitalisation!");
 	}
 

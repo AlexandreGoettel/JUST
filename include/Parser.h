@@ -48,7 +48,7 @@ namespace CMDLParser {
 
 class NuFitConfig {
 public:
-	NuFitConfig(NuFitter::NuFitCmdlArgs);
+	NuFitConfig(NuFitter::NuFitCmdlArgs);  // constructor
 	~NuFitConfig();  // destructor
 	NuFitConfig(const NuFitConfig&) = delete;  // copy constructor
 	NuFitConfig(NuFitConfig&&) = delete;  // move constructor
